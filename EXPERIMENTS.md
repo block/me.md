@@ -101,5 +101,6 @@ Every experiment must identify:
 - [0002 — Express and admit proposed context](./experiments/0002-express-and-admit-context.md)
 - [0003 — Understand why context changed](./experiments/0003-understand-provenance.md)
 - [0004 — Understand and revoke agent authority](./experiments/0004-understand-agent-authority.md)
+- [0005 — Inspect and move a selected context subset](./experiments/0005-inspect-and-move-context.md)
 
 Use the [experiment template](./experiments/TEMPLATE.md) to propose another small test.
