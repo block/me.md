@@ -104,5 +104,6 @@ Every experiment must identify:
 - [0005 — Inspect and move a selected context subset](./experiments/0005-inspect-and-move-context.md)
 - [0006 — Verify disablement, forgetting, and deletion](./experiments/0006-verify-revocation.md)
 - [0007 — Understand context and source coverage](./experiments/0007-understand-coverage.md)
+- [0008 — Learn from outcomes without profiling the person](./experiments/0008-learn-from-outcomes.md)
 
 Use the [experiment template](./experiments/TEMPLATE.md) to propose another small test.
