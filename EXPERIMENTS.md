@@ -103,5 +103,6 @@ Every experiment must identify:
 - [0004 — Understand and revoke agent authority](./experiments/0004-understand-agent-authority.md)
 - [0005 — Inspect and move a selected context subset](./experiments/0005-inspect-and-move-context.md)
 - [0006 — Verify disablement, forgetting, and deletion](./experiments/0006-verify-revocation.md)
+- [0007 — Understand context and source coverage](./experiments/0007-understand-coverage.md)
 
 Use the [experiment template](./experiments/TEMPLATE.md) to propose another small test.
