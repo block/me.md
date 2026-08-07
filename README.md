@@ -157,6 +157,8 @@ The protocol is the product. Interfaces are interchangeable.
 
 `me.md` is currently an experimental protocol draft. It is not yet a stable compatibility standard.
 
+We use [small, interface-neutral experiments](./EXPERIMENTS.md) to test one human question at a time. These experiments are non-normative: an implementation supplies evidence for the protocol, not an automatic standard.
+
 We are intentionally pacing the work in stages:
 
 ### 1. Establish the human contract
