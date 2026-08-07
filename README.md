@@ -62,6 +62,10 @@ The [context model and shared language](./CONTEXT.md) explains the boundaries be
 
 The [expression and admission guide](./EXPRESSION.md) explores how durable context can be phrased in language the person recognizes as theirs while keeping agent-specific projections subordinate to that source.
 
+The [system map](./SYSTEM.md) shows how person-owned context, access policy, agents, actions, feedback, derived state, and projections relate without treating an entire application as the protocol.
+
+The [open-source boundary](./EXTENSIONS.md) separates the core contract from candidate extensions, reference workflows, and application-specific choices.
+
 ### `me.md`
 
 `me.md` holds a small amount of context that is useful across many situations: how agents should work with you, your defaults, and your boundaries.
