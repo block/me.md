@@ -165,6 +165,8 @@ The person may:
 - **Defer** the decision.
 - **Dismiss** it without creating durable context.
 
+To honor “do not ask again,” an implementation may keep a bounded, privacy-preserving decision marker for a dismissed proposal. That marker should be disclosed, should expire or be removable, and must not be recalled as context about the person.
+
 A person who directly authors context or explicitly says “remember this” should not be asked to approve the same instruction a second time. That is different from an agent inferring something and proposing it.
 
 ## Recall, routing, and explanation
@@ -228,15 +230,15 @@ Disablement should be enforced by the context-access layer, not only by a prompt
 
 ### Forget
 
-Remove context from active durable state and future recall.
+Remove accepted context from active durable state and future recall.
 
-An implementation may retain a minimal decision record to avoid repeating a dismissed proposal, but any retained state and its lifetime must be disclosed.
+If provenance or history remains after forgetting, the implementation should make clear what remains, why it remains, how long it is retained, and how the person can purge it. Forgetting one entry is different from deleting an entire context store.
 
 ### Delete
 
 Remove specified context and the copies covered by the deletion request.
 
-Deletion semantics should explicitly address derived indexes, caches, history, backups, proposals, and projections. “Delete all” should not mean “hide the current file while retaining usable copies elsewhere.”
+Deletion semantics should explicitly address derived indexes, caches, history, backups, proposals, and projections. They should distinguish immediate deletion from copies that expire on a documented schedule. “Delete all” should not mean “hide the current file while retaining usable copies elsewhere.”
 
 ### Revoke
 
