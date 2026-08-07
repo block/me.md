@@ -1,36 +1,186 @@
-# me.md README
+# me.md
 
-Congrats, project leads! You got a new project to grow!
+**Your context should belong to you.**
 
-This stub is meant to help you form a strong community around your work. It's yours to adapt, and may 
-diverge from this initial structure. Just keep the files seeded in this repo, and the rest is yours to evolve! 
+AI agents become more useful when they understand how you work, what matters to you, and what they should always ask before doing.
 
-## Introduction
+Today, that understanding usually lives inside a product. Change apps, agents, or model providers and you may have to start over. You may not be able to see what was remembered, correct it, or take it with you.
 
-Orient users to the project here. This is a good place to start with an assumption
-that the user knows very little - so start with the Big Picture and show how this
-project fits into it.
+`me.md` is an experimental open protocol for user-owned agent context.
 
-Then maybe a dive into what this project does.
+It gives a person a simple, inspectable way to carry the context they choose across trusted agents and applications—without turning the person into a hidden profile owned by one system.
 
-Diagrams and other visuals are helpful here. Perhaps code snippets showing usage.
+## Why this should exist
 
-Project leads should complete, alongside this `README`:
+People already carry context from one relationship to another. We remember how someone likes to communicate, what they care about, and what boundaries matter.
 
-* [CODEOWNERS](./CODEOWNERS) - set project lead(s)
-* [CONTRIBUTING.md](./CONTRIBUTING.md) - Fill out how to: install prereqs, build, test, run, access CI, chat, discuss, file issues
-* [Bug-report.md](.github/ISSUE_TEMPLATE/bug-report.md) - Fill out `Assignees` add codeowners @names
-* [config.yml](.github/ISSUE_TEMPLATE/config.yml) - remove "(/add your discord channel..)" and replace the url with your Discord channel if applicable
+Agents need some of that continuity too. But continuity becomes dangerous when context is inferred silently, stored opaquely, or shared more broadly than the person intended.
 
-The other files in this template repo may be used as-is:
+`me.md` is an attempt to hold both sides of that tension:
 
-* [GOVERNANCE.md](./GOVERNANCE.md)
-* [LICENSE](./LICENSE)
+- enough continuity that every new agent does not feel like starting from zero;
+- enough control that continuity does not become surveillance.
 
-## Project Resources
+## Personal sovereignty
 
-| Resource                                   | Description                                                                    |
-| ------------------------------------------ | ------------------------------------------------------------------------------ |
-| [CODEOWNERS](./CODEOWNERS)                 | Outlines the project lead(s)                                                   |
-| [GOVERNANCE.md](./GOVERNANCE.md)           | Project governance                                                             |
-| [LICENSE](./LICENSE)                       | Apache License, Version 2.0                                                    |
+Sovereignty is the foundation of the protocol, not an optional privacy setting.
+
+A conforming implementation should preserve these principles:
+
+- **You own the source of truth.** Your context does not belong to an agent, application, model provider, or employer.
+- **You can see it.** Stored context should be legible and inspectable, not hidden behind an inferred profile.
+- **You choose what becomes durable.** An agent may suggest something worth remembering, but an observation is not automatically a fact about you.
+- **Context stays scoped.** Family context should not appear in an unrelated coding session. Project facts should not quietly become personal identity.
+- **What you say now wins.** Current instructions override stored defaults.
+- **You can change your mind.** Context can be corrected, disabled, forgotten, or deleted.
+- **Action remains separate.** Knowing your preferences is not permission to send, publish, purchase, or act on your behalf.
+- **Interfaces are replaceable.** You should be able to change agents or applications without surrendering continuity.
+
+The protocol is the stable center. Agents and applications are replaceable surfaces around it.
+
+## A working shape
+
+The exact structure is still being designed. An early shape looks like this:
+
+```text
+~/.me/
+  me.md
+  topics/
+    family.md
+    travel.md
+    communication.md
+  projects/
+    <project-id>/
+      project.md
+  proposals/
+  policy.json
+```
+
+### `me.md`
+
+`me.md` holds a small amount of context that is useful across many situations: how agents should work with you, your defaults, and your boundaries.
+
+```markdown
+# Me
+
+## How to work with me
+
+- Lead with the answer.
+- Use plain language before technical detail.
+
+## Boundaries
+
+- Always ask before sending something as me.
+- Do not make purchases without confirmation.
+```
+
+### Topics
+
+Topic files hold focused personal context that should be recalled only when it is relevant.
+
+```markdown
+# Family
+
+- Monday evenings are usually reserved for soccer practice.
+```
+
+An agent helping with a family calendar may need that context. An unrelated coding agent probably does not.
+
+### Projects
+
+Project context describes a piece of work, not the person.
+
+```markdown
+# Phoenix migration
+
+- The rollout must be reversible.
+- The next decision is whether to support dual writes.
+```
+
+Personal context follows the person. Project context follows the project.
+
+### Proposals
+
+Agents may notice something that could be useful later. They can propose it, but a proposal is not memory until the person accepts it.
+
+That distinction matters:
+
+```text
+observation → proposal → user decision → durable context
+```
+
+The person remains the authority at every step.
+
+## How agents should use it
+
+A trusted agent or application may:
+
+1. read only the context relevant to the current task;
+2. follow the person's stated defaults and boundaries;
+3. propose new durable context when something appears genuinely reusable;
+4. make it possible to understand what context was used;
+5. let the person inspect, edit, disable, forget, or delete it.
+
+Reading context is not permission to take action on someone's behalf.
+
+## What `me.md` is not
+
+`me.md` is not:
+
+- a transcript of everything a person has said;
+- a hidden psychological or behavioral profile;
+- a productivity score;
+- manager or employer telemetry;
+- permission for an agent to act without confirmation;
+- a requirement to share the same context with every agent;
+- memory owned by one application.
+
+Sparse and true is better than comprehensive and speculative.
+
+## Why open
+
+A personal context layer cannot meaningfully belong to the person if one product alone defines, stores, and interprets it.
+
+An open protocol makes it possible for:
+
+- different agents and applications to work from the same user-owned source;
+- people to inspect and move their context;
+- independent implementations to challenge and improve the design;
+- privacy, consent, and security claims to be examined in public;
+- the protocol to outlive any one interface or company.
+
+The protocol is the product. Interfaces are interchangeable.
+
+## Project status and pacing
+
+`me.md` is currently an experimental protocol draft. It is not yet a stable compatibility standard.
+
+We are intentionally pacing the work in stages:
+
+### 1. Establish the human contract
+
+Define the sovereignty principles, boundaries, and language clearly enough that technical decisions can be judged against them.
+
+### 2. Draft the portable shape
+
+Specify global, topic, and project context; proposals and consent; provenance; correction; forgetting; deletion; and portability.
+
+### 3. Build conformance tests
+
+Create synthetic examples and tests that independent implementations can use to verify the core contract.
+
+### 4. Learn from real implementations
+
+Evolve the protocol through use, security review, and implementations that are independent of any one application.
+
+The goal is not to standardize every possible memory system. It is to establish the smallest useful contract that keeps the person in control.
+
+## Contributing
+
+The most important question is not how much an agent can remember.
+
+It is whether the system increases the person's agency.
+
+Contributions should make personal context more legible, portable, scoped, revocable, and useful—without turning it into surveillance or administration.
+
+Project governance is described in [GOVERNANCE.md](./GOVERNANCE.md). This project is licensed under the [Apache License 2.0](./LICENSE).
