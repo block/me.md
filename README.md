@@ -60,6 +60,8 @@ The exact structure is still being designed. An early shape looks like this:
 
 The [context model and shared language](./CONTEXT.md) explains the boundaries between session, global, topic, project, proposed, and derived context without treating this folder layout as final.
 
+The [expression and admission guide](./EXPRESSION.md) explores how durable context can be phrased in language the person recognizes as theirs while keeping agent-specific projections subordinate to that source.
+
 ### `me.md`
 
 `me.md` holds a small amount of context that is useful across many situations: how agents should work with you, your defaults, and your boundaries.
