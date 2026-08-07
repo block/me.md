@@ -2,7 +2,11 @@
 
 **Status:** Conceptual architecture and protocol boundary. Non-normative.
 
-`me.md` does not need to standardize an entire agent product.
+Organizations are replacing coordination layers with intelligence systems. A world model can know the state of the organization, but it does not automatically know the state of the person. Without a personal layer, intelligence routes around the human instead of through them.
+
+`me.md` is that personal layer: a portable model of the person — identity, aims, sources, workstreams, people, watches, memory policy, and operating rules — that turns raw organizational activity into a person-shaped read: what moved, where the pull is, what is missing, and what to do next.
+
+To do that trustworthily, `me.md` does not need to standardize an entire agent product.
 
 A useful application may include agents, source connectors, ranking, watches, feedback, actions, and presentation. The protocol's job is to make the person's authority and the movement of their context clear across those pieces.
 
