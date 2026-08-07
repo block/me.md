@@ -2,6 +2,10 @@
 
 **Your context should belong to you.**
 
+Organizations are replacing coordination layers with intelligence systems. A world model can know the state of the organization, but it does not automatically know the state of the person. Without a personal layer, intelligence routes around the human instead of through them.
+
+`me.md` gives the person a portable model of themselves — identity, aims, sources, workstreams, people, watches, memory policy, and operating rules — so that intelligence routes through them. It turns raw organizational activity into a person-shaped read: what moved, where the pull is, what is missing, and what to do next.
+
 AI agents become more useful when they understand how you work, what matters to you, and what they should always ask before doing.
 
 Today, that understanding usually lives inside a product. Change apps, agents, or model providers and you may have to start over. You may not be able to see what was remembered, correct it, or take it with you.
@@ -29,6 +33,7 @@ The full [sovereignty contract](./SOVEREIGNTY.md) separates the commitments this
 
 A conforming implementation should preserve these principles:
 
+- **It is off until you turn it on.** Durable personal context is opt-in. A conforming implementation must work without it and must make enabling it a deliberate, reversible choice.
 - **You own the source of truth.** Your context does not belong to an agent, application, model provider, or employer.
 - **You can see it.** Stored context should be legible and inspectable, not hidden behind an inferred profile.
 - **You choose what becomes durable.** An agent may suggest something worth remembering, but an observation is not automatically a fact about you.
@@ -58,7 +63,15 @@ The exact structure is still being designed. An early shape looks like this:
   policy.json
 ```
 
+Not every part of the personal model is specified yet. Aims, workstreams, people, and watches — the pieces that power the person-shaped read of what moved and where the pull is — are planned shape, tracked as candidate contracts in the [open-source boundary](./EXTENSIONS.md).
+
 The [context model and shared language](./CONTEXT.md) explains the boundaries between session, global, topic, project, proposed, and derived context without treating this folder layout as final.
+
+The [expression and admission guide](./EXPRESSION.md) explores how durable context can be phrased in language the person recognizes as theirs while keeping agent-specific projections subordinate to that source.
+
+The [system map](./SYSTEM.md) shows how person-owned context, access policy, agents, actions, feedback, derived state, and projections relate without treating an entire application as the protocol.
+
+The [open-source boundary](./EXTENSIONS.md) separates the core contract from candidate extensions, reference workflows, and application-specific choices.
 
 ### `me.md`
 
@@ -167,9 +180,9 @@ We are intentionally pacing the work in stages:
 
 Define the sovereignty principles, boundaries, and language clearly enough that technical decisions can be judged against them.
 
-### 2. Draft the portable shape
+### 2. Draft the core shape
 
-Specify global, topic, and project context; proposals and consent; provenance; correction; forgetting; deletion; and portability.
+Specify global, topic, and project context; proposals and consent; provenance; correction; forgetting; and deletion. Portability, capabilities, coverage receipts, and outcome events are deliberately deferred candidate contracts — see the [open-source boundary](./EXTENSIONS.md).
 
 ### 3. Build conformance tests
 
