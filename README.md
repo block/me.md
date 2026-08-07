@@ -25,6 +25,8 @@ Agents need some of that continuity too. But continuity becomes dangerous when c
 
 Sovereignty is the foundation of the protocol, not an optional privacy setting.
 
+The full [sovereignty contract](./SOVEREIGNTY.md) separates the commitments this project intends to preserve from the technical choices still under test.
+
 A conforming implementation should preserve these principles:
 
 - **You own the source of truth.** Your context does not belong to an agent, application, model provider, or employer.
