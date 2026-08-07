@@ -99,5 +99,6 @@ Every experiment must identify:
 
 - [0001 — Inspect, edit, and reuse context](./experiments/0001-inspect-edit-reuse.md)
 - [0002 — Express and admit proposed context](./experiments/0002-express-and-admit-context.md)
+- [0003 — Understand why context changed](./experiments/0003-understand-provenance.md)
 
 Use the [experiment template](./experiments/TEMPLATE.md) to propose another small test.
