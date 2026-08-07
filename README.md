@@ -65,6 +65,8 @@ The [system map](./SYSTEM.md) shows how person-owned context, access policy, age
 
 The [open-source boundary](./EXTENSIONS.md) separates the core contract from candidate extensions, reference workflows, and application-specific choices.
 
+The [host contract](./HOST.md) defines what any agent, harness, or CLI must do to serve a person's context — with no required tool protocol, runtime, or privileged application. The files are the interface; two hosts that have never heard of each other must be able to serve the same person on the same store.
+
 ### `me.md`
 
 `me.md` holds a small amount of context that is useful across many situations: how agents should work with you, your defaults, and your boundaries.
