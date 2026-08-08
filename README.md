@@ -6,14 +6,6 @@ Organizations are replacing coordination layers with intelligence systems. A wor
 
 `me.md` gives the person a portable model of themselves — identity, aims, sources, workstreams, people, watches, memory policy, and operating rules — so that intelligence routes through them. It turns raw organizational activity into a person-shaped read: what moved, where the pull is, what is missing, and what to do next.
 
-AI agents become more useful when they understand how you work, what matters to you, and what they should always ask before doing.
-
-Today, that understanding usually lives inside a product. Change apps, agents, or model providers and you may have to start over. You may not be able to see what was remembered, correct it, or take it with you.
-
-`me.md` is an experimental open protocol for user-owned agent context.
-
-It gives a person a simple, inspectable way to carry the context they choose across trusted agents and applications—without turning the person into a hidden profile owned by one system.
-
 ## Why this should exist
 
 People already carry context from one relationship to another. We remember how someone likes to communicate, what they care about, and what boundaries matter.
