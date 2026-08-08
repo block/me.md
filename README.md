@@ -2,7 +2,9 @@
 
 **Your memory should belong to you.**
 
-`me.md` is an open memory protocol for AI agents. All the data that an agent knows about you is in plain files. The files use your words. The files stay on your machine:
+`me.md` is a new protocol for working with agents. It preserves human sovereignty — you own what agents know about you — and it enables you to act on the things that matter most to you, with agents that know you well enough to help.
+
+All the data that an agent knows about you is in plain files. The files use your words. The files stay on your machine:
 
 ```markdown
 # Me
@@ -33,7 +35,7 @@ Give this instruction to any agent — a chat app, a CLI, an IDE, anything that 
 
 > Set up my me.md memory. Create `~/.me/me.md` if it does not exist. Ask me a few short questions about how I like to work and what you must always ask before doing. Write only what I approve, in my own words. Then read that file at the start of our future sessions.
 
-That one message is the full setup. The agent creates the file, you speak, and only your approved words are saved. From then on, the instruction "read `~/.me/me.md` before we start" makes any other agent know you too.
+That one message is the full setup. The agent creates the file, you speak, and only your approved words are saved. From then on, the instruction "read `~/.me/me.md` before we start" makes any other agent know you too. [SETUP.md](./SETUP.md) has the full setup instruction, ready to copy.
 
 If you prefer to do it yourself:
 
