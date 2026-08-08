@@ -27,13 +27,20 @@ People call this memory. We do too. The specification documents use the word **c
 
 ## Quickstart
 
-You do not install the protocol. You write a file.
+You do not install the protocol. Any agent you already use can set it up for you.
+
+Give this instruction to any agent — a chat app, a CLI, an IDE, anything that can write a file:
+
+> Set up my me.md memory. Create `~/.me/me.md` if it does not exist. Ask me a few short questions about how I like to work and what you must always ask before doing. Write only what I approve, in my own words. Then read that file at the start of our future sessions.
+
+That one message is the full setup. The agent creates the file, you speak, and only your approved words are saved. From then on, the instruction "read `~/.me/me.md` before we start" makes any other agent know you too.
+
+If you prefer to do it yourself:
 
 1. **Create the file.** `mkdir -p ~/.me && touch ~/.me/me.md`
 2. **Write one true thing in your own words.** One line is sufficient.
-3. **Tell an agent that you trust to read the file.** A conforming host finds `~/.me/` without help. For all other agents, the instruction "read `~/.me/me.md` before we start" is a complete integration.
 
-Your memory now continues after each tool that reads it is gone. Add lines when they show their value. Remove any line, at any time, with a text editor.
+Your memory now continues after each tool that reads it is gone. Add lines when they show their value. Remove any line, at any time, with a text editor — or tell any agent to do it for you.
 
 ## What memory does, in sequence
 
