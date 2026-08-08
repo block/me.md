@@ -86,12 +86,13 @@ The [sovereignty contract](./SOVEREIGNTY.md) separates these commitments from th
   policy.json   on/off, audiences, scopes
 ```
 
-The parts that power the briefing — aims, workstreams, watches, and the people you work with — are planned shape. They are tracked as candidate contracts in [EXTENSIONS.md](./EXTENSIONS.md), and intents-and-watches is the next contract in the queue.
+The briefing contract is drafted in [BRIEFING.md](./BRIEFING.md). The store shape that powers it — aims, workstreams, watches, and the people you work with — is planned, tracked as candidate contracts in [EXTENSIONS.md](./EXTENSIONS.md).
 
 The layout is the documentation. The layout is not final. These documents give the full contracts:
 
 - [CONTEXT.md](./CONTEXT.md) — the shared language: session, global, topic, project, proposed, and derived context
 - [EXPRESSION.md](./EXPRESSION.md) — how memory is written in words that you know as yours, and how the system speaks about it
+- [BRIEFING.md](./BRIEFING.md) — the protocol's main output: what a person-shaped briefing must contain, and the rules that keep it an advocate
 - [HOST.md](./HOST.md) — the rules for each agent, harness, or CLI that serves your files; two hosts with no knowledge of each other must serve the same person without coordination
 - [PROVENANCE.md](./PROVENANCE.md) — why an entry exists: what changed, who changed it, and with what approval
 - [REVOCATION.md](./REVOCATION.md) — what disable, forget, delete, and purge must do
