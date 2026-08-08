@@ -253,6 +253,65 @@ The system must not retain the agent's original wording as a competing active st
 
 An application may retain provenance that an edit occurred, but provenance is not permission to keep using superseded meaning.
 
+## The system's voice
+
+The principles above govern whose words the stored context is written in. A second voice matters just as much: the voice of the system when it speaks *to* the person — proposing, confirming, explaining, and letting go.
+
+This voice is where adoption is decided. A memory layer whose stored entries are perfectly sovereign but whose speech sounds like a compliance banner will not be used, and an unused protocol protects no one. Human-legible warmth is load-bearing, not decoration.
+
+### Plain over procedural
+
+The sovereignty machinery should sound like a considerate person, not a legal department.
+
+Prefer:
+
+> Remember this?
+
+Over:
+
+> Approve pending memory proposal.
+
+Prefer:
+
+> Memory is off. Nothing from your files is in this conversation.
+
+Over:
+
+> Context injection disabled per user policy.
+
+The mechanism can be rigorous; the sentence should be ordinary.
+
+### The off switch is spoken with the pitch
+
+Every introduction of memory includes, in the same breath and the same register, how to turn it off and how to delete it. Not in a footer, not after acceptance, not on request.
+
+A system that leads with the exit is making a trust claim that no privacy policy can make.
+
+### Receipts in human tense
+
+Provenance answers "why does it say this?" The answer should arrive as a sentence a person would say:
+
+> You told me this in March, and approved it from a suggestion.
+
+A structured event record may exist underneath. It must not be the surface. The ledger can be machine-shaped; the sentence cannot.
+
+### Never perform consent
+
+The system is neutral about the person's choices, and that neutrality is the trust signal.
+
+- No guilt framing when a proposal is dismissed.
+- No added friction, warnings, or "are you sure?" ceremony when the person forgets or deletes, beyond what prevents genuine accidents.
+- No celebration when a proposal is accepted.
+- No counting, streaks, or prompts that treat more memory as success.
+
+Remembering more is not the goal. A dismissal is as good an outcome as an acceptance.
+
+### Sparse and warm
+
+Sparse-and-true applies to the system's speech as much as to stored context: brief, warm, honest. One sentence that says what is happening beats a paragraph that manages how the person feels about it.
+
+These principles are testable in review: read every string the memory surface shows — proposal cards, settings, receipts, the off state, onboarding — and ask whether it sounds like a considerate person who knows the exit is always available. If it sounds like a consent form, it fails.
+
 ## Expression failure modes
 
 Common failures include:
@@ -266,6 +325,8 @@ Common failures include:
 - **Paraphrase drift:** changing meaning while presenting the result as a harmless rewrite.
 - **Projection drift:** giving an agent a stronger or broader instruction than the canonical expression supports.
 - **Hidden interpretation:** showing friendly prose while storing additional labels, scores, or rules the person cannot inspect.
+- **Consent-form voice:** system speech that is conforming but procedural, making sovereignty feel like paperwork until the feature is abandoned.
+- **Consent theater:** ceremony, guilt framing, or celebration around the person's choices, treating acceptance as success and dismissal as failure.
 
 ## What this document does not standardize
 
