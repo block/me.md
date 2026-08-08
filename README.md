@@ -1,6 +1,6 @@
 # me.md
 
-**A protocol for keeping up with agents.**
+**Keep up with agents, on your terms.**
 
 Work is filling with agents. They act while you sleep, produce more than you can read, and move faster than you can watch. The person who tries to follow all of it drowns. The person who ignores it falls behind.
 
