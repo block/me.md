@@ -1,10 +1,12 @@
 # me.md
 
-**Your memory should belong to you.**
+**A protocol for keeping up with agents.**
 
-`me.md` is a new protocol for working with agents. It preserves human sovereignty — you own what agents know about you — and it enables you to act on the things that matter most to you, with agents that know you well enough to help.
+Work is filling with agents. They act while you sleep, produce more than you can read, and move faster than you can watch. The person who tries to follow all of it drowns. The person who ignores it falls behind.
 
-All the data that an agent knows about you is in plain files. The files use your words. The files stay on your machine:
+`me.md` gives you the other option: a **briefing**, shaped by you. It turns everything that moved into a person-shaped read — what moved, where the pull is, what is missing, and what to do next. Not a feed of all activity. A read built from what matters most to you.
+
+For the briefing to be yours, the agents must know you — your aims, your boundaries, your "ask me first." That knowing is **memory**, and it must belong to you, or the briefing becomes one more thing a product does to you. So the protocol rests on memory you own: plain files, in your words, on your machine.
 
 ```markdown
 # Me
@@ -53,8 +55,9 @@ Your memory now continues after each tool that reads it is gone. Add lines when 
 5. **Receipt** — each entry can show why it exists: who wrote it, when, and with what approval.
 6. **Advocate** — the file speaks for you when you do not monitor it. It limits what agents read to the current task. It keeps family data out of work sessions. It does not let a stored preference become permission to act as you.
 7. **Independence** — you own the file, and the standard is open. Each tool must compete to serve the file. No tool can lock the file in.
+8. **Briefing** — the destination. Agents that know your aims can turn everything that moved into your person-shaped read: what moved, where the pull is, what is missing, what to do next.
 
-Points 1 through 3 are the reasons to write the file. Points 4 through 7 are the reasons the file is safe to write.
+Points 1 through 3 are the reasons to write the file. Points 4 through 7 are the reasons the file is safe to write. Point 8 is the reason the protocol exists.
 
 ## Sovereignty first
 
@@ -82,6 +85,8 @@ The [sovereignty contract](./SOVEREIGNTY.md) separates these commitments from th
   proposals/    agent suggestions that wait for your decision
   policy.json   on/off, audiences, scopes
 ```
+
+The parts that power the briefing — aims, workstreams, watches, and the people you work with — are planned shape. They are tracked as candidate contracts in [EXTENSIONS.md](./EXTENSIONS.md), and intents-and-watches is the next contract in the queue.
 
 The layout is the documentation. The layout is not final. These documents give the full contracts:
 
