@@ -56,9 +56,9 @@ You do not install the protocol. Any agent you already use can set it up for you
 
 Give this instruction to any agent — a chat app, a CLI, an IDE, anything that can write a file:
 
-> Set up my me.md memory. Create `~/.me/me.md` if it does not exist. Ask me a few short questions about how I like to work and what you must always ask before doing. Write only what I approve, in my own words. Then read that file at the start of our future sessions.
+> Set up my me.md memory. Create `~/.me/me.md` if it does not exist. Ask me a few short questions about how I like to work and what you must always ask before doing. Write only what I approve, in my own words. Then read that file at the start of every future session automatically, without my asking — record that rule in your persistent instructions now.
 
-That one message is the full setup. The agent creates the file, you speak, and only your approved words are saved. From then on, the instruction "read `~/.me/me.md` before we start" makes any other agent know you too. [SETUP.md](./SETUP.md) has the full setup instruction, ready to copy.
+That one message is the full setup — the last setup effort you spend. A conforming host finds `~/.me/` and reads it at the start of every session on its own. You never ask an agent to remember you, and you never repeat the instruction. If a tool makes you re-invoke your own memory by hand each session, it is spending the attention this protocol exists to protect. (For an agent that does not yet conform, the one line "read `~/.me/me.md` before we start" is the temporary bridge.) [SETUP.md](./SETUP.md) has the full setup instruction, ready to copy.
 
 If you prefer to do it yourself:
 
