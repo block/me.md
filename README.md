@@ -58,7 +58,7 @@ Give this instruction to any agent — a chat app, a CLI, an IDE, anything that 
 
 > Set up my me.md memory. Create `~/.me/me.md` if it does not exist. Ask me a few short questions about how I like to work and what you must always ask before you act. Write only what I approve, in my own words. Then read that file at the start of each future session, automatically, with no instruction from me. Record that rule in your persistent instructions now.
 
-That one message is the full setup. It is the last setup work that you do. A conforming host finds `~/.me/` and reads it at the start of each session, with no instruction from you. You do not ask an agent to remember you. You do not repeat the instruction. A tool that requires a manual start in each session uses the attention that this protocol exists to protect. For an agent that does not conform yet, the one line "read `~/.me/me.md` before we start" is a temporary bridge. [SETUP.md](./SETUP.md) has the full setup instruction, ready to copy.
+That one message is the full setup. It is the last setup work that you do. A conforming host finds `~/.me/` and reads it at the start of each session, with no instruction from you. You do not ask an agent to remember you. You do not repeat the instruction. A tool that requires a manual start in each session uses the attention that this protocol exists to protect. For a harness that does not conform yet, [PROTOCOL.md](./PROTOCOL.md) has a paste-in block that makes any instruction surface — a system prompt, a rules file, custom instructions — serve the store. [SETUP.md](./SETUP.md) has the full setup instruction, ready to copy.
 
 If you prefer to do it yourself:
 
@@ -113,6 +113,7 @@ The layout is the documentation. The layout is not final. These documents give t
 
 - [CONTEXT.md](./CONTEXT.md) — the shared language: session, global, topic, project, proposed, and derived context
 - [EXPRESSION.md](./EXPRESSION.md) — how memory is written in words that you know as yours, and how the system speaks about it
+- [PROTOCOL.md](./PROTOCOL.md) — the smallest complete statement of the protocol: the store, the loop, and a paste-in block for any harness
 - [BRIEFING.md](./BRIEFING.md) — the protocol's main output: what a person-shaped briefing must contain, and the rules that keep it an advocate
 - [HOST.md](./HOST.md) — the rules for each agent, harness, or CLI that serves your files; two hosts with no knowledge of each other must serve the same person without coordination
 - [PROVENANCE.md](./PROVENANCE.md) — why an entry exists: what changed, who changed it, and with what approval

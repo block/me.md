@@ -44,6 +44,8 @@ Read ~/.me/me.md before we start.
 
 There is no import, no account, and no synchronization. The file is the integration. The bridge line is a temporary aid, not the design.
 
+For a harness with an instruction surface — a system prompt, a rules file, custom instructions — [PROTOCOL.md](./PROTOCOL.md) has a paste-in block that serves the full loop, not only the read.
+
 ## The rules the agent must follow
 
 Any agent that serves your file must obey the protocol:
