@@ -50,6 +50,16 @@ Coverage        git (34), calendar (12), mail (50, headers only).
 
 Every part is composed against your aims and your watches — the same activity produces a different briefing for a different person. The full contract is [BRIEFING.md](./BRIEFING.md): five required parts, read-only composition, one suggested move, and an honest coverage receipt in every read.
 
+## One thread, not many sessions
+
+Today, work with AI is divided into many chat sessions. Each session starts with no knowledge of you. Past sessions collect in a sidebar, and the context inside them is lost. People explain themselves again, or they search old transcripts for what they already said.
+
+That interface exists because of an architecture fault, and it is temporary. When the session is the only container of memory, people must keep old sessions to keep their context.
+
+`me.md` removes the fault. Your files carry the continuity. A session is a view of them, not a container. A conforming host mounts your files at the start of each session, so the first session and the hundredth start with the same knowledge of you. You can discard any session without loss: what you chose to keep is in the store, and the [briefing](./BRIEFING.md) tells you what moved since your last read.
+
+The single thread that people predict is not one endless chat. An endless transcript is large and speculative, and a product owns it. The single thread is your store, mounted everywhere — small, true, and yours.
+
 ## Quickstart
 
 You do not install the protocol. Any agent you already use can set it up for you.
