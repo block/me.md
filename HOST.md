@@ -83,4 +83,4 @@ Conformance is observable from the store and the host's behavior alone, with no 
 7. **Second-host test** — point an unrelated conforming host at the same store; recall, proposals, and provenance interoperate with no migration step.
 8. **Discard test** — delete all past sessions and transcripts; the next session starts with the same durable context, and the host's behavior does not change.
 
-A future conformance suite (see [EXTENSIONS.md](./EXTENSIONS.md)) will express these as synthetic fixtures. Until then, this checklist is the review standard.
+[conformance/](./conformance/) expresses these tests as synthetic fixtures: a fixture store and one procedure for each test. This checklist remains the review standard; the fixtures are the way to run it.

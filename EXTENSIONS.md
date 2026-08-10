@@ -260,7 +260,7 @@ The current public work establishes the human contract, context language, expres
 6. **Derived-state limits:** tests proving caches, indexes, and patterns cannot restore or outrank forgotten context.
 7. **Event and intent boundaries:** shared language for feedback, outcomes, priorities, and watches without treating them as identity.
 8. **Security model:** path safety, prompt injection, connector isolation, local permissions, and cross-interface trust.
-9. **Conformance:** synthetic tests that verify the contract without requiring one application's architecture.
+9. **Conformance:** synthetic tests that verify the contract without requiring one application's architecture. A first fixture suite is drafted in [conformance/](./conformance/).
 
 These should be developed in focused PRs and experiments rather than added as one large specification.
 
