@@ -23,20 +23,25 @@ preserves my ownership of what you know about me.
 3. Write only what I approve, in my own words. Do not add anything I
    did not say. Do not infer my traits, role, or interests.
 4. Show me the finished file.
-5. At the start of our future sessions, read ~/.me/me.md before we work.
+5. From now on, read ~/.me/me.md at the start of every session,
+   automatically, without my asking. If you have a persistent
+   instruction, memory, or configuration mechanism, record this rule
+   there now so it survives this conversation.
 ```
 
-That one message is the full setup. The agent creates the file, you speak, and only your approved words are saved.
+That one message is the full setup — and the last setup effort you spend. The agent creates the file, you speak, and only your approved words are saved.
 
-## Use it with every other agent
+## After setup, the protocol runs without you
 
-Once the file exists, this single line makes any other agent know you:
+This is critical to the design: **the start of the protocol must not cost the person time or attention.** A conforming host finds `~/.me/` and reads it at the start of every session on its own. You never ask to be remembered. You never repeat an instruction. If a tool makes you re-invoke your own memory by hand each session, it is spending the attention this protocol exists to protect — that is a conformance failure, not an inconvenience.
+
+For an agent that does not yet conform and has no way to keep a standing instruction, this single line is the temporary bridge:
 
 ```text
 Read ~/.me/me.md before we start.
 ```
 
-No import, no account, no sync. The file is the integration.
+No import, no account, no sync. The file is the integration — and the bridge line is a stopgap, not the design.
 
 ## The rules the agent must follow
 

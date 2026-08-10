@@ -22,6 +22,7 @@ The key words MUST, MUST NOT, SHOULD, and MAY are used as in RFC 2119.
 
 ### 1. Mounting
 
+- A host MUST discover and mount the store automatically at the start of every session, without an instruction from the person. The person's effort ends when the file exists. A protocol that must be re-invoked by hand each session consumes the attention it exists to protect, and will not be used.
 - A host MUST treat the store as external and person-owned. It MUST NOT copy the store into its own durable state beyond session-scoped caches.
 - A host MUST honor the enabled/disabled state in policy before reading anything else. Disabled means the host behaves as if the store does not exist: no recall, no injection, no proposals, no tooling that implies memory. A host SHOULD state plainly that memory is off if asked.
 - A host MUST function fully with no store present. Absence of `~/.me/` (or its equivalent location) is a normal state, not an error.
