@@ -1,8 +1,12 @@
 # me.md
 
-**Your memory should belong to you.**
+**Keep up with agents, on your terms.**
 
-`me.md` is an open memory protocol for AI agents. All the data that an agent knows about you is in plain files. The files use your words. The files stay on your machine:
+Work is filling with agents. They act while you sleep, produce more than you can read, and move faster than you can watch. The person who tries to follow all of it drowns. The person who ignores it falls behind.
+
+`me.md` gives you the other option: a **briefing**, shaped by you. It turns everything that moved into a person-shaped read — what moved, where the pull is, what is missing, and what to do next. Not a feed of all activity. A read built from what matters most to you.
+
+For the briefing to be yours, the agents must know you — your aims, your boundaries, your "ask me first." That knowing is **memory**, and it must belong to you, or the briefing becomes one more thing a product does to you. So the protocol rests on memory you own: plain files, in your words, on your machine.
 
 ```markdown
 # Me
@@ -25,17 +29,45 @@ decide   content becomes memory only when you agree — and your refusal stays i
 
 People call this memory. We do too. The specification documents use the word **context** when precision is necessary. One task of the protocol is to decide which content can become memory. A proposal is not memory. A project fact is not personal memory. An observation from an agent is not a fact about you.
 
+## The briefing
+
+Memory is the substrate. The briefing is the chief value: the person-shaped read that lets you keep up with agents. A briefing looks like this:
+
+```text
+What moved      3 signals since your last read: 1 new, 2 unchanged.
+                The migration decision you watch moved yesterday.
+
+Where the pull  2 reviews wait on you. Your API change has waited
+                15 days with no reviewer — consider a nudge.
+
+What is missing Messages were scanned headers-only, so obligations
+                there are this read's blind spot, not an absence.
+
+Your move       Answer the review that blocks the release.
+
+Coverage        git (34), calendar (12), mail (50, headers only).
+```
+
+Every part is composed against your aims and your watches — the same activity produces a different briefing for a different person. The full contract is [BRIEFING.md](./BRIEFING.md): five required parts, read-only composition, one suggested move, and an honest coverage receipt in every read.
+
 ## Quickstart
 
-You do not install the protocol. You write a file.
+You do not install the protocol. Any agent you already use can set it up for you.
+
+Give this instruction to any agent — a chat app, a CLI, an IDE, anything that can write a file:
+
+> Set up my me.md memory. Create `~/.me/me.md` if it does not exist. Ask me a few short questions about how I like to work and what you must always ask before doing. Write only what I approve, in my own words. Then read that file at the start of our future sessions.
+
+That one message is the full setup. The agent creates the file, you speak, and only your approved words are saved. From then on, the instruction "read `~/.me/me.md` before we start" makes any other agent know you too. [SETUP.md](./SETUP.md) has the full setup instruction, ready to copy.
+
+If you prefer to do it yourself:
 
 1. **Create the file.** `mkdir -p ~/.me && touch ~/.me/me.md`
 2. **Write one true thing in your own words.** One line is sufficient.
-3. **Tell an agent that you trust to read the file.** A conforming host finds `~/.me/` without help. For all other agents, the instruction "read `~/.me/me.md` before we start" is a complete integration.
 
-Your memory now continues after each tool that reads it is gone. Add lines when they show their value. Remove any line, at any time, with a text editor.
+Your memory now continues after each tool that reads it is gone. Add lines when they show their value. Remove any line, at any time, with a text editor — or tell any agent to do it for you.
 
-## What memory does, in sequence
+## What the protocol does, in sequence
 
 1. **Introduction** — an agent starts with knowledge of you. You do not introduce yourself to each new tool again.
 2. **Working style** — answers come in the shape that you asked for. The agent adapts to you.
@@ -44,8 +76,9 @@ Your memory now continues after each tool that reads it is gone. Add lines when 
 5. **Receipt** — each entry can show why it exists: who wrote it, when, and with what approval.
 6. **Advocate** — the file speaks for you when you do not monitor it. It limits what agents read to the current task. It keeps family data out of work sessions. It does not let a stored preference become permission to act as you.
 7. **Independence** — you own the file, and the standard is open. Each tool must compete to serve the file. No tool can lock the file in.
+8. **Briefing** — the destination. Agents that know your aims turn everything that moved into your person-shaped read, and you keep up.
 
-Points 1 through 3 are the reasons to write the file. Points 4 through 7 are the reasons the file is safe to write.
+Points 1 through 3 are the reasons to write the file. Points 4 through 7 are the reasons the file is safe to write. Point 8 is the reason the protocol exists.
 
 ## Sovereignty first
 
@@ -74,10 +107,13 @@ The [sovereignty contract](./SOVEREIGNTY.md) separates these commitments from th
   policy.json   on/off, audiences, scopes
 ```
 
+The briefing contract is drafted in [BRIEFING.md](./BRIEFING.md). The store shape that powers it — aims, workstreams, watches, and the people you work with — is planned, tracked as candidate contracts in [EXTENSIONS.md](./EXTENSIONS.md).
+
 The layout is the documentation. The layout is not final. These documents give the full contracts:
 
 - [CONTEXT.md](./CONTEXT.md) — the shared language: session, global, topic, project, proposed, and derived context
 - [EXPRESSION.md](./EXPRESSION.md) — how memory is written in words that you know as yours, and how the system speaks about it
+- [BRIEFING.md](./BRIEFING.md) — the protocol's main output: what a person-shaped briefing must contain, and the rules that keep it an advocate
 - [HOST.md](./HOST.md) — the rules for each agent, harness, or CLI that serves your files; two hosts with no knowledge of each other must serve the same person without coordination
 - [PROVENANCE.md](./PROVENANCE.md) — why an entry exists: what changed, who changed it, and with what approval
 - [REVOCATION.md](./REVOCATION.md) — what disable, forget, delete, and purge must do
@@ -93,7 +129,7 @@ A small and true file is better than a large and speculative one.
 
 ## Why open
 
-A memory layer does not belong to the person if one product alone defines, stores, and interprets it. An open protocol lets independent implementations serve the same user-owned files. It lets the public examine the privacy and consent claims. It lets the protocol continue after each interface or company is gone.
+A personal layer does not belong to the person if one product alone defines, stores, and interprets it. An open protocol lets independent implementations serve the same user-owned files. It lets the public examine the privacy and consent claims. It lets the protocol continue after each interface or company is gone.
 
 The protocol is the product. Interfaces are interchangeable.
 
