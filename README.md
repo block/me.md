@@ -56,9 +56,9 @@ You do not install the protocol. Any agent you already use can set it up for you
 
 Give this instruction to any agent — a chat app, a CLI, an IDE, anything that can write a file:
 
-> Set up my me.md memory. Create `~/.me/me.md` if it does not exist. Ask me a few short questions about how I like to work and what you must always ask before doing. Write only what I approve, in my own words. Then read that file at the start of every future session automatically, without my asking — record that rule in your persistent instructions now.
+> Set up my me.md memory. Create `~/.me/me.md` if it does not exist. Ask me a few short questions about how I like to work and what you must always ask before you act. Write only what I approve, in my own words. Then read that file at the start of each future session, automatically, with no instruction from me. Record that rule in your persistent instructions now.
 
-That one message is the full setup — the last setup effort you spend. A conforming host finds `~/.me/` and reads it at the start of every session on its own. You never ask an agent to remember you, and you never repeat the instruction. If a tool makes you re-invoke your own memory by hand each session, it is spending the attention this protocol exists to protect. (For an agent that does not yet conform, the one line "read `~/.me/me.md` before we start" is the temporary bridge.) [SETUP.md](./SETUP.md) has the full setup instruction, ready to copy.
+That one message is the full setup. It is the last setup work that you do. A conforming host finds `~/.me/` and reads it at the start of each session, with no instruction from you. You do not ask an agent to remember you. You do not repeat the instruction. A tool that requires a manual start in each session uses the attention that this protocol exists to protect. For an agent that does not conform yet, the one line "read `~/.me/me.md` before we start" is a temporary bridge. [SETUP.md](./SETUP.md) has the full setup instruction, ready to copy.
 
 If you prefer to do it yourself:
 
