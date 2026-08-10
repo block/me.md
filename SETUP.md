@@ -23,25 +23,26 @@ preserves my ownership of what you know about me.
 3. Write only what I approve, in my own words. Do not add anything I
    did not say. Do not infer my traits, role, or interests.
 4. Show me the finished file.
-5. From now on, read ~/.me/me.md at the start of every session,
-   automatically, without my asking. If you have a persistent
-   instruction, memory, or configuration mechanism, record this rule
-   there now so it survives this conversation.
+5. From now on, read ~/.me/me.md at the start of each session,
+   automatically, with no instruction from me. If you have a
+   persistent instruction, memory, or configuration mechanism,
+   record this rule there now, so that the rule continues after
+   this conversation.
 ```
 
-That one message is the full setup — and the last setup effort you spend. The agent creates the file, you speak, and only your approved words are saved.
+That one message is the full setup. It is the last setup work that you do. The agent creates the file, you speak, and the agent saves only your approved words.
 
-## After setup, the protocol runs without you
+## After setup, the protocol operates without you
 
-This is critical to the design: **the start of the protocol must not cost the person time or attention.** A conforming host finds `~/.me/` and reads it at the start of every session on its own. You never ask to be remembered. You never repeat an instruction. If a tool makes you re-invoke your own memory by hand each session, it is spending the attention this protocol exists to protect — that is a conformance failure, not an inconvenience.
+This rule is critical to the design: **the start of the protocol must not use the person's time or attention.** A conforming host finds `~/.me/` and reads it at the start of each session, with no instruction from the person. You do not ask an agent to remember you. You do not repeat an instruction. A tool that requires a manual start in each session uses the attention that this protocol exists to protect. That is a conformance failure, not an inconvenience.
 
-For an agent that does not yet conform and has no way to keep a standing instruction, this single line is the temporary bridge:
+Some agents do not conform yet and cannot keep a standing instruction. For those agents, this one line is a temporary bridge:
 
 ```text
 Read ~/.me/me.md before we start.
 ```
 
-No import, no account, no sync. The file is the integration — and the bridge line is a stopgap, not the design.
+There is no import, no account, and no synchronization. The file is the integration. The bridge line is a temporary aid, not the design.
 
 ## The rules the agent must follow
 
