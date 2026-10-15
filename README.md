@@ -54,7 +54,7 @@ It is not a transcript, not a hidden profile, not a productivity score, not empl
 
 ## Documents
 
-Every document starts with a status line. There are three kinds.
+Every protocol document listed below starts with a status line. There are three kinds.
 
 **Normative drafts.** These are the rules. A host that claims conformance follows them. Until version 1.0, any release can change them.
 
