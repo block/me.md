@@ -1,6 +1,6 @@
 # The protocol shape
 
-**Status:** Normative draft. This page is the smallest complete statement of the protocol.
+**Status:** Guide. This page summarizes the store and loop. [HOST.md](./HOST.md) defines host conformance.
 
 `me.md` works with any AI harness or platform. If a tool can read and write files, it can serve a person's store. This page gives the full engagement in one shape. [HOST.md](./HOST.md) gives the full conformance rules.
 

@@ -56,14 +56,15 @@ It is not a transcript, not a hidden profile, not a productivity score, not empl
 
 Every protocol document listed below starts with a status line. There are three kinds.
 
-**Normative drafts.** These are the rules. A host that claims conformance follows them. Until version 1.0, any release can change them.
+**Draft contracts.** HOST.md defines host conformance, SOVEREIGNTY.md states the commitments to the person, and BRIEFING.md defines a conforming briefing. These drafts may change.
 
-- [PROTOCOL.md](./PROTOCOL.md) — the smallest complete statement: the store, the loop, and a paste-in block for any harness
 - [HOST.md](./HOST.md) — full conformance rules for implementers, with black-box tests
 - [BRIEFING.md](./BRIEFING.md) — the main output: the person-shaped read
 - [SOVEREIGNTY.md](./SOVEREIGNTY.md) — the commitments to the person
 
-**Guide.** For the person. It adds no rules.
+**Guides.** Setup and an overview of the rules.
+
+- [PROTOCOL.md](./PROTOCOL.md) — the store, the loop, and a paste-in block for a harness
 
 - [SETUP.md](./SETUP.md) — the setup instruction, ready to copy
 
