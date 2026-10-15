@@ -24,9 +24,11 @@ take it to any other agent.
    did not say. Do not infer my traits, role, or interests.
 4. Show me the finished file.
 5. Record this rule in your persistent instructions, rules file, or
-   memory, so that it continues after this conversation: read
-   ~/.me/me.md at the start of each session, automatically, with no
-   instruction from me.
+   memory, so that it continues after this conversation: at the start
+   of each session, check ~/.me/policy.json before reading any context.
+   If policy is off, behave as if the store is absent: no recall or
+   proposals. Otherwise, read ~/.me/me.md if it exists. Do this
+   automatically, with no instruction from me.
 6. After setup, follow the read, propose, and decide loop in
    https://github.com/block/me.md/blob/main/PROTOCOL.md.
    Inferred changes go in ~/.me/proposals/ for my decision. You may
