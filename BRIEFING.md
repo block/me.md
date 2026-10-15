@@ -1,6 +1,6 @@
 # Briefing contract
 
-**Status:** Draft protocol contract. This is the protocol's main output.
+**Status:** Normative draft. This is the protocol's main output.
 
 The reason `me.md` exists is to help a person keep up with agents. The briefing is how. It turns everything that moved into a person-shaped read: **what moved, where the pull is, what is missing, and what to do next.**
 

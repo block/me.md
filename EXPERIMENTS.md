@@ -1,5 +1,7 @@
 # Experiments
 
+**Status:** Process. Non-normative.
+
 `me.md` is being developed through small, reversible experiments.
 
 The goal is not to turn the first useful interface into a standard. It is to learn which human capabilities matter, which boundaries must hold, and which technical choices can remain replaceable.

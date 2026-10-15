@@ -1,6 +1,6 @@
-# Revocation and deletion contract
+# Revocation and deletion
 
-**Status:** Working protocol hypothesis. Non-normative.
+**Status:** Working protocol hypothesis. Non-normative. The required revocation rules are in [HOST.md §5](./HOST.md#5-revocation). This document explains them and records what is still under test.
 
 A person’s control is not complete if context can be added but cannot be reliably stopped, forgotten, or removed.
 

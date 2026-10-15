@@ -1,6 +1,6 @@
 # Host contract
 
-**Status:** Draft protocol contract. Normative for conforming hosts.
+**Status:** Normative draft. A host that claims conformance must follow it.
 
 A *host* is anything that reads or writes a person's context on their behalf: a desktop agent, a CLI, an IDE assistant, a chat harness, a background daemon, a script. The protocol does not care which. This document defines what any of them must do to call itself conforming.
 

@@ -1,5 +1,7 @@
 # The me.md sovereignty contract
 
+**Status:** Normative draft. Every other document must keep these commitments. The open questions are in [What remains under test](#what-remains-under-test).
+
 `me.md` is experimental. Its storage layout, APIs, and implementation details will change as we learn.
 
 These commitments are different. They are the conditions under which a personal context system remains meaningfully user-owned. An implementation should be able to explain how it preserves them before claiming compatibility with `me.md`.

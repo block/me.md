@@ -54,12 +54,27 @@ It is not a transcript, not a hidden profile, not a productivity score, not empl
 
 ## Documents
 
+Every document starts with a status line. There are three kinds.
+
+**Normative drafts.** These are the rules. A host that claims conformance follows them. Until version 1.0, any release can change them.
+
 - [PROTOCOL.md](./PROTOCOL.md) — the smallest complete statement: the store, the loop, and a paste-in block for any harness
-- [SETUP.md](./SETUP.md) — the setup instruction for the person, ready to copy
 - [HOST.md](./HOST.md) — full conformance rules for implementers, with black-box tests
 - [BRIEFING.md](./BRIEFING.md) — the main output: the person-shaped read
 - [SOVEREIGNTY.md](./SOVEREIGNTY.md) — the commitments to the person
-- [CONTEXT.md](./CONTEXT.md), [EXPRESSION.md](./EXPRESSION.md), [PROVENANCE.md](./PROVENANCE.md), [REVOCATION.md](./REVOCATION.md), [SYSTEM.md](./SYSTEM.md), [EXTENSIONS.md](./EXTENSIONS.md), [EXPERIMENTS.md](./EXPERIMENTS.md) — the deeper contracts
+
+**Guide.** For the person. It adds no rules.
+
+- [SETUP.md](./SETUP.md) — the setup instruction, ready to copy
+
+**Non-normative.** Design notes, vocabulary, and open questions. They explain the rules. They do not add to them.
+
+- [CONTEXT.md](./CONTEXT.md) — shared vocabulary
+- [PROVENANCE.md](./PROVENANCE.md) and [REVOCATION.md](./REVOCATION.md) — the reasons behind HOST.md §4 and §5
+- [EXPRESSION.md](./EXPRESSION.md) — how context is put into words and admitted
+- [SYSTEM.md](./SYSTEM.md) — the conceptual system map
+- [EXTENSIONS.md](./EXTENSIONS.md) — the open-source boundary and candidate extensions
+- [EXPERIMENTS.md](./EXPERIMENTS.md) — how the protocol is tested
 
 ## Status
 
