@@ -20,7 +20,7 @@ store/
   journal.md       a provenance record for every entry
 ```
 
-The person described is **Alex Fixture**. Alex is synthetic. No real person's context appears in this directory, so findings from these fixtures can be published without redaction.
+The person described is **Alex Fixture**. Alex is synthetic. The fixture content itself needs no personal-data redaction. Review findings, transcripts, and other test artifacts before publication; they may contain unrelated host or personal data.
 
 The policy file's exact schema is still under test ([SOVEREIGNTY.md](../SOVEREIGNTY.md)); the fixture uses the simplest form that can say off. A host that reads a different policy shape adapts the off test's payload — it does not skip the test.
 
