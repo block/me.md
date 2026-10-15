@@ -2,8 +2,9 @@
 """Check the protocol documents for drift and broken links.
 
 1. Shared blocks. Text that must be the same in more than one document is
-   marked with <!-- shared:NAME --> and <!-- /shared:NAME -->. Every copy of
-   a block must be identical.
+   marked with <!-- shared:NAME --> and <!-- /shared:NAME -->. Every block
+   must be listed in EXPECTED, must appear in exactly the files listed there,
+   and every copy must be identical.
 2. Relative links. Every relative link must point to a file that exists,
    and every #anchor must match a heading in that file.
 
@@ -15,6 +16,10 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+EXPECTED = {
+    "setup": {"README.md", "SETUP.md"},
+    "store": {"README.md", "PROTOCOL.md"},
+}
 SHARED = re.compile(r"<!-- shared:([a-z0-9-]+) -->\n(.*?)\n<!-- /shared:\1 -->", re.S)
 OPEN_MARK = re.compile(r"<!-- /?shared:([a-z0-9-]+) -->")
 LINK = re.compile(r"\]\(([^)\s]+)\)")
@@ -59,7 +64,20 @@ def main():
             elif anchor and dest.suffix == ".md" and anchor not in anchors(dest):
                 errors.append(f"{rel}: missing anchor {target}")
 
-    for name, copies in sorted(blocks.items()):
+    for name in sorted(set(blocks) | set(EXPECTED)):
+        copies = blocks.get(name, [])
+        found_in = {str(rel) for rel, _ in copies}
+        if name not in EXPECTED:
+            errors.append(f"shared:{name} is not listed in EXPECTED")
+            continue
+        for missing in sorted(EXPECTED[name] - found_in):
+            errors.append(f"shared:{name} is missing from {missing}")
+        for extra in sorted(found_in - EXPECTED[name]):
+            errors.append(f"shared:{name} is not expected in {extra}")
+        if len(copies) != len(found_in):
+            errors.append(f"shared:{name} appears more than once in one file")
+        if not copies:
+            continue
         first_file, first_body = copies[0]
         for other_file, other_body in copies[1:]:
             if other_body != first_body:
