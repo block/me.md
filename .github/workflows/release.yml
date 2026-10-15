@@ -1,0 +1,29 @@
+name: release
+
+# Push a tag vX.Y.Z to build a draft release. A maintainer reviews the
+# draft and publishes it by hand.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build release files
+        run: python3 scripts/build-release.py "$GITHUB_REF_NAME"
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          prerelease=""
+          case "$version" in 0.*) prerelease="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" --draft $prerelease \
+            --title "me.md protocol $version" \
+            --notes-file dist/release-notes.md \
+            "dist/me.md-protocol-$version.md"

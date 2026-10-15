@@ -63,4 +63,4 @@ It is not a transcript, not a hidden profile, not a productivity score, not empl
 
 ## Status
 
-`me.md` is an experimental protocol draft, not a stable standard yet. The most important question for any contribution is whether the system increases the person's agency. Governance is in [GOVERNANCE.md](./GOVERNANCE.md). The license is [Apache 2.0](./LICENSE).
+`me.md` is an experimental protocol draft, not a stable standard yet. Releases are tagged `vX.Y.Z`, and a host that claims conformance names the release it follows. Changes are in [CHANGELOG.md](./CHANGELOG.md). The most important question for any contribution is whether the system increases the person's agency. Governance is in [GOVERNANCE.md](./GOVERNANCE.md). The license is [Apache 2.0](./LICENSE).
