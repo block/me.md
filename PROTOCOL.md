@@ -6,16 +6,14 @@
 
 ## The store
 
-<!-- shared:store -->
 ```text
 ~/.me/
   me.md         read at the start of each session
   topics/       read a file only when the task makes it relevant
   projects/     read a file only for work on that project
-  proposals/    the only location where an agent can write
+  proposals/    agent-inferred changes await the person’s decision
   policy.json   if this says off, behave as if the store is absent
 ```
-<!-- /shared:store -->
 
 ## The loop
 
@@ -31,13 +29,13 @@ RECALL   During the task, read the topic or project file that the
 
 PROPOSE  When you find something that the person may want to keep,
          write it to proposals/ in the person's words, and ask.
-         Do not write to any other location in the store.
+         Do not apply an inferred change without approval.
 
 DECIDE   The person accepts, edits, or refuses. A refusal stays in
          effect. Silence is not acceptance.
 ```
 
-An agent that follows the loop cannot write memory. Only the person can admit it.
+Only the person can authorize durable memory. A host may apply an edit the person explicitly requests, or a proposal they approve. It must record what changed, when, through which host, and on whose authority. Agent inference alone never authorizes a write. See [HOST.md §3](./HOST.md#3-writing) and [§4](./HOST.md#4-provenance).
 
 ## The paste-in form
 
@@ -54,11 +52,13 @@ RECALL — Read a file in ~/.me/topics/ or ~/.me/projects/ only when
 the current task makes it relevant.
 
 PROPOSE — When you find something I may want to keep, write it as a
-new file in ~/.me/proposals/ in my words, and ask me. Do not write
-to any other location in ~/.me/.
+new file in ~/.me/proposals/ in my words, and ask me. Do not apply
+an inferred change without my approval.
 
 DECIDE — I accept, edit, or refuse. My refusal stays in effect. My
-silence is not acceptance.
+silence is not acceptance. You may apply an edit I explicitly request
+or a proposal I approve. Record what changed, when, through which
+host, and on whose authority.
 
 What I say now always overrides the store. Stored preferences are
 never permission to act for me.

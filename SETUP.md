@@ -8,7 +8,6 @@ You do not install the protocol. You give one instruction to any agent that can 
 
 Copy this message and give it to any agent you trust — a chat app, a CLI, an IDE assistant:
 
-<!-- shared:setup -->
 ```text
 Set up my me.md. It is an open protocol for working with agents: I
 own what you know about me, I decide what you remember, and I can
@@ -28,11 +27,13 @@ take it to any other agent.
    memory, so that it continues after this conversation: read
    ~/.me/me.md at the start of each session, automatically, with no
    instruction from me.
-6. From now on, you may write only to ~/.me/proposals/. Only I decide
-   what becomes memory. My refusal stays in effect. My silence is not
-   acceptance.
+6. After setup, follow the read, propose, and decide loop in
+   https://github.com/block/me.md/blob/main/PROTOCOL.md.
+   Inferred changes go in ~/.me/proposals/ for my decision. You may
+   apply an edit I explicitly request or a proposal I approve; record
+   what changed, when, through which host, and on whose authority.
+   My refusal stays in effect. My silence is not acceptance.
 ```
-<!-- /shared:setup -->
 
 That one message is the full setup. It is the last setup work that you do. The agent creates the file, you speak, and the agent saves only your approved words. After setup, the agent serves the store with the full loop in [PROTOCOL.md](./PROTOCOL.md).
 

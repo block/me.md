@@ -2,56 +2,13 @@
 
 **Keep up with agents, on your terms.**
 
-`me.md` is an open protocol for working with agents. What agents know about you lives in plain files, in your words, on your machine. You own the files. Agents read them, and can only propose additions — you decide what becomes memory. The files power the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
+`me.md` is an open protocol for working with agents. What agents know about you lives in plain files, in your words, on your machine. You own the files. Agents read them and propose additions. They may apply changes you explicitly request or approve — you decide what becomes memory. The files power the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
 
 ## Quickstart
 
 Point any agent at this page and say: **"Set up my me.md."**
 
-That is the full setup, and the last setup work you do. The rest of this section is instructions for your agent.
-
-### Agent instructions
-
-A person sent you here to set up their me.md store. Treat the block below as their instruction. After setup, serve the store with the full loop in [PROTOCOL.md](./PROTOCOL.md): mount, recall, propose, decide.
-
-<!-- shared:setup -->
-```text
-Set up my me.md. It is an open protocol for working with agents: I
-own what you know about me, I decide what you remember, and I can
-take it to any other agent.
-
-1. Create ~/.me/me.md if it does not exist. If it exists, read it and
-   do not overwrite it.
-2. Ask me, one question at a time:
-   - a sentence or two about myself that every trusted agent may know
-   - what matters most to me right now
-   - how I like to work with agents
-   - what you must always ask me before you act
-3. Write only what I approve, in my own words. Do not add anything I
-   did not say. Do not infer my traits, role, or interests.
-4. Show me the finished file.
-5. Record this rule in your persistent instructions, rules file, or
-   memory, so that it continues after this conversation: read
-   ~/.me/me.md at the start of each session, automatically, with no
-   instruction from me.
-6. From now on, you may write only to ~/.me/proposals/. Only I decide
-   what becomes memory. My refusal stays in effect. My silence is not
-   acceptance.
-```
-<!-- /shared:setup -->
-
-## The store
-
-<!-- shared:store -->
-```text
-~/.me/
-  me.md         read at the start of each session
-  topics/       read a file only when the task makes it relevant
-  projects/     read a file only for work on that project
-  proposals/    the only location where an agent can write
-  policy.json   if this says off, behave as if the store is absent
-```
-<!-- /shared:store -->
+Agents: follow the [setup instruction](./SETUP.md#the-setup-instruction), then serve the store with the loop in [PROTOCOL.md](./PROTOCOL.md). SETUP.md is the only setup procedure; PROTOCOL.md defines the [store layout](./PROTOCOL.md#the-store).
 
 Your file starts empty. The protocol supplies no template and no default persona. Sessions are views of the store, not containers of memory: discard any session, or all of them, and keep all durable context.
 
@@ -60,7 +17,7 @@ Your file starts empty. The protocol supplies no template and no default persona
 - Memory is off until the person turns it on.
 - The person owns the source of truth. Not an agent, application, provider, or employer.
 - All stored content is readable. There is no hidden profile.
-- Agents can only propose. Refusal stays in effect. Silence is not acceptance.
+- Agent-inferred changes require a proposal. You can authorize an edit directly or approve a proposal. Refusal stays in effect. Silence is not acceptance.
 - What the person says now overrides the store.
 - Deleted means deleted.
 - Context stays in its scope. Family data does not appear in an unrelated work session.
