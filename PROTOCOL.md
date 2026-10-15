@@ -6,6 +6,7 @@
 
 ## The store
 
+<!-- shared:store -->
 ```text
 ~/.me/
   me.md         read at the start of each session
@@ -14,6 +15,7 @@
   proposals/    the only location where an agent can write
   policy.json   if this says off, behave as if the store is absent
 ```
+<!-- /shared:store -->
 
 ## The loop
 

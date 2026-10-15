@@ -8,29 +8,33 @@ You do not install the protocol. You give one instruction to any agent that can 
 
 Copy this message and give it to any agent you trust — a chat app, a CLI, an IDE assistant:
 
+<!-- shared:setup -->
 ```text
-Set up my me.md memory. It is a protocol for working with agents that
-preserves my ownership of what you know about me.
+Set up my me.md. It is an open protocol for working with agents: I
+own what you know about me, I decide what you remember, and I can
+take it to any other agent.
 
 1. Create ~/.me/me.md if it does not exist. If it exists, read it and
    do not overwrite it.
 2. Ask me, one question at a time:
-   - a sentence or two about myself that I want every trusted agent
-     to know
+   - a sentence or two about myself that every trusted agent may know
    - what matters most to me right now
    - how I like to work with agents
-   - what you must always ask me before doing
+   - what you must always ask me before you act
 3. Write only what I approve, in my own words. Do not add anything I
    did not say. Do not infer my traits, role, or interests.
 4. Show me the finished file.
-5. From now on, read ~/.me/me.md at the start of each session,
-   automatically, with no instruction from me. If you have a
-   persistent instruction, memory, or configuration mechanism,
-   record this rule there now, so that the rule continues after
-   this conversation.
+5. Record this rule in your persistent instructions, rules file, or
+   memory, so that it continues after this conversation: read
+   ~/.me/me.md at the start of each session, automatically, with no
+   instruction from me.
+6. From now on, you may write only to ~/.me/proposals/. Only I decide
+   what becomes memory. My refusal stays in effect. My silence is not
+   acceptance.
 ```
+<!-- /shared:setup -->
 
-That one message is the full setup. It is the last setup work that you do. The agent creates the file, you speak, and the agent saves only your approved words.
+That one message is the full setup. It is the last setup work that you do. The agent creates the file, you speak, and the agent saves only your approved words. After setup, the agent serves the store with the full loop in [PROTOCOL.md](./PROTOCOL.md).
 
 ## After setup, the protocol operates without you
 
