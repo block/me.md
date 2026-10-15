@@ -97,7 +97,7 @@ A useful habit for every test: snapshot the store before (`diff -r` or `git stat
 
 ## Reporting
 
-Report results per test as pass, fail, or not-applicable-with-reason, alongside the host name and version. Findings follow the [experiment discipline](../EXPERIMENTS.md): observation, then interpretation, then protocol implication. Because the store is synthetic, full transcripts can be published.
+Report results per test as pass, fail, or not-applicable-with-reason, alongside the host name and version. Findings follow the [experiment discipline](../EXPERIMENTS.md): observation, then interpretation, then protocol implication. The fixture store is synthetic, so its content needs no personal-data redaction. Transcripts and other test artifacts are different: they can capture system prompts, tool output, account metadata, credentials, or other host state. Review them before you publish them.
 
 ## What this suite does not test
 
