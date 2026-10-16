@@ -25,8 +25,8 @@ The first tagged draft. It records the protocol as it is now, so that hosts and 
 ### For hosts
 
 - [PROTOCOL.md](./PROTOCOL.md): the store layout, the loop (mount, recall, propose, decide), and a paste-in block for a harness that does not conform natively.
-- [HOST.md](./HOST.md): the conformance rules for mounting, recall, writing, provenance, revocation, and security, with eight black-box tests.
-- [BRIEFING.md](./BRIEFING.md): what a conforming briefing contains, and where its inputs live in the store. Producing briefings is optional; a host that produces one must follow BRIEFING.md (HOST.md §7).
+- [HOST.md](./HOST.md): the conformance rules for mounting, recall, writing, provenance, revocation, security, and briefings, with nine black-box tests.
+- [BRIEFING.md](./BRIEFING.md): what a conforming briefing contains, and where its inputs live in the store. A conforming host must produce one when the person asks. Scheduled briefings are optional and run only on a schedule the person set (HOST.md §7).
 
 ### Not decided in this release
 

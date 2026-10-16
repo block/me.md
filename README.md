@@ -2,7 +2,7 @@
 
 **Keep up with agents, on your terms.**
 
-`me.md` is an open protocol for working with agents. What agents know about you lives in plain files, in your words, on your machine. You own the files. Agents read them and propose additions. They may apply changes you explicitly request or approve — you decide what becomes memory. The files power the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
+`me.md` is an open protocol for working with agents. What agents know about you lives in plain files, in your words, on your machine. You own the files. Agents read them and propose additions. They may apply changes you explicitly request or approve — you decide what becomes memory. The files power the protocol's required main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
 
 ## Quickstart
 
@@ -33,7 +33,7 @@ Every protocol document listed below starts with a status line. There are three 
 **Normative drafts.** HOST.md defines host conformance, SOVEREIGNTY.md states the commitments to the person, and BRIEFING.md defines a conforming briefing. These drafts may change.
 
 - [HOST.md](./HOST.md) — full conformance rules for implementers, with black-box tests
-- [BRIEFING.md](./BRIEFING.md) — the main output: the person-shaped read
+- [BRIEFING.md](./BRIEFING.md) — the required main output: the person-shaped read
 - [SOVEREIGNTY.md](./SOVEREIGNTY.md) — the commitments to the person
 
 **Guides.** Setup and an overview of the rules.
