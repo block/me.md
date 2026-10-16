@@ -60,6 +60,10 @@ The key words MUST, MUST NOT, SHOULD, and MAY are used as in RFC 2119.
 - A host MUST confine reads and writes to the store's boundaries (no path traversal out of the store; no following links out of it silently).
 - A host MUST NOT transmit store contents to any party other than the model invocation the person's session requires, without separate explicit consent.
 
+### 7. Briefings
+
+- A host is not required to produce briefings. A host that produces a briefing MUST follow [BRIEFING.md](./BRIEFING.md).
+
 ## What the protocol deliberately does not specify
 
 - how a host discovers the store (environment variable, well-known path, explicit configuration are all acceptable);

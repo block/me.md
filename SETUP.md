@@ -1,6 +1,6 @@
 # Set up me.md with any agent
 
-**Status:** Guide for the person. It adds no rules. The rules are in [PROTOCOL.md](./PROTOCOL.md) and [HOST.md](./HOST.md).
+**Status:** Guide for the person. It adds no rules. The rules are in [HOST.md](./HOST.md) and [SOVEREIGNTY.md](./SOVEREIGNTY.md).
 
 `me.md` is a new protocol for working with agents. It preserves human sovereignty: you own what agents know about you, you decide what they remember, and you can take it all with you. The purpose is not memory for its own sake. The purpose is to let you act on the things that matter most to you, with agents that know you well enough to help.
 
@@ -33,9 +33,10 @@ take it to any other agent.
    automatically, with no instruction from me.
 6. After setup, follow the read, propose, and decide loop in
    https://github.com/block/me.md/blob/main/PROTOCOL.md.
-   Inferred changes go in ~/.me/proposals/ for my decision. You may
-   apply an edit I explicitly request or a proposal I approve; record
-   what changed, when, through which host, and on whose authority.
+   Inferred changes go in ~/.me/proposals/. I accept, edit, or refuse
+   each one. You may apply an edit I explicitly request or a proposal
+   I accept; record what changed, when, through which host, and on
+   whose authority.
    My refusal stays in effect. My silence is not acceptance.
 ```
 

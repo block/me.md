@@ -14,10 +14,10 @@ Your file starts empty. The protocol supplies no template and no default persona
 
 ## The rules
 
-- Memory is off until the person turns it on.
+- Memory is off until the person creates their file.
 - The person owns the source of truth. Not an agent, application, provider, or employer.
 - All stored content is readable. There is no hidden profile.
-- Agent-inferred changes require a proposal. You can authorize an edit directly or approve a proposal. Refusal stays in effect. Silence is not acceptance.
+- Agent-inferred changes require a proposal. You accept, edit, or refuse each proposal, or ask for an edit directly. Refusal stays in effect. Silence is not acceptance.
 - What the person says now overrides the store.
 - Deleted means deleted.
 - Context stays in its scope. Family data does not appear in an unrelated work session.
@@ -30,7 +30,7 @@ It is not a transcript, not a hidden profile, not a productivity score, not empl
 
 Every protocol document listed below starts with a status line. There are three kinds.
 
-**Draft contracts.** HOST.md defines host conformance, SOVEREIGNTY.md states the commitments to the person, and BRIEFING.md defines a conforming briefing. These drafts may change.
+**Normative drafts.** HOST.md defines host conformance, SOVEREIGNTY.md states the commitments to the person, and BRIEFING.md defines a conforming briefing. These drafts may change.
 
 - [HOST.md](./HOST.md) — full conformance rules for implementers, with black-box tests
 - [BRIEFING.md](./BRIEFING.md) — the main output: the person-shaped read
@@ -39,7 +39,6 @@ Every protocol document listed below starts with a status line. There are three 
 **Guides.** Setup and an overview of the rules.
 
 - [PROTOCOL.md](./PROTOCOL.md) — the store, the loop, and a paste-in block for a harness
-
 - [SETUP.md](./SETUP.md) — the setup instruction, ready to copy
 
 **Non-normative.** Design notes, vocabulary, and open questions. They explain the rules. They do not add to them.

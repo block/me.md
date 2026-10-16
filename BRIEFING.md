@@ -15,6 +15,16 @@ Memory makes the briefing possible. The briefing is what memory is for.
 - **Signal** — one observed movement relevant to an aim, watch, or workstream.
 - **Coverage** — the honest statement of what was actually read to produce the briefing, and at what depth.
 
+## Where the inputs live
+
+All briefing inputs are ordinary store content. They need no new files and no hidden state.
+
+- **Aims** are in `me.md`, in the person's words. Setup asks for them: "what matters most to me right now."
+- **Watches** are lines under a `## Watches` heading in `me.md`, one watch per line, in the person's words. The heading exists only after the person adds a first watch. A host MUST NOT add a watch that the person did not set.
+- **Workstreams** are files in `projects/`, under the project scoping rule.
+
+A host that keeps "since the last read" state keeps it as host state. It is not personal context, and it is not part of the store.
+
 ## What a conforming briefing contains
 
 ### 1. What moved

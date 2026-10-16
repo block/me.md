@@ -225,7 +225,7 @@ A projection is never the canonical source of truth.
 | Canonical context | Preferences, boundaries, topic facts, project context | User-owned; portable only within chosen scope |
 | Policy and authorization | Enabled state, audiences, capability limits | User-governed; may remain local to an implementation |
 | Proposals and decisions | Candidate expressions, acceptance, dismissal | Private; proposals inactive until admitted |
-| Intents | Watches, declared priorities, stop conditions | User-owned optional extension |
+| Intents | Watches (core, in `me.md`); declared priorities and stop conditions | User-owned; the richer intent model is an optional extension |
 | Outcome events | Acted, dismissed, deferred, correction, useful/noisy | Private optional extension; not automatically memory |
 | External evidence | Calendar data, documents, code, messages | Source-governed; minimize persistence |
 | Derived state | Indexes, scores, summaries, patterns, caches | Local-private and rebuildable by default |
