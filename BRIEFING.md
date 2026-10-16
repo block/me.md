@@ -1,6 +1,6 @@
 # Briefing contract
 
-**Status:** Normative draft. This is the protocol's main output.
+**Status:** Normative draft. This is the protocol's main output. A conforming host is required to produce it when the person asks.
 
 The reason `me.md` exists is to help a person keep up with agents. The briefing is how. It turns everything that moved into a person-shaped read: **what moved, where the pull is, what is missing, and what to do next.**
 
@@ -14,6 +14,16 @@ Memory makes the briefing possible. The briefing is what memory is for.
 - **Workstream** — a body of work the person is part of. Follows the project scoping rule: it stays with the work, not the person.
 - **Signal** — one observed movement relevant to an aim, watch, or workstream.
 - **Coverage** — the honest statement of what was actually read to produce the briefing, and at what depth.
+
+## Where the inputs live
+
+All briefing inputs are ordinary store content. They need no new files and no hidden state.
+
+- **Aims** are in `me.md`, in the person's words. Setup asks for them: "what matters most to me right now."
+- **Watches** are lines under a `## Watches` heading in `me.md`, one watch per line, in the person's words. The heading exists only after the person adds a first watch. A host MUST NOT add a watch that the person did not set.
+- **Workstreams** are files in `projects/`, under the project scoping rule.
+
+A host that keeps "since the last read" state keeps it as host state. It is not personal context, and it is not part of the store.
 
 ## What a conforming briefing contains
 

@@ -144,7 +144,7 @@ Provenance should make it possible to answer:
 - When did it happen?
 - What source or proposal did it come from?
 
-The protocol does not yet require Git, a ledger, a database, or any other provenance storage mechanism.
+The protocol requires one shared record, `journal.md` ([HOST.md §4](./HOST.md#4-provenance)). It does not require Git, a database, or any other storage beyond that.
 
 ## Proposals and decisions
 

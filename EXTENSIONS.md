@@ -124,7 +124,7 @@ A public extension should define retention, scope, and whether event contents ar
 
 ### Intents and watches
 
-A watch can be represented as an explicit monitoring intent:
+The basic watch is part of the core: a line under `## Watches` in `me.md`, as defined in [BRIEFING.md](./BRIEFING.md#where-the-inputs-live). This extension is the richer form. A watch can be represented as an explicit monitoring intent:
 
 - target or state to observe;
 - authorized source;

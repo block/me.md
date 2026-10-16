@@ -1,8 +1,8 @@
 # Set up me.md with any agent
 
-**Status:** Guide for the person. It adds no rules. The rules are in [PROTOCOL.md](./PROTOCOL.md) and [HOST.md](./HOST.md).
+**Status:** Guide for the person. It adds no rules. The rules are in [HOST.md](./HOST.md) and [SOVEREIGNTY.md](./SOVEREIGNTY.md).
 
-`me.md` is a new protocol for working with agents. It preserves human sovereignty: you own what agents know about you, you decide what they remember, and you can take it all with you. The purpose is not memory for its own sake. The purpose is to let you act on the things that matter most to you, with agents that know you well enough to help.
+`me.md` is a new protocol for working with agents. It preserves human sovereignty: you own what agents know about you, you decide what they remember, and any agent on your computer that follows the protocol can use it. The purpose is not memory for its own sake. The purpose is to let you act on the things that matter most to you, with agents that know you well enough to help.
 
 You do not install the protocol. You give one instruction to any agent that can write a file.
 
@@ -12,8 +12,8 @@ Copy this message and give it to any agent you trust — a chat app, a CLI, an I
 
 ```text
 Set up my me.md. It is an open protocol for working with agents: I
-own what you know about me, I decide what you remember, and I can
-take it to any other agent.
+own what you know about me, I decide what you remember, and any
+other agent on this computer that follows the protocol can use it.
 
 1. Create ~/.me/me.md if it does not exist. If it exists, read it and
    do not overwrite it.
@@ -27,15 +27,20 @@ take it to any other agent.
 4. Show me the finished file.
 5. Record this rule in your persistent instructions, rules file, or
    memory, so that it continues after this conversation: at the start
-   of each session, check ~/.me/policy.json before reading any context.
-   If policy is off, behave as if the store is absent: no recall or
-   proposals. Otherwise, read ~/.me/me.md if it exists. Do this
-   automatically, with no instruction from me.
+   of each session, read only ~/.me/policy.json, and decide before you
+   open any other file in ~/.me/. If it exists and is anything other
+   than exactly {"state": "on"}, including text that is not valid
+   JSON, memory is off: open no other file in ~/.me/ and write nothing
+   there. If it is missing or says on, read ~/.me/me.md if it exists. Do this automatically,
+   with no instruction from me.
 6. After setup, follow the read, propose, and decide loop in
    https://github.com/block/me.md/blob/main/PROTOCOL.md.
-   Inferred changes go in ~/.me/proposals/ for my decision. You may
-   apply an edit I explicitly request or a proposal I approve; record
-   what changed, when, through which host, and on whose authority.
+   Inferred changes go in ~/.me/proposals/. I accept, edit, or refuse
+   each one. You may apply an edit I explicitly request or a proposal
+   I accept. For each change, append one line to ~/.me/journal.md:
+   what changed (not the content itself), when, through which host,
+   and on whose authority. A refused proposal stays in
+   ~/.me/proposals/ marked refused; do not propose it again.
    My refusal stays in effect. My silence is not acceptance.
 ```
 
