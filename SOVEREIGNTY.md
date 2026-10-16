@@ -72,11 +72,10 @@ A person should be able to change interfaces without losing continuity or contro
 
 The project is currently testing, rather than standardizing:
 
-- whether `~/.me/` is the right default location;
 - whether Markdown is the right primary representation;
 - the exact relationship between global, topic, and project context;
 - proposal, approval, correction, and dismissal experiences;
-- provenance, history, and undo storage;
+- undo, and how long history is kept;
 - local topic routing and indexing;
 - protection of context at rest and in transit;
 - synchronization between devices;

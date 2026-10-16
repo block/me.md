@@ -22,7 +22,7 @@ Your file starts empty. The protocol supplies no template and no default persona
 - Deleted means deleted.
 - Context stays in its scope. Family data does not appear in an unrelated work session.
 - Knowledge of preferences is never permission to act for the person.
-- Any conforming host can serve the same files, with no migration and no lock-in.
+- Any conforming host on the same computer serves the same files, with no migration and no lock-in. Syncing between devices is not defined yet.
 
 It is not a transcript, not a hidden profile, not a productivity score, not employer telemetry, and not memory that one application owns. A small and true file is better than a large and speculative one.
 
