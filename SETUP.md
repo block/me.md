@@ -27,10 +27,11 @@ other agent on this computer that follows the protocol can use it.
 4. Show me the finished file.
 5. Record this rule in your persistent instructions, rules file, or
    memory, so that it continues after this conversation: at the start
-   of each session, check ~/.me/policy.json before reading any context.
-   If the file exists and says {"state": "off"}, or exists but cannot
-   be read, behave as if the store is absent: no recall or proposals.
-   Otherwise, read ~/.me/me.md if it exists. Do this automatically,
+   of each session, read only ~/.me/policy.json, and decide before you
+   open any other file in ~/.me/. If it exists and is anything other
+   than exactly {"state": "on"}, including text that is not valid
+   JSON, memory is off: open no other file in ~/.me/ and write nothing
+   there. If it is missing or says on, read ~/.me/me.md if it exists. Do this automatically,
    with no instruction from me.
 6. After setup, follow the read, propose, and decide loop in
    https://github.com/block/me.md/blob/main/PROTOCOL.md.

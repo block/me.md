@@ -27,7 +27,7 @@ The key words MUST, MUST NOT, SHOULD, and MAY are used as in RFC 2119.
 - A host MUST treat the store as external and person-owned. It MUST NOT copy the store into its own durable state beyond session-scoped caches.
 - The store is at the path in the `ME_HOME` environment variable if it is set, and at `~/.me/` otherwise. A host MUST NOT use another location. Two hosts on the same machine therefore always serve the same store.
 - Policy is `policy.json` in the store: `{"state": "on"}` or `{"state": "off"}`. A missing file means on. A file that cannot be read, is not valid JSON, or has any other `state` value means off.
-- A host MUST honor the enabled/disabled state in policy before reading anything else. Disabled means the host behaves as if the store does not exist: no recall, no injection, no proposals, no tooling that implies memory. A host SHOULD state plainly that memory is off if asked.
+- A host MUST read `policy.json` alone and decide the enabled/disabled state before it opens any other file in the store. Disabled means the host behaves as if the store does not exist: no recall, no injection, no proposals, no tooling that implies memory. A host SHOULD state plainly that memory is off if asked.
 - A host MUST function fully with no store present. Absence of the store is a normal state, not an error.
 
 ### 2. Recall
@@ -86,7 +86,7 @@ Two hosts that have never heard of each other MUST be able to serve the same per
 Conformance is observable from the store and the host's behavior alone, with no access to the host's internals:
 
 1. **Absence test** — remove the store; the host works normally.
-2. **Off test** — set `policy.json` to `{"state": "off"}`, and separately to invalid JSON; no recall, no proposals, no memory tooling appears in a session.
+2. **Off test** — set `policy.json` to `{"state": "off"}`, and separately to invalid JSON; the host opens no other store file (check its file reads, not only its answer); no recall, no proposals, no memory tooling appears in a session.
 3. **Pen test** — instruct an agent to remember something without approving it; the store's canonical content is unchanged and a proposal exists.
 4. **Receipt test** — after any change, the store alone answers what changed, when, via which host, on whose authority.
 5. **Delete test** — delete an entry; it does not reappear in any later session from that host.

@@ -13,7 +13,7 @@
   projects/     read a file only for work on that project
   proposals/    one file per proposal; Status: pending, accepted, or refused
   journal.md    one line per durable change: when, what, which host, whose authority
-  policy.json   {"state": "on"} or {"state": "off"}; missing means on, unreadable means off
+  policy.json   {"state": "on"} or {"state": "off"}; missing means on; anything else means off
 ```
 
 The store is at `$ME_HOME` if that is set, and at `~/.me/` otherwise.
@@ -49,10 +49,13 @@ Every harness has an instruction surface: a system prompt, a rules file, custom 
 ```text
 Serve my me.md store at ~/.me/ with this loop:
 
-MOUNT — At the start of each session, check ~/.me/policy.json. If it
-exists and says {"state": "off"}, or exists but cannot be read, behave
-as if ~/.me/ does not exist. Otherwise read ~/.me/me.md if it exists.
-Do this automatically. Do not ask me.
+MOUNT — At the start of each session, read only ~/.me/policy.json,
+and decide before you open any other file in ~/.me/. If the file
+exists and is anything other than exactly {"state": "on"}, including
+{"state": "off"} or text that is not valid JSON, memory is off: behave
+as if ~/.me/ does not exist, open no other file there, and write
+nothing there. If the file is missing or says on, read ~/.me/me.md if
+it exists. Do this automatically. Do not ask me.
 
 RECALL — Read a file in ~/.me/topics/ or ~/.me/projects/ only when
 the current task makes it relevant.
@@ -69,7 +72,7 @@ silence is not acceptance. Update the proposal's Status line to
 accepted or refused. You may apply an edit I explicitly request or a
 proposal I accept. For each change, append one line to
 ~/.me/journal.md: time | file | what changed | host (agent) |
-authority (me directly, accepted proposal, or external edit).
+authority (person direct, accepted proposal <file>, or external edit).
 Describe the change; do not copy the content into the journal.
 
 What I say now always overrides the store. Stored preferences are
