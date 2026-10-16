@@ -1,5 +1,7 @@
 # Set up me.md with any agent
 
+**Status:** Guide for the person. It adds no rules. The rules are in [PROTOCOL.md](./PROTOCOL.md) and [HOST.md](./HOST.md).
+
 `me.md` is a new protocol for working with agents. It preserves human sovereignty: you own what agents know about you, you decide what they remember, and you can take it all with you. The purpose is not memory for its own sake. The purpose is to let you act on the things that matter most to you, with agents that know you well enough to help.
 
 You do not install the protocol. You give one instruction to any agent that can write a file.

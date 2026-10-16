@@ -1,6 +1,6 @@
-# Provenance contract
+# Provenance
 
-**Status:** Working protocol hypothesis. Non-normative.
+**Status:** Working protocol hypothesis. Non-normative. The required provenance rules are in [HOST.md §4](./HOST.md#4-provenance). This document explains them and records what is still under test.
 
 Provenance explains how durable context came to exist and why a change was allowed.
 
