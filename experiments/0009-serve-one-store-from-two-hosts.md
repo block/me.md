@@ -1,4 +1,4 @@
-# Experiment 0009 — Serve one store from two hosts
+# Experiment 0009: Serve one store from two hosts
 
 **Status:** Proposed
 **Contract under test:** [HOST.md](../HOST.md)

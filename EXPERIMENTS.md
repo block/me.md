@@ -106,4 +106,6 @@ Every experiment must identify:
 - [0009 — Serve one store from two hosts](./experiments/0009-serve-one-store-from-two-hosts.md)
 - [0010 — Produce a person-shaped briefing](./experiments/0010-produce-a-person-shaped-briefing.md)
 
+Numbers are identifiers, not a sequence. Gaps are expected.
+
 Use the [experiment template](./experiments/TEMPLATE.md) to propose another small test.

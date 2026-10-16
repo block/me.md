@@ -1,4 +1,4 @@
-# Experiment 0010 — Produce a person-shaped briefing
+# Experiment 0010: Produce a person-shaped briefing
 
 **Status:** Proposed
 **Contract under test:** [BRIEFING.md](../BRIEFING.md)
