@@ -1,0 +1,3 @@
+# Travel
+
+Prefers aisle seats.

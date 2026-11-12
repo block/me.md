@@ -1,0 +1,4 @@
+- 2026-11-12T17:03:01Z | me.md | added an aim | host: examplehost 1.0 | authority: person direct
+- 2026-11-12T17:04:00Z | me.md | added an aim | host: examplehost 1.0
+- 2026-11-12T17:05:00 | me.md | added an aim | host: examplehost 1.0 | authority: person direct
+- a list item with no separator

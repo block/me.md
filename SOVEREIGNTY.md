@@ -1,8 +1,8 @@
 # The me.md sovereignty contract
 
-**Status:** Normative draft. Every other document must keep these commitments. The open questions are in [What remains under test](#what-remains-under-test).
+**Status:** Normative draft. These are the commitments to the person, in plain language. Every other document must keep them. [HOST.md](./HOST.md), [STORE.md](./STORE.md), and [BRIEFING.md](./BRIEFING.md) turn them into testable requirements, and [conformance/TRACEABILITY.md](./conformance/TRACEABILITY.md) shows which requirement and test carries each one. If a requirement seems to break a commitment, the requirement is wrong and gets fixed. The open questions are in [What remains under test](#what-remains-under-test).
 
-`me.md` is experimental. Its storage layout, APIs, and implementation details will change as we learn.
+`me.md` is experimental. Its storage layout and implementation details will change as we learn. Each release fixes them for that release.
 
 These commitments are different. They are the conditions under which a personal context system remains meaningfully user-owned. An implementation should be able to explain how it preserves them before claiming compatibility with `me.md`.
 
@@ -46,7 +46,7 @@ Stored context may narrow what an agent is allowed to do—for example, by recor
 
 ## Revocation is real
 
-Turning context off must stop its use at the enforcement layer, not merely ask the agent to ignore it.
+Turning context off must stop its use at the enforcement layer, not merely ask the agent to ignore it. A host that serves the store only through instructions to a model cannot promise this. It must say so in its conformance claim and its documentation ([HOST.md H0.3 and H6.4](./HOST.md#6-security-posture)).
 
 Forgetting must remove context from active recall. Deletion must have a clear meaning, including how history, indexes, caches, proposals, backups, and projections are handled. An implementation must not describe something as deleted while continuing to use a retained copy.
 
@@ -80,7 +80,7 @@ The project is currently testing, rather than standardizing:
 - protection of context at rest and in transit;
 - synchronization between devices;
 - export and interoperability formats;
-- the minimum useful conformance surface.
+- whether the conformance levels in [HOST.md](./HOST.md#conformance-levels) are the right cut.
 
 ## How we evaluate experiments
 

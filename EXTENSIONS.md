@@ -124,7 +124,7 @@ A public extension should define retention, scope, and whether event contents ar
 
 ### Intents and watches
 
-The basic watch is part of the core: a line under `## Watches` in `me.md`, as defined in [BRIEFING.md](./BRIEFING.md#where-the-inputs-live). This extension is the richer form. A watch can be represented as an explicit monitoring intent:
+The basic watch is part of the core: a list item in `watches.md`, as defined in [STORE.md §4](./STORE.md#4-watchesmd) and [BRIEFING.md](./BRIEFING.md#where-the-inputs-live). This extension is the richer form. A watch can be represented as an explicit monitoring intent:
 
 - target or state to observe;
 - authorized source;
@@ -219,7 +219,7 @@ These may be open-source implementation code, but they should not define the pro
 - product-specific settings screens;
 - CLI command names;
 - background schedules and daemons;
-- exact file locations before experiments support them;
+- file locations beyond the store layout in [STORE.md](./STORE.md);
 - organization-specific concepts, datasets, or fixtures.
 
 Independent implementations should be free to make different choices while preserving the human contract.
@@ -252,15 +252,15 @@ Independent implementations should be free to make different choices while prese
 
 The current public work establishes the human contract, context language, expression, and experiment discipline. Important missing pieces include:
 
-1. **Provenance:** a technology-neutral contract for explaining mutations.
+1. **Provenance:** the journal line is defined ([STORE.md §7](./STORE.md#7-journal)). Detection of external edits, and signed decisions, are still missing.
 2. **Capabilities:** a machine-readable separation between context access and action authority.
 3. **Portability:** an inspectable manifest of portable, local-private, derived, projected, and excluded state.
 4. **Coverage:** a way to communicate what context and evidence were actually available.
-5. **Revocation tests:** active-session disablement, forgetting, deletion, and projection cleanup.
+5. **Revocation tests:** HOST.md has Off and Delete tests. Projection cleanup is still missing.
 6. **Derived-state limits:** tests proving caches, indexes, and patterns cannot restore or outrank forgotten context.
 7. **Event and intent boundaries:** shared language for feedback, outcomes, priorities, and watches without treating them as identity.
-8. **Security model:** path safety, prompt injection, connector isolation, local permissions, and cross-interface trust.
-9. **Conformance:** synthetic tests that verify the contract without requiring one application's architecture.
+8. **Security model:** HOST.md §6 and STORE.md cover path safety, untrusted proposals, and local permissions. Connector isolation and cross-interface trust are still missing.
+9. **Conformance:** HOST.md has 18 black-box tests in four levels, and [me-lint](./tools/README.md) checks store files against synthetic fixtures. A runner that drives a host through the tests is still missing.
 
 These should be developed in focused PRs and experiments rather than added as one large specification.
 

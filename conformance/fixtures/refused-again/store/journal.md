@@ -1,0 +1,1 @@
+- 2026-11-12T17:10:00Z | proposals/20261112T170301Z-aaaa.md | refused | host: examplehost 1.0 (trip-helper) | authority: person direct

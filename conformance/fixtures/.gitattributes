@@ -1,0 +1,2 @@
+# Keep CRLF bytes exactly as written.
+crlf/** -text

@@ -1,0 +1,10 @@
+{
+  "exit": 0,
+  "policy_state": "on",
+  "error_count": 0,
+  "warning_count": 0,
+  "counts": {
+    "proposals_pending": 1,
+    "journal_entries": 1
+  }
+}

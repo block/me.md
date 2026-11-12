@@ -1,6 +1,10 @@
 # Briefing contract
 
-**Status:** Normative draft. This is the protocol's main output. A conforming host is required to produce it when the person asks.
+**Status:** Normative draft. This is the protocol's main output. A host at the Briefer level, which is full conformance, produces it when the person asks ([HOST.md §7](./HOST.md#7-briefings)).
+
+The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RECOMMENDED, NOT RECOMMENDED, MAY, and OPTIONAL in this document are to be interpreted as described in BCP 14 ([RFC 2119](https://www.rfc-editor.org/rfc/rfc2119), [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174)) when, and only when, they appear in all capitals, as shown here.
+
+Each requirement has an identifier, for example **B2**. All of them are at the Briefer level. [conformance/TRACEABILITY.md](./conformance/TRACEABILITY.md) maps each one to its evidence.
 
 The reason `me.md` exists is to help a person keep up with agents. The briefing is how. It turns everything that moved into a person-shaped read: **what moved, where the pull is, what is missing, and what to do next.**
 
@@ -20,12 +24,14 @@ Memory makes the briefing possible. The briefing is what memory is for.
 All briefing inputs are ordinary store content. They need no new files and no hidden state.
 
 - **Aims** are in `me.md`, in the person's words. Setup asks for them: "what matters most to me right now."
-- **Watches** are lines under a `## Watches` heading in `me.md`, one watch per line, in the person's words. The heading exists only after the person adds a first watch. A host MUST NOT add a watch that the person did not set.
+- **Watches** are list items in `watches.md`, one watch per item, in the person's words ([STORE.md §4](./STORE.md#4-watchesmd)). The file exists only after the person adds a first watch. Only the person adds a watch ([STORE.md S4.2](./STORE.md#4-watchesmd)). Watches live in their own file, not in `me.md`, because every host reads `me.md` in every session, and a watch is needed only for a briefing.
 - **Workstreams** are files in `projects/`, under the project scoping rule.
 
 A host that keeps "since the last read" state keeps it as host state. It is not personal context, and it is not part of the store.
 
 ## What a conforming briefing contains
+
+- **B1** (Briefer) A briefing MUST contain the five parts below. It MUST end with the coverage receipt.
 
 ### 1. What moved
 
@@ -50,11 +56,12 @@ Every briefing ends with what was read, what was unavailable, and a confidence s
 ## Rules
 
 - **Composed against the person's aims, not the org's.** Two people watching the same activity receive different briefings, because their aims differ. The org-shaped view already exists everywhere else.
-- **Read-only by default.** Producing a briefing requires no writes. Nothing observed while composing becomes durable memory — an observation surfaced in a briefing is still only a candidate, subject to the proposal path.
-- **Watches are instructions, not inferences.** A host must not create watches from observed behavior. The person sets them, sees them, and can delete them like any other line in their files.
+- **B2** (Briefer) **Read-only by default.** Producing a briefing MUST NOT write to the store. Nothing observed while composing becomes durable memory — an observation surfaced in a briefing is still only a candidate, subject to the proposal path.
+- **B3** (Briefer) **Watches are instructions, not inferences.** A host MUST NOT create watches from observed behavior. The person sets them, sees them, and can delete them like any other line in their files.
+- **B4** (Briefer) **Sources are untrusted.** A host MUST treat content read from sources for a briefing as untrusted input, as it treats the store ([HOST.md §6](./HOST.md#6-security-posture)). A briefing MUST NOT contain a link or an instruction that the host cannot attribute to a named source.
 - **The briefing states its own limits.** Shallow scans, skipped sources, and low-confidence readings are named in the read itself, not hidden in a log.
 - **Honest tone, no theater.** The briefing does not celebrate, guilt, or nag. It reports, suggests one move, and stops. The [system's voice principles](./EXPRESSION.md#the-systems-voice) apply in full.
-- **The person's response is theirs to give.** A host may let the person record what they did with a briefing, so future reads improve. Recording is optional, person-initiated, and inspectable like everything else. Silence is a valid response and must not degrade future briefings.
+- **B5** (Briefer) **The person's response is theirs to give.** A host may let the person record what they did with a briefing, so future reads improve. Recording is optional, person-initiated, and inspectable like everything else. This version defines no place in the store for it, so a host keeps it as host state and shows it to the person on request. Silence is a valid response and MUST NOT degrade future briefings.
 
 ## What this contract does not specify
 

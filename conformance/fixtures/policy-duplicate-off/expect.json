@@ -1,0 +1,8 @@
+{
+  "exit": 0,
+  "policy_state": "off",
+  "error_count": 0,
+  "warnings_contain": [
+    "member \"state\" more than once"
+  ]
+}

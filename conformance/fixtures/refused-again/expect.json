@@ -1,0 +1,19 @@
+{
+  "exit": 1,
+  "policy_state": "on",
+  "error_count": 2,
+  "errors_contain": [
+    "proposals/20261112T170400Z-cccc.md: front matter: line 2: expected `key: value`",
+    "proposals/20261112T180000Z-bbbb.md: proposes again the body of refused proposal 20261112T170301Z-aaaa.md"
+  ],
+  "warning_count": 1,
+  "warnings_contain": [
+    "proposals/20261112T180100Z-dddd.md: same body as invalid proposal 20261112T170400Z-cccc.md"
+  ],
+  "counts": {
+    "proposals": 4,
+    "proposals_pending": 2,
+    "proposals_refused": 1,
+    "proposals_invalid": 1
+  }
+}
