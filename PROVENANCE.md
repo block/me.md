@@ -267,17 +267,16 @@ The interface does not need to expose implementation internals by default. It sh
 
 ## What this document does not standardize
 
-This document does not define:
+[HOST.md §4](./HOST.md#4-provenance) and [STORE.md §7](./STORE.md#7-journal) define the required record: one journal line per durable change. This document does not define:
 
-- Git, JSONL, SQLite, or another storage mechanism;
-- a required event schema;
+- storage beyond the journal, such as Git, JSONL, or SQLite;
+- a richer event schema than the journal line;
 - cryptographic signatures or hash algorithms;
 - history retention periods;
 - undo behavior;
 - synchronization conflict resolution;
 - whether every direct user edit must block on provenance persistence;
-- user-interface layout;
-- conformance requirements.
+- user-interface layout.
 
 These choices should be informed by experiments, security review, and multiple implementations.
 

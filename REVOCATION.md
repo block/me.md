@@ -301,7 +301,7 @@ When semantics are unclear:
 
 ## What this document does not standardize
 
-This document does not define:
+[HOST.md §5](./HOST.md#5-revocation) and its black-box tests carry the revocation requirements. This document does not define:
 
 - filesystem deletion methods;
 - secure erasure guarantees;
@@ -311,9 +311,8 @@ This document does not define:
 - projection APIs;
 - provider log policies;
 - legal retention rules;
-- receipt schemas;
-- user-interface labels;
-- conformance requirements.
+- receipt schemas beyond the journal line in [STORE.md §7](./STORE.md#7-journal);
+- user-interface labels.
 
 ## Questions still under test
 

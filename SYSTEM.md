@@ -262,7 +262,7 @@ These deserve public experiments and may later become shared contracts:
 
 These should not become protocol requirements without strong evidence:
 
-- a particular filesystem layout or database;
+- a particular database, or any file layout beyond the store layout in [STORE.md](./STORE.md);
 - a specific model or prompt;
 - interface design and agent personality;
 - source connectors;
