@@ -330,16 +330,14 @@ Common failures include:
 
 ## What this document does not standardize
 
-This document does not define:
+[HOST.md](./HOST.md) and [STORE.md](./STORE.md) define the store layout, the proposal format, and conformance. This document does not define:
 
 - a context-entry schema;
 - required kinds or strength fields;
-- a storage format or filesystem path;
 - API or tool names;
 - a particular admission card, settings view, editor, or CLI;
 - a controlled vocabulary for identity or sensitive data;
-- model prompts or projection syntax;
-- conformance requirements.
+- model prompts or projection syntax.
 
 These principles are a working application-layer hypothesis to test through experiments and independent implementations.
 

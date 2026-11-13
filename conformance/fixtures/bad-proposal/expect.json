@@ -1,0 +1,10 @@
+{
+  "exit": 1,
+  "policy_state": "on",
+  "errors_contain": [
+    "proposals/20261112T170301Z-aaaa.md: missing required key: basis",
+    "proposals/20261112T170302Z-bbbb.md: proposed-at must be RFC 3339 UTC",
+    "proposals/20261112T170303Z-cccc.md: target must not be watches.md"
+  ],
+  "error_count": 3
+}

@@ -2,7 +2,7 @@
 
 **Keep up with agents, on your terms.**
 
-`me.md` is an open protocol for working with agents. What agents know about you lives in plain files, in your words, on your machine. You own the files. Agents read them and propose additions. They may apply changes you explicitly request or approve — you decide what becomes memory. The files power the protocol's required main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
+`me.md` is an open protocol for working with agents. What agents know about you lives in plain files, in your words, on your machine. You own the files. Agents read them and propose additions. They may apply changes you explicitly request or approve — you decide what becomes memory. The files power the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
 
 ## Quickstart
 
@@ -10,7 +10,39 @@ Point any agent at this page and say: **"Set up my me.md."**
 
 Agents: follow the [setup instruction](./SETUP.md#the-setup-instruction), then serve the store with the loop in [PROTOCOL.md](./PROTOCOL.md). SETUP.md is the only setup procedure; PROTOCOL.md defines the [store layout](./PROTOCOL.md#the-store).
 
-Your file starts empty. The protocol supplies no template and no default persona. Sessions are views of the store, not containers of memory: discard any session, or all of them, and keep all durable context.
+Your file starts empty. The protocol supplies no template and no default persona. A session only reads the store. It does not hold your memory: delete any session, or all of them, and you keep all durable context.
+
+## What it looks like
+
+Your words, in `~/.me/me.md`:
+
+```markdown
+I lead the payments migration. Mornings are for deep work.
+Always ask me before you message anyone outside my team.
+```
+
+An agent notices something and can only ask. It writes a proposal in `~/.me/proposals/`:
+
+```markdown
+---
+status: pending
+target: topics/travel.md
+proposed-by: goose 1.9 (trip-helper)
+proposed-at: 2026-11-12T17:03:01Z
+basis: You asked for aisle seats on two bookings this week.
+---
+
+Prefer aisle seats when booking flights.
+```
+
+You accept it, in any agent that serves the store. The acceptance leaves two lines in `~/.me/journal.md`, your decision and the change:
+
+```text
+- 2026-11-12T17:05:40Z | proposals/20261112T170301Z-7f3a.md | accepted | host: goose 1.9 (trip-helper) | authority: person direct
+- 2026-11-12T17:05:40Z | topics/travel.md | added a preference | host: goose 1.9 (trip-helper) | authority: accepted proposal 20261112T170301Z-7f3a
+```
+
+Refuse it instead, and no agent that follows the protocol proposes it again. Write `{"state": "off"}` in `~/.me/policy.json`, and every one of them stops using the store.
 
 ## The rules
 
@@ -30,10 +62,11 @@ It is not a transcript, not a hidden profile, not a productivity score, not empl
 
 Every protocol document listed below starts with a status line. There are three kinds.
 
-**Normative drafts.** HOST.md defines host conformance, SOVEREIGNTY.md states the commitments to the person, and BRIEFING.md defines a conforming briefing. These drafts may change.
+**Normative drafts.** HOST.md defines host conformance, STORE.md defines the file formats, SOVEREIGNTY.md states the commitments to the person, and BRIEFING.md defines a conforming briefing. These drafts may change.
 
-- [HOST.md](./HOST.md) — full conformance rules for implementers, with black-box tests
-- [BRIEFING.md](./BRIEFING.md) — the required main output: the person-shaped read
+- [HOST.md](./HOST.md) — conformance rules and levels for implementers, with black-box tests
+- [STORE.md](./STORE.md) — the file formats: layout, policy, proposals, journal, and safe writes
+- [BRIEFING.md](./BRIEFING.md) — the main output, the person-shaped read, produced by hosts at the Briefer level
 - [SOVEREIGNTY.md](./SOVEREIGNTY.md) — the commitments to the person
 
 **Guides.** Setup and an overview of the rules.
@@ -41,7 +74,7 @@ Every protocol document listed below starts with a status line. There are three 
 - [PROTOCOL.md](./PROTOCOL.md) — the store, the loop, and a paste-in block for a harness
 - [SETUP.md](./SETUP.md) — the setup instruction, ready to copy
 
-**Non-normative.** Design notes, vocabulary, and open questions. They explain the rules. They do not add to them.
+**Non-normative.** Design notes, vocabulary, and open questions. They explain the rules. They do not add to them. Where they say "must", they explain; they do not bind a host.
 
 - [CONTEXT.md](./CONTEXT.md) — shared vocabulary
 - [PROVENANCE.md](./PROVENANCE.md) and [REVOCATION.md](./REVOCATION.md) — the reasons behind HOST.md §4 and §5
@@ -49,6 +82,12 @@ Every protocol document listed below starts with a status line. There are three 
 - [SYSTEM.md](./SYSTEM.md) — the conceptual system map
 - [EXTENSIONS.md](./EXTENSIONS.md) — the open-source boundary and candidate extensions
 - [EXPERIMENTS.md](./EXPERIMENTS.md) — how the protocol is tested
+
+**When documents disagree**, HOST.md and STORE.md win, then BRIEFING.md, then the guides, then the non-normative notes. SOVEREIGNTY.md says what the rules are for. A rule that breaks a commitment in it is a bug to fix.
+
+## Tools
+
+- [me-lint](./tools/README.md) checks that a store follows [STORE.md](./STORE.md). It checks files, not host behavior.
 
 ## Status
 

@@ -1,0 +1,13 @@
+{
+  "exit": 1,
+  "policy_state": "on",
+  "errors_contain": [
+    "journal.md: line 2: expected 5 fields",
+    "journal.md: line 3: time must be RFC 3339 UTC with Z",
+    "journal.md: line 4: expected 5 fields separated by ' | ', found 1"
+  ],
+  "error_count": 3,
+  "counts": {
+    "journal_entries": 4
+  }
+}
