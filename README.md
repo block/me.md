@@ -1,12 +1,13 @@
-# me.md
+# thou
 
 **Keep up with agents, on your terms.**
 
-`me.md` is an open protocol for working with agents. What agents know about you lives in plain files, in your words, on your machine. You own the files. Agents read them and propose additions. They may apply changes you explicitly request or approve — you decide what becomes memory. The files power the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
+<!-- TODO(framing): README lead. Replace this paragraph's first sentence with the framing text. -->
+The thou protocol is an open way of working with agents. What agents know about you lives in plain files, in your words, on your machine. You own the files. Agents read them and propose additions. They may apply changes you explicitly request or approve — you decide what becomes memory. The files power the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
 
 ## Quickstart
 
-Point any agent at this page and say: **"Set up my me.md."**
+Point any agent at this page and say: **"Set up my me.md."** The agent creates your `me.md` file and serves it under the thou protocol.
 
 Agents: follow the [setup instruction](./SETUP.md#the-setup-instruction), then serve the store with the loop in [PROTOCOL.md](./PROTOCOL.md). SETUP.md is the only setup procedure; PROTOCOL.md defines the [store layout](./PROTOCOL.md#the-store).
 
@@ -87,8 +88,8 @@ Every protocol document listed below starts with a status line. There are three 
 
 ## Tools
 
-- [me-lint](./tools/README.md) checks that a store follows [STORE.md](./STORE.md). It checks files, not host behavior.
+- [thou-lint](./tools/README.md) checks that a store follows [STORE.md](./STORE.md). It checks files, not host behavior.
 
 ## Status
 
-`me.md` is an experimental protocol draft, not a stable standard yet. Releases are tagged `vX.Y.Z`, and a host that claims conformance names the release it follows. Changes are in [CHANGELOG.md](./CHANGELOG.md). The most important question for any contribution is whether the system increases the person's agency. Governance is in [GOVERNANCE.md](./GOVERNANCE.md). The license is [Apache 2.0](./LICENSE).
+The thou protocol is an experimental draft, not a stable standard yet. Releases are tagged `vX.Y.Z`, and a host that claims conformance names the release it follows. Changes are in [CHANGELOG.md](./CHANGELOG.md). The most important question for any contribution is whether the system increases the person's agency. Governance is in [GOVERNANCE.md](./GOVERNANCE.md). The license is [Apache 2.0](./LICENSE).

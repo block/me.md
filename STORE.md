@@ -211,4 +211,4 @@ Two hosts can serve one store at the same time. These rules keep one host from l
 - encrypted ("sealed") files;
 - signed decisions.
 
-[me-lint](./tools/README.md) checks a store against this format. It checks files, not host behavior. The behavior tests are in [HOST.md](./HOST.md#black-box-conformance).
+[thou-lint](./tools/README.md) checks a store against this format. It checks files, not host behavior. The behavior tests are in [HOST.md](./HOST.md#black-box-conformance).

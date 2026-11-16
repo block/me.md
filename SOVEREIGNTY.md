@@ -1,10 +1,11 @@
-# The me.md sovereignty contract
+# The thou sovereignty contract
 
 **Status:** Normative draft. These are the commitments to the person, in plain language. Every other document must keep them. [HOST.md](./HOST.md), [STORE.md](./STORE.md), and [BRIEFING.md](./BRIEFING.md) turn them into testable requirements, and [conformance/TRACEABILITY.md](./conformance/TRACEABILITY.md) shows which requirement and test carries each one. If a requirement seems to break a commitment, the requirement is wrong and gets fixed. The open questions are in [What remains under test](#what-remains-under-test).
 
-`me.md` is experimental. Its storage layout and implementation details will change as we learn. Each release fixes them for that release.
+<!-- TODO(framing): SOVEREIGNTY opener ("agents treat you as a thou, not an it"). Insert the framing text above this paragraph. -->
+The thou protocol is experimental. Its storage layout and implementation details will change as we learn. Each release fixes them for that release.
 
-These commitments are different. They are the conditions under which a personal context system remains meaningfully user-owned. An implementation should be able to explain how it preserves them before claiming compatibility with `me.md`.
+These commitments are different. They are the conditions under which a personal context system remains meaningfully user-owned. An implementation should be able to explain how it preserves them before claiming compatibility with the thou protocol.
 
 ## The person is the authority
 

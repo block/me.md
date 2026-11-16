@@ -5,7 +5,7 @@
 Evidence:
 
 - **T1–T18**: the black-box tests in [HOST.md](../HOST.md#black-box-conformance).
-- **lint**: [me-lint](../tools/README.md) checks the files a host wrote. It shows that the files have the right form. It does not show how a host behaved.
+- **lint**: [thou-lint](../tools/README.md) checks the files a host wrote. It shows that the files have the right form. It does not show how a host behaved.
 - **review**: no automatic check yet. A reviewer reads the host's documentation or code. The reason is given.
 
 Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.

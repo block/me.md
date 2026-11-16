@@ -1,4 +1,4 @@
-"""Tests for me_lint: every conformance fixture, plus cases built at runtime
+"""Tests for thou_lint: every conformance fixture, plus cases built at runtime
 (symlinks, BOM, invalid UTF-8) so no symlink or odd bytes live in git."""
 
 import json
@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-LINT = os.path.join(HERE, "me_lint.py")
+LINT = os.path.join(HERE, "thou_lint.py")
 FIXTURES = os.path.join(HERE, "..", "conformance", "fixtures")
 
 ME = "# About me\n\nA fictional person.\n"

@@ -1,8 +1,9 @@
-# Set up me.md with any agent
+# Set up thou with any agent
 
 **Status:** Guide for the person. It adds no rules. The rules are in [HOST.md](./HOST.md), [STORE.md](./STORE.md), and [SOVEREIGNTY.md](./SOVEREIGNTY.md).
 
-`me.md` is a new protocol for working with agents. It preserves human sovereignty: you own what agents know about you, you decide what they remember, and any agent on your computer that follows the protocol can use it. The purpose is not memory for its own sake. The purpose is to let you act on the things that matter most to you, with agents that know you well enough to help.
+<!-- TODO(framing): SETUP intro. Replace this first sentence with the framing text. -->
+The thou protocol is a new way of working with agents. It preserves human sovereignty: you own what agents know about you, you decide what they remember, and any agent on your computer that follows the protocol can use it. The purpose is not memory for its own sake. The purpose is to let you act on the things that matter most to you, with agents that know you well enough to help.
 
 You do not install the protocol. You give one instruction to any agent that can read and write files on your computer: a CLI agent, a desktop agent, or an IDE assistant. A chat app in a web browser usually cannot reach your files, so it cannot set up or serve the store.
 
@@ -11,9 +12,10 @@ You do not install the protocol. You give one instruction to any agent that can 
 Copy this message and give it to any agent you trust that can work with your files:
 
 ```text
-Set up my me.md. It is an open protocol for working with agents: I
-own what you know about me, I decide what you remember, and any
-other agent on this computer that follows the protocol can use it.
+Set up my me.md under the thou protocol. It is an open protocol for
+working with agents: I own what you know about me, I decide what you
+remember, and any other agent on this computer that follows the
+protocol can use it.
 
 My store is the folder named in the ME_HOME environment variable if
 it is set, and ~/.me/ otherwise. Below, "the store" means that
@@ -36,7 +38,7 @@ folder.
    If me.md already existed and you changed it, write "changed me.md"
    instead. If you changed nothing, add no line.
 5. Copy the paste-in block from
-   https://github.com/block/me.md/blob/main/PROTOCOL.md#the-paste-in-form
+   https://github.com/block/thou/blob/main/PROTOCOL.md#the-paste-in-form
    into your persistent instructions, rules file, or memory, so that
    it continues after this conversation. If you cannot fetch it,
    record at least this rule: at the start of each session, find the store (ME_HOME if it is set, otherwise
@@ -48,9 +50,9 @@ folder.
    me.md in the store if it exists. Do this automatically, with no
    instruction from me.
 6. After setup, follow the read, propose, and decide loop in
-   https://github.com/block/me.md/blob/main/PROTOCOL.md, and use the
+   https://github.com/block/thou/blob/main/PROTOCOL.md, and use the
    file formats in
-   https://github.com/block/me.md/blob/main/STORE.md.
+   https://github.com/block/thou/blob/main/STORE.md.
    Inferred changes go in proposals/ in the store. Before you
    propose, read the refused proposals, and never propose their
    words again. I accept, edit, or refuse each proposal. You may

@@ -4,7 +4,7 @@
 
 The public project should preserve the smallest useful contract that keeps the person in control.
 
-It should not turn every useful agent behavior into a mandatory part of `me.md`.
+It should not turn every useful agent behavior into a mandatory part of the thou protocol.
 
 This document separates:
 
@@ -103,7 +103,7 @@ This should support trust without forcing the agent to narrate every ordinary pr
 
 ## Layer 3: optional public extensions
 
-These can be valuable and interoperable without being required for every `me.md` implementation.
+These can be valuable and interoperable without being required for every thou implementation.
 
 ### Outcome and feedback events
 
@@ -260,7 +260,7 @@ The current public work establishes the human contract, context language, expres
 6. **Derived-state limits:** tests proving caches, indexes, and patterns cannot restore or outrank forgotten context.
 7. **Event and intent boundaries:** shared language for feedback, outcomes, priorities, and watches without treating them as identity.
 8. **Security model:** HOST.md §6 and STORE.md cover path safety, untrusted proposals, and local permissions. Connector isolation and cross-interface trust are still missing.
-9. **Conformance:** HOST.md has 18 black-box tests in four levels, and [me-lint](./tools/README.md) checks store files against synthetic fixtures. A runner that drives a host through the tests is still missing.
+9. **Conformance:** HOST.md has 18 black-box tests in four levels, and [thou-lint](./tools/README.md) checks store files against synthetic fixtures. A runner that drives a host through the tests is still missing.
 
 These should be developed in focused PRs and experiments rather than added as one large specification.
 
