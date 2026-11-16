@@ -1,10 +1,14 @@
 # thou
 
-**thou — agents that turn toward you.**
+**Agents that turn toward you.**
 
 You say me. Your agents say thou.
 
-The thou protocol is an open protocol for personal context. What your agents know about you lives in plain files you own, starting with `~/.me/me.md`. Every agent that follows the protocol reads those files the same way. It asks before it remembers anything, it shows you what changed, and it stops the moment you turn it off. You decide what becomes memory. The files power the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
+Every agent you use is starting to remember you. Each one keeps what it learns in its own place, in its own format, under its own rules. You can't read all of it, carry it to the next agent, or turn it all off at once. Most of it is not something you said. It was inferred about you, and it is kept for someone else's purposes.
+
+The thou protocol starts from the other side. It is an open protocol for personal context. What your agents know about you lives in plain files you own, starting with `~/.me/me.md`. Every agent that follows the protocol reads those files the same way. It asks before it keeps anything it inferred about you, it records each change it makes, and it stops using the files when you turn memory off.
+
+The point is not memory for its own sake. It is to help you keep up with your agents, on your terms. The files power the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
 
 ## Quickstart
 
@@ -12,7 +16,7 @@ Point any agent at this page and say: **"Set up my me.md."** The agent creates y
 
 Agents: follow the [setup instruction](./SETUP.md#the-setup-instruction), then serve the store with the loop in [PROTOCOL.md](./PROTOCOL.md). SETUP.md is the only setup procedure; PROTOCOL.md defines the [store layout](./PROTOCOL.md#the-store).
 
-Your file starts empty. The protocol supplies no template and no default persona. A session only reads the store. It does not hold your memory: delete any session, or all of them, and you keep all durable context.
+Your file holds only what you tell it. The protocol supplies no template and no default persona. A session only reads the store. It does not hold your memory: delete any session, or all of them, and you keep all durable context.
 
 ## What it looks like
 
@@ -44,21 +48,44 @@ You accept it, in any agent that serves the store. The acceptance leaves two lin
 - 2026-11-12T17:05:40Z | topics/travel.md | added a preference | host: goose 1.9 (trip-helper) | authority: accepted proposal 20261112T170301Z-7f3a
 ```
 
-Refuse it instead, and no agent that follows the protocol proposes it again. Write `{"state": "off"}` in `~/.me/policy.json`, and every one of them stops using the store.
+Refuse it instead, and no agent that follows the protocol proposes those words again. Write `{"state": "off"}` in `~/.me/policy.json`, and every one of them stops using the store.
 
-## The rules
+## What we hold to
 
-- Memory is off until the person creates their file.
-- The person owns the source of truth. Not an agent, application, provider, or employer.
-- All stored content is readable. There is no hidden profile.
-- Agent-inferred changes require a proposal. You accept, edit, or refuse each proposal, or ask for an edit directly. Refusal stays in effect. Silence is not acceptance.
-- What the person says now overrides the store.
-- Deleted means deleted.
-- Context stays in its scope. Family data does not appear in an unrelated work session.
-- Knowledge of preferences is never permission to act for the person.
-- Any conforming host on the same computer serves the same files, with no migration and no lock-in. Syncing between devices is not defined yet.
+These are the commitments in short form. [SOVEREIGNTY.md](./SOVEREIGNTY.md) states them in full, and [HOST.md](./HOST.md) and [STORE.md](./STORE.md) turn them into requirements a host can be tested against.
 
-It is not a transcript, not a hidden profile, not a productivity score, not employer telemetry, and not memory that one application owns. A small and true file is better than a large and speculative one.
+- **You are the authority on you.** Stored context can help an agent understand you. It never defines you. What an agent inferred ranks below what you said yourself. You own the source of truth, not an agent, an application, a provider or an employer.
+- **Memory starts with you, and it is chosen.** There is no memory until you create your file. Something an agent notices becomes a proposal: a short file that waits for you. You accept it, edit it or refuse it, or ask for an edit directly. A refusal stays in effect until you delete it. Silence is not a yes.
+- **You can read all of it.** Your context is Markdown. No hidden profile, embedding or score competes with what you wrote. A host that changes your files records each change in a journal you can read: what changed, when, through which host, and on whose authority.
+- **What you say now wins.** The store gives agents continuity. It has no authority over what you ask for in the present conversation.
+- **Only what the task needs.** An agent recalls the least it needs for the work in front of it. Every agent reads `me.md` at the start of every session, so it holds only what every agent may know. Topic and project files are read only when the task needs them, so family context in its own topic file does not appear in an unrelated work session.
+- **Knowing you is not permission.** Knowing what you prefer does not let an agent send, buy, publish or approve anything for you. Your context can narrow what an agent may do. It never grants a new power.
+- **Off means off, and deletion is honest.** `{"state": "off"}` in `policy.json` turns memory off in every agent that follows the protocol: at once for new sessions, and at the next read or write in a session already open. A host that can keep that promise only by asking a model to obey must say so in its conformance claim, with the words "by instruction". A host never calls something deleted while it still uses a copy, and it tells you what it cannot delete, such as a model provider's logs.
+- **It is yours, not your employer's.** The protocol is not a productivity score, a manager's dashboard or a way to watch people at work. Context about other people stays minimal, and scoped to your own legitimate use.
+- **No one owns the interface.** Any conforming agent on the same computer serves the same files, with no migration and no lock-in. Syncing between devices is not defined yet.
+
+The store is not a transcript, and it is not memory that one application owns. A small and true file is better than a large and speculative one.
+
+## Why the name
+
+In 1923 Martin Buber wrote that we can meet another being as a *Thou*, a whole person, or treat them as an *It*, a thing to know about and use ([Stanford Encyclopedia of Philosophy, "Martin Buber"](https://plato.stanford.edu/entries/buber/)). Most AI memory treats you as an It: a profile inferred about you, kept by someone else, and shaped for their purposes. The thou protocol is the other relation. Agents meet you as a person. What they keep about you is what you agreed to, in words you can read, in files you own.
+
+The file is yours, so it is called `me.md`. The protocol is the agent's side of the relationship, so it is called thou. The first drafts of the protocol were called me.md too. Your file keeps that name.
+
+## What it can't promise yet
+
+The protocol is an experimental draft, and some of what it is for is not proven yet.
+
+- Not every agent can enforce the off switch below the model. One that only follows instructions has to say so.
+- Syncing between devices, undo and encrypted files are not defined yet. Whether Markdown is the right format is still under test. The full list is in [SOVEREIGNTY.md](./SOVEREIGNTY.md#what-remains-under-test).
+- A conformance runner that checks how an agent behaves, and not just its files, is planned. Until it exists, the tests in [HOST.md](./HOST.md#black-box-conformance) are a review standard.
+- The central test of portability has not been run yet: [two agents that have never met, serving the same store](./experiments/0009-serve-one-store-from-two-hosts.md). It is a proposed experiment.
+
+## What the thou protocol is not
+
+- Not a memory product, an app or a cloud service. It is files on your computer and rules for agents.
+- Not Block's data. Block wrote the first draft, and the aim is a neutral home.
+- Not employer telemetry. [SOVEREIGNTY.md](./SOVEREIGNTY.md#personal-context-is-not-organizational-telemetry) says so.
 
 ## Documents
 
@@ -87,22 +114,12 @@ Every protocol document listed below starts with a status line. There are three 
 
 **When documents disagree**, HOST.md and STORE.md win, then BRIEFING.md, then the guides, then the non-normative notes. SOVEREIGNTY.md says what the rules are for. A rule that breaks a commitment in it is a bug to fix.
 
-## Why the name
-
-In 1923 Martin Buber wrote that we can meet another being as a *Thou*, a whole person, or treat them as an *It*, a thing to know about and use. Most AI memory treats you as an It: a profile inferred about you, kept by someone else, and shaped for their purposes. The thou protocol is the other relation. Agents meet you as a person. What they keep about you is what you agreed to, in words you can read, in files you own. ([Stanford Encyclopedia of Philosophy, "Martin Buber"](https://plato.stanford.edu/entries/buber/).)
-
-The first drafts of this protocol were called me.md. Your file keeps that name: you say me, your agents say thou.
-
-## What the thou protocol is not
-
-- Not a memory product, an app, or a cloud service. It is files on your computer and rules for agents.
-- Not Block's data. Block wrote the first draft, and the aim is a neutral home.
-- Not employer telemetry. [SOVEREIGNTY.md](./SOVEREIGNTY.md) says so.
-
 ## Tools
 
-- [thou-lint](./tools/README.md) checks that a store follows [STORE.md](./STORE.md). It checks files, not host behavior.
+- The [thou-lint](./tools/README.md) tool checks that a store follows [STORE.md](./STORE.md). It checks files, not host behavior.
 
-## Status
+## Status, and how to help
 
-The thou protocol is an experimental draft, not a stable standard yet. Releases are tagged `vX.Y.Z`, and a host that claims conformance names the release it follows. Changes are in [CHANGELOG.md](./CHANGELOG.md). The most important question for any contribution is whether the system increases the person's agency. Governance is in [GOVERNANCE.md](./GOVERNANCE.md). The license is [Apache 2.0](./LICENSE).
+The thou protocol is an experimental draft, not a stable standard yet. Releases are tagged `vX.Y.Z`, and a host that claims conformance names the release it follows. Changes are in [CHANGELOG.md](./CHANGELOG.md).
+
+If you build agents, read the spec and serve a store. If you use them, say **"Set up my me.md."** and tell us where it falls short. Every change gets the same test: does it give the person more say? Governance is in [GOVERNANCE.md](./GOVERNANCE.md). The license is [Apache 2.0](./LICENSE).
