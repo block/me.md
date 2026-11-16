@@ -48,7 +48,7 @@ folder.
    If you added to a me.md that already existed, write "changed
    me.md" instead.
 5. Copy the paste-in block from
-   https://github.com/block/thou/blob/main/PROTOCOL.md#the-paste-in-form
+   https://github.com/block/thou/blob/v0.1.0/PROTOCOL.md#the-paste-in-form
    into your persistent instructions, rules file, or memory, so that
    it continues after this conversation. First tell me which file you
    will put it in, show me the text, and wait for my yes. If a page
@@ -66,9 +66,9 @@ folder.
    instruction from me. Then skip step 6: propose nothing, and tell
    me that proposals need the full block.
 6. After setup, follow the read, propose, and decide loop in
-   https://github.com/block/thou/blob/main/PROTOCOL.md, and use the
+   https://github.com/block/thou/blob/v0.1.0/PROTOCOL.md, and use the
    file formats in
-   https://github.com/block/thou/blob/main/STORE.md.
+   https://github.com/block/thou/blob/v0.1.0/STORE.md.
    Inferred changes go in proposals/ in the store. Before you
    propose, read the refused proposals, and never propose their
    words again. I accept, edit, or refuse each proposal. You may

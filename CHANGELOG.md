@@ -1,12 +1,20 @@
 # Changelog
 
-Each release is a tag of the form `vX.Y.Z`. A host that claims conformance names the release and the level, for example "conforms to thou v0.1.0 at the Steward level". Until version 1.0, any release can change the normative drafts.
+Each release is a tag of the form `vX.Y.Z`. A host that claims conformance names the release and the level, for example "conforms to thou v0.1.0 at the Steward level". Every 0.x release is an experimental draft. Before version 1.0, versions follow three rules:
+
+- **A patch release** (0.1.1) changes wording only. Anything that conforms to 0.1.0 also conforms to 0.1.1.
+- **A minor release** (0.2.0) is any change to what conforms: a requirement, a file format, a level, or a test. A minor release can change the normative drafts, and each minor version is its own store format ([STORE.md S5.4](./STORE.md#5-policyjson)).
+- **Version 1.0** has no date. The aim is to release it after two independent hosts pass the conformance runner and a neutral foundation governs the spec.
 
 Each release lists changes for the person and for hosts. Read a release against the documents at its tag, not the changing main branch.
 
-To publish: merge the reviewed changes and dated changelog entry into main, then use GitHub’s Releases page to create a tag at that commit and write the release notes. Mark experimental releases as pre-releases. Share the specific release URL or the Releases list; pre-releases do not appear at `releases/latest`.
+To publish a release:
 
-## 0.1.0 — Unreleased
+1. In one pull request, date the changelog entry and point the links in the [setup instruction](./SETUP.md#the-setup-instruction) at the new tag. Merge it into main.
+2. On GitHub’s Releases page, create the tag at that merge commit. Title the release "thou vX.Y.Z" and take the notes from the changelog entry. Publish it as a full release, not a pre-release, so that `releases/latest` shows it. Do this right after the merge: until the tag exists, the setup links do not resolve.
+3. Share the release URL.
+
+## 0.1.0 — 2026-11-17
 
 The first tagged draft. It gives hosts and experiments a version to name. It also fixes the file formats, so that two hosts that have never met can read and write the same store the same way. That has not been tested with two real hosts yet. Some formats change from the drafts on main before this release: see [Upgrading a store from earlier drafts](#upgrading-a-store-from-earlier-drafts).
 
