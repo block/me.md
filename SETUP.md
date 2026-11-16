@@ -2,8 +2,7 @@
 
 **Status:** Guide for the person. It adds no rules. The rules are in [HOST.md](./HOST.md), [STORE.md](./STORE.md), and [SOVEREIGNTY.md](./SOVEREIGNTY.md).
 
-<!-- TODO(framing): SETUP intro. Replace this first sentence with the framing text. -->
-The thou protocol is a new way of working with agents. It preserves human sovereignty: you own what agents know about you, you decide what they remember, and any agent on your computer that follows the protocol can use it. The purpose is not memory for its own sake. The purpose is to let you act on the things that matter most to you, with agents that know you well enough to help.
+The thou protocol is an open protocol for personal context: agents that turn toward you. It preserves human sovereignty: you own what agents know about you, you decide what they remember, and any agent on your computer that follows the protocol can use it. The purpose is not memory for its own sake. The purpose is to let you act on the things that matter most to you, with agents that know you well enough to help.
 
 You do not install the protocol. You give one instruction to any agent that can read and write files on your computer: a CLI agent, a desktop agent, or an IDE assistant. A chat app in a web browser usually cannot reach your files, so it cannot set up or serve the store.
 

@@ -1,9 +1,10 @@
 # thou
 
-**Keep up with agents, on your terms.**
+**thou — agents that turn toward you.**
 
-<!-- TODO(framing): README lead. Replace this paragraph's first sentence with the framing text. -->
-The thou protocol is an open way of working with agents. What agents know about you lives in plain files, in your words, on your machine. You own the files. Agents read them and propose additions. They may apply changes you explicitly request or approve — you decide what becomes memory. The files power the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
+You say me. Your agents say thou.
+
+The thou protocol is an open protocol for personal context. What your agents know about you lives in plain files you own, starting with `~/.me/me.md`. Every agent that follows the protocol reads those files the same way. It asks before it remembers anything, it shows you what changed, and it stops the moment you turn it off. You decide what becomes memory. The files power the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
 
 ## Quickstart
 
@@ -85,6 +86,18 @@ Every protocol document listed below starts with a status line. There are three 
 - [EXPERIMENTS.md](./EXPERIMENTS.md) — how the protocol is tested
 
 **When documents disagree**, HOST.md and STORE.md win, then BRIEFING.md, then the guides, then the non-normative notes. SOVEREIGNTY.md says what the rules are for. A rule that breaks a commitment in it is a bug to fix.
+
+## Why the name
+
+In 1923 Martin Buber wrote that we can meet another being as a *Thou*, a whole person, or treat them as an *It*, a thing to know about and use. Most AI memory treats you as an It: a profile inferred about you, kept by someone else, and shaped for their purposes. The thou protocol is the other relation. Agents meet you as a person. What they keep about you is what you agreed to, in words you can read, in files you own. ([Stanford Encyclopedia of Philosophy, "Martin Buber"](https://plato.stanford.edu/entries/buber/).)
+
+The first drafts of this protocol were called me.md. Your file keeps that name: you say me, your agents say thou.
+
+## What the thou protocol is not
+
+- Not a memory product, an app, or a cloud service. It is files on your computer and rules for agents.
+- Not Block's data. Block wrote the first draft, and the aim is a neutral home.
+- Not employer telemetry. [SOVEREIGNTY.md](./SOVEREIGNTY.md) says so.
 
 ## Tools
 
