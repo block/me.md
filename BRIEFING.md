@@ -6,7 +6,7 @@ The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RE
 
 Each requirement has an identifier, for example **B2**. All of them are at the Briefer level. [conformance/TRACEABILITY.md](./conformance/TRACEABILITY.md) maps each one to its evidence.
 
-The reason `me.md` exists is to help a person keep up with agents. The briefing is how. It turns everything that moved into a person-shaped read: **what moved, where the pull is, what is missing, and what to do next.**
+The reason the thou protocol exists is to help a person keep up with agents. The briefing is how. It turns everything that moved into a person-shaped read: **what moved, where the pull is, what is missing, and what to do next.**
 
 Memory makes the briefing possible. The briefing is what memory is for.
 

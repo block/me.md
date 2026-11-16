@@ -1,6 +1,6 @@
-# me-lint
+# thou-lint
 
-`me_lint.py` checks that a me.md store follows the v0.1 file format. It is one file, Python 3.9 or newer, standard library only.
+`thou_lint.py` checks that a thou store follows the v0.1 file format. It is one file, Python 3.9 or newer, standard library only.
 
 ## What it checks
 
@@ -21,8 +21,8 @@ It is not a conformance test of a host. It cannot tell you that a host honors `p
 ## Run it
 
 ```
-python3 tools/me_lint.py ~/.me
-python3 tools/me_lint.py ~/.me --json
+python3 tools/thou_lint.py ~/.me
+python3 tools/thou_lint.py ~/.me --json
 ```
 
 Human output has one line per finding: `ERROR`, `WARN` or `NOTE`, then the path, then the message. Exit 0 means no errors. Exit 1 means errors. Exit 2 means a usage error, such as a path that is not a directory.

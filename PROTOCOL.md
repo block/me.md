@@ -2,7 +2,7 @@
 
 **Status:** Guide. This page summarizes the store and loop. [HOST.md](./HOST.md) defines host conformance. [STORE.md](./STORE.md) defines the file formats. Where this page and those documents differ, they win.
 
-`me.md` works with any AI harness or platform. If a tool can read and write files, it can serve a person's store. This page gives the full engagement in one shape.
+The thou protocol works with any AI harness or platform. If a tool can read and write files, it can serve a person's store. This page gives the full engagement in one shape.
 
 ## The store
 
@@ -50,9 +50,9 @@ A host does not have to do the whole loop. A host that only reads can conform at
 Every harness has an instruction surface: a system prompt, a rules file, custom instructions, or an agent file. This block makes any of them serve the store:
 
 ```text
-Serve my me.md store with this loop. The store is the folder named
-in the ME_HOME environment variable if it is set, and ~/.me/
-otherwise. Below, "the store" means that folder.
+Serve my store under the thou protocol, with this loop. The store is
+the folder named in the ME_HOME environment variable if it is set,
+and ~/.me/ otherwise. Below, "the store" means that folder.
 
 MOUNT — At the start of each session, read only policy.json in the
 store, and decide before you open any other file there. Memory is on
