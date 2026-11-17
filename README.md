@@ -6,11 +6,36 @@ Your file says me. Your agents say thou.
 
 <p align="center"><img src="./assets/before-after.png" width="420" alt="A square field of small pointed marks, split down the middle by a blue line. On the right, before, the marks are grey and point every which way. On the left, after, they are black and all point toward one spot on the line, and the marks nearest it are blue."></p>
 
-Every agent you use is starting to remember you. Each one keeps what it learns in its own place, in its own format, under its own rules. There is no one place where you can read all of it, carry it to the next agent, or turn it all off. Some of it is not something you said. It was inferred about you, and it is kept on someone else's terms.
+The thou protocol keeps what your agents know about you in plain Markdown files that you own, starting with `~/.me/me.md`. The file is yours, so it is called `me.md`. The protocol is how agents address you, so it is called thou. Any agent that follows the protocol reads those files the same way. It asks before it keeps anything it inferred about you, it records each change it makes, and it stops using the files when you turn memory off.
 
-The thou protocol starts from the other side. It is an open protocol for personal context. What your agents know about you lives in plain files you own, starting with `~/.me/me.md`. Every agent that follows the protocol reads those files the same way. It asks before it keeps anything it inferred about you, it records each change it makes, and it stops using the files when you turn memory off.
+The files also feed the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next. It helps you keep up with your agents, on your terms.
 
-The point is not memory for its own sake. It is to help you keep up with your agents, on your terms. The files power the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next.
+## It, or thou
+
+In 1923 the philosopher Martin Buber described two ways to meet another being ([Stanford Encyclopedia of Philosophy, "Martin Buber"](https://plato.stanford.edu/entries/buber/)). You can meet them as a *Thou*: a whole person, in a relation that goes both ways. Or you can treat them as an *It*: a thing to know about and use.
+
+Many agents now remember you, and that memory is often an It relation. Each agent keeps what it learns in its own place, in its own format, under its own rules. Some of it is not something you said. It was inferred about you. There is no one place where you can read all of it, carry it to the next agent, or turn it all off. EU guidance on the right to take your data to another service says that right does not cover data a service creates "by a personalisation or recommendation process, by user categorisation or profiling" ([Article 29 Working Party, WP242](https://ec.europa.eu/information_society/newsroom/image/document/2016-51/wp242_en_40852.pdf)). You can still ask to see it, under the right of access, but the service doesn't have to let you take it with you.
+
+Software can't meet you the way a person can. What the protocol can change is the record, and who controls it. The Markdown files are not the new part: many agents already keep memory about you in Markdown. What the thou protocol adds is a contract around the files, the same in every agent that follows it. In the spec, an agent or the app that runs it is a *host*, and your folder of files is the *store*.
+
+The left column below is memory that treats you as an It. Most products today sit somewhere between the two columns. The right column is what the spec requires of a host. A host picks a level, and each level adds duties to the one before: a Reader only reads, a Proposer also proposes, a Steward also applies your decisions and records them, and a Briefer also writes briefings. The rows on new memory, refusals, the journal and deleting start at the Proposer or Steward level. No host has claimed conformance yet.
+
+| | Memory that treats you as an It | Memory under the thou protocol |
+|---|---|---|
+| **When it starts** | When you start using the product. | When you create your file. No agent creates it unless you ask ([S1.2, S1.3](./STORE.md#1-location-and-presence)). |
+| **Who has the last word** | What the agent inferred about you. | You. What you said ranks above anything inferred, and what you say now overrides anything stored ([SOVEREIGNTY.md](./SOVEREIGNTY.md#the-person-is-the-authority), [H2.3](./HOST.md#2-recall)). |
+| **How something becomes memory** | The agent keeps what it noticed. | What an agent inferred, it can only propose. You accept, edit or refuse each proposal, and silence is not a yes. What you tell it to remember, it can save at once, and the journal records that you asked ([H3.1, H3.4, H3.7](./HOST.md#3-writing), [S6.9, S6.15](./STORE.md#status)). |
+| **When you say no** | A deleted or refused memory can be inferred again later. | The refusal is kept. No agent that follows the protocol proposes the same words again, for any file ([H3.3](./HOST.md#3-writing), [S6.11](./STORE.md#status)). |
+| **What you can read** | A summary, which may not show everything the agent uses. | Everything in the store, in plain Markdown. A host may keep a search index, but it must not become a hidden second source of truth ([SOVEREIGNTY.md](./SOVEREIGNTY.md#context-is-legible)). |
+| **What changed, and why** | You can often see the list, but not when or why an entry was added. | Every change gets a line in a journal you can read: what changed, when, through which host, and on whose authority ([H4.1, H4.2](./HOST.md#4-provenance)). |
+| **What each task sees** | What the product's own rules select. | The least the task needs. `me.md` is read at the start of every session, so keep in it only what every agent may know. Topic and project files are read only when the task needs them ([H2.1](./HOST.md#2-recall)). |
+| **What knowing you allows** | Remembered preferences can act as standing approval. | Knowing what you prefer does not let an agent send, buy, publish or approve anything for you. Your context can narrow what an agent may do. It never grants a new power ([H2.2](./HOST.md#2-recall), [SOVEREIGNTY.md](./SOVEREIGNTY.md#context-is-not-permission-to-act)). |
+| **Turning it off** | One switch per product, if there is one. | One file, `policy.json`, turns memory off in every agent that serves your store: at once for new sessions, and at the next read or write in a session already open ([STORE.md §5](./STORE.md#5-policyjson), [H5.1](./HOST.md#5-revocation)). It is a request those agents honor, not a lock ([H6.4](./HOST.md#6-security-posture)). |
+| **Deleting** | You may not know which copies are left. | A host removes it from everything it controls, including caches and anything derived from it. It never calls something deleted while it still uses a copy, and it tells you what it cannot delete, such as a model provider's logs ([H5.2, H5.3](./HOST.md#5-revocation), [SOVEREIGNTY.md](./SOVEREIGNTY.md#revocation-is-real)). |
+| **Changing agents** | An export in the product's own format, or starting over. | Every agent on your computer that follows the protocol serves the same files, with no migration ([H1.4](./HOST.md#1-mounting)). Moving them anywhere else is a separate, deliberate step, and it should not widen who can see them ([SOVEREIGNTY.md](./SOVEREIGNTY.md#portability-does-not-mean-universal-sharing)). |
+| **Whose it is** | Held by the product, in its format, under its terms. | Yours. The protocol must not become a productivity score or a way to watch people at work, and context about other people should stay minimal. This is a commitment in [SOVEREIGNTY.md](./SOVEREIGNTY.md#personal-context-is-not-organizational-telemetry), not yet a requirement a host can be tested against. |
+
+[SOVEREIGNTY.md](./SOVEREIGNTY.md) states the commitments in full. [HOST.md](./HOST.md) and [STORE.md](./STORE.md) turn them into requirements that a host can be tested against.
 
 ## Quickstart
 
@@ -52,36 +77,18 @@ You accept it, in any agent that serves the store. The acceptance leaves two lin
 
 Refuse it instead, and no agent that follows the protocol proposes those words again. Write `{"state": "off"}` in `~/.me/policy.json`, and every one of them stops using the store.
 
-## What we hold to
-
-These are the commitments in short form. [SOVEREIGNTY.md](./SOVEREIGNTY.md) states them in full, and [HOST.md](./HOST.md) and [STORE.md](./STORE.md) turn them into requirements a host can be tested against.
-
-- **You are the authority on you.** Stored context can help an agent understand you. It never defines you. What an agent inferred ranks below what you said yourself. You own the source of truth, not an agent, an application, a provider or an employer.
-- **Memory starts with you, and it is chosen.** There is no memory until you create your file. Something an agent notices becomes a proposal: a short file that waits for you. You accept it, edit it or refuse it, or ask for an edit directly. A refusal stays in effect until you delete it. Silence is not a yes.
-- **You can read all of it.** Your context is Markdown. No hidden profile, embedding or score competes with what you wrote. A host that changes your files records each change in a journal you can read: what changed, when, through which host, and on whose authority.
-- **What you say now wins.** The store gives agents continuity. It has no authority over what you ask for in the present conversation.
-- **Only what the task needs.** An agent recalls the least it needs for the work in front of it. Every agent reads `me.md` at the start of every session, so it holds only what every agent may know. Topic and project files are read only when the task needs them, so family context in its own topic file does not appear in an unrelated work session.
-- **Knowing you is not permission.** Knowing what you prefer does not let an agent send, buy, publish or approve anything for you. Your context can narrow what an agent may do. It never grants a new power.
-- **One switch turns it off, and deletion is honest.** `{"state": "off"}` in `policy.json` turns memory off in every agent that follows the protocol: at once for new sessions, and at the next read or write in a session already open. The switch is a request that those agents honor, not a lock. It does not stop software that ignores the protocol, and it cannot take back what a session has already read. A host that can keep that promise only by asking a model to obey must say so in its conformance claim, with the words "by instruction". A host never calls something deleted while it still uses a copy, and it tells you what it cannot delete, such as a model provider's logs.
-- **It is yours, not your employer's.** The protocol is not a productivity score, a manager's dashboard or a way to watch people at work. Context about other people stays minimal, and scoped to your own legitimate use.
-- **No one owns the interface.** Any conforming agent on the same computer serves the same files, with no migration and no lock-in. Syncing between devices is not defined yet.
-- **Moving it is your choice.** Exporting or syncing your context into another tool is a separate step that you start. It never widens who can see it by default.
-
-The store is not a transcript, and it is not memory that one application owns. A small and true file is better than a large and speculative one.
-
 ## Why the name
 
-The name rhymes with "how". It is the old English word for "you", said to the person you are speaking to.
+The name rhymes with "how". It is how English once said "you" to one person. It is also Buber's word in *I and Thou*, above, written here in lowercase.
 
-In 1923 Martin Buber wrote that we can meet another being as a *Thou*, a whole person. Or we can treat them as an *It*, a thing to know about and use ([Stanford Encyclopedia of Philosophy, "Martin Buber"](https://plato.stanford.edu/entries/buber/)). AI memory often treats you as an It: a profile inferred about you, kept by someone else, and shaped for their purposes. The thou protocol takes the other side. Software can't meet you the way a person can. It can ask before it keeps anything, and keep only what you agreed to, in words you can read, in files you own.
-
-The file is yours, so it is called `me.md`. The protocol is the agent's side of the relationship, so it is called thou. The first drafts of the protocol were called `me.md` too. Your file keeps that name.
+The first drafts of the protocol were called `me.md`, the name your file keeps.
 
 ## What it can't promise yet
 
 The protocol is an experimental draft, and some of what it is for is not proven yet.
 
-- Not every agent can enforce the off switch below the model. One that only follows instructions has to say so.
+- The off switch is a request that agents following the protocol honor, not a lock. It does not stop software that ignores the protocol, and it cannot take back what a session has already read.
+- Not every agent can enforce the off switch below the model. One that only follows instructions has to say so in its conformance claim, with the words "by instruction" ([H0.3](./HOST.md#conformance-levels)).
 - No host has claimed conformance yet. Today you try the protocol through the paste-in block in [PROTOCOL.md](./PROTOCOL.md#the-paste-in-form), which makes an agent follow it by instruction. That is the weakest form.
 - The off switch covers these files only. It does not turn off the memory features built into the agents you use.
 - The journal is an account that each host keeps of its own changes. It is not tamper-proof: any program that can write your files can write a false line. Signed decisions are not defined yet.
@@ -101,7 +108,8 @@ The protocol is an experimental draft, and some of what it is for is not proven 
 - Not a memory product, an app or a cloud service. It is files on your computer and rules for agents.
 - Not a project file. An `AGENTS.md` file tells agents about a codebase. Your `me.md` tells them about you, in every project.
 - Not one tool's memory. A memory file that one tool keeps serves that tool. Your store serves every agent that follows the protocol.
-- Not a transport. A memory server is a way to reach context. The thou protocol is the files and the consent rules, and a server can serve them.
+- Not a server. A memory server is one way to reach context. The thou protocol is the files and the consent rules, and a server can serve them.
+- Not a transcript. The store holds what you chose to keep, not everything you said.
 - Not owned by Block. Block wrote the first draft, and the aim is a neutral home.
 - Not employer telemetry. [SOVEREIGNTY.md](./SOVEREIGNTY.md#personal-context-is-not-organizational-telemetry) says so.
 
