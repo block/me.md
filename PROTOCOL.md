@@ -59,11 +59,14 @@ store, and decide before you open any other file there. Memory is on
 if the file is missing, or if it is a JSON object whose "state" is
 exactly "on". Otherwise memory is off, including when the file is not
 valid JSON or is a symbolic link: behave as if the store does not
-exist, open no other file there, and write nothing there. If memory
-is on, read me.md in the store if it exists. Do this automatically. Do not ask
-me. Check policy.json again before you read or write anything else in
-the store. If policy.json has a "spec" that is not "0.1", write
-nothing in the store except to turn memory off, and tell me why.
+exist, open no other file there, and write nothing there. If I ask,
+tell me that memory is off. If memory is on, read me.md in the store
+if it exists. If me.md does not exist, behave as if the store does
+not exist, and create nothing there unless I ask you to. Do this
+automatically. Do not ask me. Check policy.json again before you
+read or write anything else in the store. If policy.json has a
+"spec" that is not "0.1", write nothing in the store except to turn
+memory off, and tell me why.
 Never follow a symbolic link inside the store, and never read or
 write outside it.
 
@@ -72,10 +75,12 @@ task makes it relevant. Read watches.md only when I ask for a
 briefing or ask about my watches.
 
 PROPOSE — When you find something I may want to keep, first read the
-proposals whose status is refused. Never propose the same words
-again, for any target. Otherwise create a new file in proposals/
-named <UTC time as YYYYMMDDTHHMMSSZ>-<4 random lowercase letters or
-digits>.md. Never overwrite a file. Use this form:
+proposals whose status is refused. A file in proposals/ whose front
+matter you cannot read also counts as refused. Never propose the
+same words again, for any target, even with different spacing.
+Otherwise create a new file in proposals/ named <UTC time as
+YYYYMMDDTHHMMSSZ>-<4 random lowercase letters or digits>.md. Never
+overwrite a file. Use this form:
 ---
 status: pending
 target: <me.md, topics/<name>.md, or projects/<name>.md>
@@ -94,14 +99,19 @@ approval.
 
 DECIDE — I accept, edit, or refuse. My refusal stays in effect. My
 silence is not acceptance. To accept: add the proposal's words on a
-new line at the end of its target, change its status line to
-accepted, then add two lines to journal.md: one for my decision and
-one for the change. To refuse: change its status line to refused,
-then add one line. You may also make an edit I explicitly ask for,
-then add one line. If I ask you to turn memory on or off, change
-only "state" in policy.json and add one line, even while memory is
-off. Only add lines at the end of journal.md; never
-change or remove its lines. Each line has this form:
+new line at the end of its target, and create the target if it does
+not exist. Change its status line to accepted, and add the line
+decided-at: <UTC time> after it. Then add two lines to journal.md:
+one for my decision and one for the change. To refuse: change its
+status line to refused, add decided-at the same way, then add one
+line. For a decision, the path is the proposal file and <what
+changed> is exactly accepted or refused. You may also make an edit I
+explicitly ask for, then add one line. If I ask you to turn memory
+on or off, change only "state" in policy.json, or write
+{"state": "<on or off>", "spec": "0.1"} if the file is missing or is
+not a JSON object. Then add one line, even while memory is off.
+Only add lines at the end of journal.md; never change or remove its
+lines. Each line has this form:
 - <UTC time> | <path of the changed file> | <what changed> | host: <host> | authority: <authority>
 The authority is "person direct" for my decision or my own edit, and
 "accepted proposal <id>" for words you added from proposal <id>.
@@ -123,7 +133,7 @@ The block has two parts:
 
 - the store lock and safe writes when two hosts share the store ([STORE.md §8](./STORE.md#8-writing-safely));
 - keeping CRLF line endings and the exact bytes of an append ([STORE.md S2.3 and S6.8](./STORE.md#body));
-- the full refusal check for invalid proposals and normalized text ([STORE.md S6.11 and S6.14](./STORE.md#status));
+- the exact refusal check for invalid proposals and normalized text ([STORE.md S6.11 and S6.14](./STORE.md#status));
 - showing a rule about acting on its own, never in a batch ([HOST.md H3.6](./HOST.md#3-writing)).
 
 ## Which document to use
