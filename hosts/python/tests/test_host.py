@@ -422,9 +422,17 @@ class Robustness(StoreTest):
         self.assertIn("123456789012345678901234567890", text)
         self.assertEqual(self.host.state()["memory"], "on")
 
-    def test_deeply_nested_policy_is_off(self):
+    def test_deeply_nested_policy_gets_an_answer(self):
         self.write("policy.json", '{"state": "on", "x": ' + "[" * 100000 + "]" * 100000 + "}")
-        self.assertEqual(self.host.state()["memory"], "off")
+        # It is valid JSON that says "on". Python up to 3.14 can't parse it that deep, so thou-py reads it as
+        # off, which is safe. Newer Pythons can, and read it as on. Either way: an answer, not a crash.
+        self.assertIn(self.host.state()["memory"], ("on", "off"))
+        try:
+            self.host.policy("off")
+        except HostError as exc:
+            self.assertEqual(exc.code, "io_error")  # too deep to rewrite: nothing changed
+        self.assertFalse(os.path.exists(self.path(".me.lock")))
+        self.assertEqual([n for n in os.listdir(self.root) if n.endswith(".tmp")], [])
 
     def test_overlapping_match_is_ambiguous(self):
         self.write("me.md", "aaa\n")
