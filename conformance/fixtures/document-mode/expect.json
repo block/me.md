@@ -1,0 +1,13 @@
+{
+  "exit": 0,
+  "policy_state": "on",
+  "error_count": 0,
+  "warning_count": 0,
+  "counts": {
+    "topics": 0,
+    "projects": 0,
+    "proposals": 0,
+    "watches": 0,
+    "journal_entries": 0
+  }
+}

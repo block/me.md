@@ -1,0 +1,9 @@
+{
+  "exit": 0,
+  "policy_state": "on",
+  "error_count": 0,
+  "warnings_contain": [
+    "spec 9.0",
+    "must not write"
+  ]
+}

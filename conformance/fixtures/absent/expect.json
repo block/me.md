@@ -1,0 +1,9 @@
+{
+  "exit": 0,
+  "present": false,
+  "policy_state": null,
+  "error_count": 0,
+  "notes_contain": [
+    "store absent"
+  ]
+}

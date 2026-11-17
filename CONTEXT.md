@@ -282,17 +282,14 @@ Portability should expand the person’s choices, not the audience by default.
 
 ## What this document does not standardize
 
-This document does not yet define:
+[HOST.md](./HOST.md) and [STORE.md](./STORE.md) define the store location, the file layout, the proposal and journal formats, and conformance. This document does not yet define:
 
-- a filesystem location;
-- Markdown or another canonical representation;
-- a schema for entries, scopes, or proposals;
+- whether Markdown stays the canonical representation;
+- a schema for entries or scopes;
 - API or tool names;
 - topic identifiers or routing algorithms;
-- provenance storage;
 - encryption, synchronization, or backup mechanisms;
-- user-interface language;
-- conformance requirements.
+- user-interface language.
 
 Those choices should be informed by experiments and independent implementations.
 

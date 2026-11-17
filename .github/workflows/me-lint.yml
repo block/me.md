@@ -1,0 +1,44 @@
+name: me-lint
+
+on:
+  pull_request:
+    paths:
+      - "*.md"
+      - "tools/**"
+      - "conformance/**"
+      - ".github/workflows/me-lint.yml"
+  push:
+    branches: [main]
+    paths:
+      - "*.md"
+      - "tools/**"
+      - "conformance/**"
+      - ".github/workflows/me-lint.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.x"]
+        include:
+          # The oldest Python the tools support. Pinned: ubuntu-latest
+          # (26.04) has no Python 3.9 build.
+          - os: ubuntu-24.04
+            python: "3.9"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Unit tests and conformance fixtures
+        run: python -m unittest discover -s tools -p 'test_*.py'
+      - name: Lint the valid-full fixture
+        run: python tools/me_lint.py conformance/fixtures/valid-full/store
