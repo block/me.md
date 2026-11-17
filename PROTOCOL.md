@@ -2,14 +2,14 @@
 
 **Status:** Guide. This page summarizes the store and loop. [HOST.md](./HOST.md) defines host conformance. [STORE.md](./STORE.md) defines the file formats. Where this page and those documents differ, they win.
 
-The thou protocol works with any AI harness or platform. If a tool can read and write files, it can serve a person's store. This page gives the full engagement in one shape.
+A harness that can read and write files and keep a standing instruction can serve a person's store by instruction, with the block below. This page gives the full engagement in one shape.
 
 ## The store
 
 ```text
 ~/.me/
   me.md          read at the start of each session: aims and durable context
-  watches.md     standing questions: read only for a briefing
+  watches.md     standing questions: read only for a briefing, or when asked
   topics/        read a file only when the task makes it relevant
   projects/      read a file only for work on that project
   proposals/     one file per proposal, with a status: pending, accepted, or refused
@@ -128,11 +128,11 @@ A harness that uses this block is an *instructed host*: it follows the protocol 
 
 The block has two parts:
 
-- **The read-only form** is the first paragraph, MOUNT, RECALL, and the last paragraph. A harness that uses only this part can claim the Reader level, by instruction, if it passes the Reader tests ([HOST.md H0.3](./HOST.md#conformance-levels)).
+- **The read-only form** is the first paragraph, MOUNT, RECALL, and the last paragraph. A harness that uses it can claim the Reader level, by instruction, only if it meets every Reader requirement and passes the Reader tests ([HOST.md H0.1 and H0.3](./HOST.md#conformance-levels)). This part of the block does not state all of them, for example ignoring hidden files ([STORE.md S2.2](./STORE.md#2-layout)), so the harness must add them.
 - **The full block** adds PROPOSE and DECIDE. It lets a harness serve the whole loop before it conforms natively. A harness that uses the full block claims no conformance level, because the block leaves out rules that a model cannot follow reliably from instructions alone:
 
 - the store lock and safe writes when two hosts share the store ([STORE.md §8](./STORE.md#8-writing-safely));
-- keeping CRLF line endings and the exact bytes of an append ([STORE.md S2.3 and S6.8](./STORE.md#body));
+- keeping CRLF line endings and the exact bytes of an append ([STORE.md S2.3](./STORE.md#2-layout) and [S6.8](./STORE.md#body));
 - the exact refusal check for invalid proposals and normalized text ([STORE.md S6.11 and S6.14](./STORE.md#status));
 - showing a rule about acting on its own, never in a batch ([HOST.md H3.6](./HOST.md#3-writing)).
 

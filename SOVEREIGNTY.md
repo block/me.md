@@ -48,7 +48,7 @@ Stored context may narrow what an agent is allowed to do—for example, by recor
 
 ## Revocation is real
 
-Turning context off must stop its use at the enforcement layer, not merely ask the agent to ignore it. A host that serves the store only through instructions to a model cannot promise this. It must say so in its conformance claim and its documentation ([HOST.md H0.3 and H6.4](./HOST.md#6-security-posture)).
+Turning context off must stop its use at the enforcement layer, not merely ask the agent to ignore it. A host that serves the store only through instructions to a model cannot promise this. It must say so in its conformance claim and its documentation ([HOST.md H0.3](./HOST.md#conformance-levels) and [H6.4](./HOST.md#6-security-posture)).
 
 Forgetting must remove context from active recall. Deletion must have a clear meaning, including how history, indexes, caches, proposals, backups, and projections are handled. An implementation must not describe something as deleted while continuing to use a retained copy.
 

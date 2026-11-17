@@ -75,5 +75,5 @@ Every briefing ends with what was read, what was unavailable, and a confidence s
 - **The feed:** reporting everything that happened instead of what matters to this person. Volume is the problem the briefing exists to solve.
 - **The manager:** converting the read into assignments, scores, or completion tracking.
 - **The inference engine:** deriving aims and watches from behavior instead of taking them from the person.
-- **The confident blank:** presenting a shallow scan as a complete read. The coverage receipt exists to make this impossible.
+- **The confident blank:** presenting a shallow scan as a complete read. The coverage receipt exists to show what was not read.
 - **Silent memory:** letting briefing observations leak into durable context without the proposal path.
