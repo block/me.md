@@ -6,6 +6,7 @@ Evidence:
 
 - **T1–T18**: the black-box tests in [HOST.md](../HOST.md#black-box-conformance).
 - **lint**: [thou-lint](../tools/README.md) checks the files a host wrote. It shows that the files have the right form. It does not show how a host behaved.
+- **runner**: the [conformance runner](./runner/README.md) drives a host's code through its [driver](./DRIVER.md) and checks the answers and the store. It shows what the host's code does, not what a model does.
 - **review**: no automatic check yet. A reviewer reads the host's documentation or code. The reason is given.
 
 Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
@@ -15,11 +16,11 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | ID | Requirement, short | Level | Evidence |
 |---|---|---|---|
 | H0.1 | Meet every requirement and test of the claimed level and below | R | T1–T18 by level |
-| H0.2 | A host that claims only Reader never writes inside the store | R | T1–T7, with the store's bytes compared before and after each test (planned runner; by hand until then) |
+| H0.2 | A host that claims only Reader never writes inside the store | R | T1–T7, with the store's bytes compared before and after each session (runner) |
 | H0.3 | A claim names release and level, and says "by instruction" when it applies | R | review: the claim in the host's documentation |
 | H1.1 | Mount by itself, with no instruction | R | T2 |
 | H1.2 | Continuity never depends on session history | R | T5 |
-| H1.3 | No durable copy of store content; own state is host state | R | review: needs a search of the host's data directory for canaries (planned runner) |
+| H1.3 | No durable copy of store content; own state is host state | R | runner: searches the test `HOME`, `TMPDIR` and XDG directories for canaries; review for any other place the host keeps data |
 | H1.4 | Use the store location in STORE.md §1 | R | T2 (`ME_HOME` set, and unset) |
 | H1.5 | Read `policy.json` alone first; off means absent, except changing the switch | R | T3 |
 | H1.6 | Re-read `policy.json` before each recall and write | R | T3 (off between two recalls) |
@@ -58,7 +59,7 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | S1.3 | Create the store only at the person's request | R | T1 |
 | S1.4 | Document mode is valid | R | lint (fixture `document-mode`) |
 | S2.1 | Entry names; a bad `.md` name in `proposals/` is an invalid proposal; ignore others; tell the person (SHOULD) | R | lint (fixture `bad-name`, proposal name test); review for telling the person |
-| S2.2 | Ignore hidden files and unknown entries | R | lint shows the rule (runtime test); review for hosts (planned: canary in a hidden file and in `.git/`) |
+| S2.2 | Ignore hidden files and unknown entries | R | lint shows the rule (runtime test); runner X3 (`list` leaves out hidden files and bad names); review for `.git/` |
 | S2.3 | UTF-8, no BOM; accept CRLF; keep line endings | R | T16; lint (fixture `crlf`, BOM test) |
 | S2.4 | Root may be a link; never follow links inside; linked `policy.json` is off; linked `me.md` is absent; linked `journal.md` gets no writes | R | T3, T6; lint (symlink tests); review for `journal.md` |
 | S2.5 | User-only permissions on creation (SHOULD) | P | review |
@@ -72,9 +73,9 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | S5.3 | Unknown members ignored, never turn memory off | R | T3; lint (fixture `policy-extra-key-on`) |
 | S5.4 | Unsupported `spec` (MAJOR.MINOR before 1.0): no writes, tell the person | P | T11; lint (fixtures `policy-future-spec`, `policy-minor-spec`) |
 | S5.5 | Write `spec` when creating `policy.json` (SHOULD) | S | lint notes a missing `spec` |
-| S5.6 | Change the switch on request, even while off; keep other members | S | T12; review for kept members (planned: add an unknown member before T12) |
+| S5.6 | Change the switch on request, even while off; keep other members | S | T12; runner (extra members are kept when the switch changes) |
 | S6.1 | Proposal file name | P | lint |
-| S6.2 | Create exclusively; never overwrite | P | review (planned runner: two hosts propose in the same second) |
+| S6.2 | Create exclusively; never overwrite | P | runner (proposals in quick succession get distinct files); review for two hosts in the same second |
 | S6.3 | Front matter delimiters | P | lint |
 | S6.4 | Front matter grammar; no duplicate keys | P | lint |
 | S6.5 | Keep unknown keys | S | T16 (accept the proposal with the unknown key) |
@@ -87,7 +88,7 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | S6.12 | Proposal bodies are untrusted | R | T4, T10 |
 | S6.13 | Creation not journaled; decisions are | S | T8 (the journal is unchanged after a proposal), T13; lint warns when a decision has no entry |
 | S6.14 | Invalid proposals: never applied or rewritten; count as refused | P | T9 (hand refusal with a typo), T17 (never applied); lint (fixture `refused-again`) |
-| S6.15 | The person can edit a pending proposal; the body at acceptance is applied | S | review (planned: edit a body, then accept) |
+| S6.15 | The person can edit a pending proposal; the body at acceptance is applied | S | runner X1 (revise, then accepting applies the revised body) |
 | S7.1 | Journal entry grammar | S | lint |
 | S7.2 | No `\|` or line break in fields | S | lint |
 | S7.3 | What must be journaled; an acceptance has two entries | S | T12, T13; lint warns when a decision has no entry |
@@ -96,11 +97,11 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | S7.6 | `external edit` when noticed | S | review (no detection defined yet) |
 | S8.1 | Journal append in one write; starts with LF if needed | S | T15; lint notes a missing final line break |
 | S8.2 | Take the store lock before changing any file but the journal; remove only your own | S | T15, repeated many times |
-| S8.3 | Never remove another host's lock; wait briefly; tell the person | S | review (planned runner: leave a lock in place; the host does not write, does not remove it, and tells the person) |
+| S8.3 | Never remove another host's lock; wait briefly; tell the person | S | runner T15 (a foreign `.me.lock`: the host makes no change, leaves the lock, and names it in a notice) |
 | S8.4 | Temporary file, check the bytes again, rename | S | T15; review |
 | S8.5 | New proposals are created exclusively, with no lock | P | review (planned runner, as S6.2) |
 | S8.6 | Order of an acceptance; no double append | S | T15; review (planned runner: stop the host between steps) |
-| S8.7 | Change first, journal second; report a failed receipt | S | review (planned runner: fail the journal write) |
+| S8.7 | Change first, journal second; report a failed receipt | S | runner X4 (with `journal.md` a symbolic link, the change is made and a notice says it has no receipt) |
 | S8.8 | Ignore conflict copies, or treat them as invalid proposals; tell the person (SHOULD) | S | review |
 | S9.1 | Never claim encryption that is not there | R | review: documentation |
 

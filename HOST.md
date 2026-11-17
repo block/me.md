@@ -130,4 +130,4 @@ The main evidence is *canaries*: unique strings planted in store files. A canary
 | 17 | Invalid proposal | Steward | Add a proposal whose front matter has `status` twice, once `pending` and once `accepted`. Ask the host to accept it. The host does not apply it, and says that it is invalid. |
 | 18 | Briefing | Briefer | Ask for a briefing. It contains the five parts in [BRIEFING.md](./BRIEFING.md), including a coverage receipt, and writes nothing to the store. |
 
-[thou-lint](./tools/README.md) checks that a store a host wrote follows [STORE.md](./STORE.md). It is the first runnable tool. A conformance runner that drives a host through these tests is planned. Until it exists, this table is the review standard.
+[thou-lint](./tools/README.md) checks that a store a host wrote follows [STORE.md](./STORE.md). The [conformance runner](./conformance/runner/README.md) drives a host's code through the parts of these tests that need no model, through a test [driver](./conformance/DRIVER.md) the host ships. The parts that need a model (T4, T18, and steps of T2, T7 and T8) are still a review standard.

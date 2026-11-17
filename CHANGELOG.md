@@ -14,6 +14,14 @@ To publish a release:
 2. On GitHub’s Releases page, create the tag at that merge commit. Title the release "thou vX.Y.Z" and take the notes from the changelog entry. Publish it as a full release, not a pre-release, so that `releases/latest` shows it. Do this right after the merge: until the tag exists, the setup links do not resolve.
 3. Share the release URL.
 
+## Unreleased
+
+Nothing here changes the protocol or the store format. These are tools for testing hosts.
+
+- **A test driver interface** ([conformance/DRIVER.md](./conformance/DRIVER.md)): a few operations that a host can expose so that one runner can test any host. A host does not need a driver to conform.
+- **A conformance runner** ([conformance/runner/](./conformance/runner/README.md)): runs the parts of tests T1 to T17 that need no model against a host's driver, and checks the store the host leaves behind.
+- **thou-py** ([hosts/python/](./hosts/python/README.md)): a reference host at the Steward level that enforces the rules in its own code. It runs as a Claude Code plugin, as an MCP server for other agents, or as a driver. It makes no conformance claim.
+
 ## 0.1.0 — 2026-11-17
 
 The first tagged draft. It gives hosts and experiments a version to name. It also fixes the file formats, so that two hosts that have never met can read and write the same store the same way. That has not been tested with two real hosts yet. Some formats change from the drafts on main before this release: see [Upgrading a store from earlier drafts](#upgrading-a-store-from-earlier-drafts).
