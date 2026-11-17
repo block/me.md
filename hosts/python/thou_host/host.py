@@ -225,7 +225,9 @@ class Host:
         if not isinstance(target, str) or not formats.TARGET_RE.fullmatch(target):
             raise HostError("bad_target", "A proposal targets me.md, topics/<name>.md or projects/<name>.md "
                                           "(S6.4). It never targets watches.md (S4.2).")
-        if not isinstance(body, str) or normalize(body) == "":
+        if not isinstance(body, str):
+            raise HostError("bad_request", "A proposal needs a body: the words to keep.")
+        if normalize(body) == "":
             raise HostError("empty_body", "The proposal has no words to keep (S6.6).")
         if not isinstance(basis, str) or formats.one_line(basis) == "":
             raise HostError("bad_request", "A proposal needs a basis: why, in words the person will recognize.")
@@ -312,7 +314,9 @@ class Host:
     def revise(self, proposal, body, agent=None):
         """S6.15: the person changes a pending body. Not journaled (S6.13)."""
         self._writable()
-        if not isinstance(body, str) or normalize(body) == "":
+        if not isinstance(body, str):
+            raise HostError("bad_request", "revise needs a body: the new words.")
+        if normalize(body) == "":
             raise HostError("empty_body", "The new body has no words (S6.6).")
         rel = self._proposal_path(proposal)
         token = self._lock(agent)

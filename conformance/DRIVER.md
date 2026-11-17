@@ -29,7 +29,7 @@ A request is a JSON object with `id` and `op`, and the fields of that operation:
 {"id": 3, "op": "propose", "target": "topics/travel.md", "body": "Prefer aisle seats.", "basis": "You asked for aisle seats twice."}
 ```
 
-`id` is any JSON value. The response carries it back unchanged.
+`id` is any JSON value. The response carries it back unchanged. If the line is not a JSON object, the response has `"id": null` and the error `bad_request`.
 
 A response always has `id` and `ok`. When `ok` is `true`, the response has the fields of that operation. When `ok` is `false`, it has `error`, one of the codes below, and `message`, a sentence for the person:
 
@@ -70,7 +70,7 @@ Who the host is and what it claims. It does not touch the store.
 
 Starts the session: find the store, decide on or off, and read `me.md` ([H1.1](../HOST.md#1-mounting), [H1.5](../HOST.md#1-mounting)).
 
-Answer: `memory`, `store` (the absolute path of the store), and `files`. When `memory` is `"on"`, `files` has one item, `{"path": "me.md", "text": "…"}`. Otherwise `files` is empty.
+Answer: `memory`, `store` (the absolute path of the store), and `files`. The store root MAY be a symbolic link to a directory, and mounting follows it ([S2.4](../STORE.md#2-layout)). When `memory` is `"on"`, `files` has one item, `{"path": "me.md", "text": "…"}`. Otherwise `files` is empty.
 
 ### `list` (Reader)
 
@@ -94,7 +94,7 @@ The proposals waiting for a decision.
 
 Answer: `memory`, `proposals`, and `invalid`.
 
-- `proposals` lists each valid proposal whose `status` is `pending`: `{"id", "file", "target", "proposed-by", "proposed-at", "basis", "body"}`. The status comes only from the front matter ([S6.7](../STORE.md#body)).
+- `proposals` lists each valid proposal whose `status` is `pending`: `{"id", "file", "target", "proposed-by", "proposed-at", "basis", "body"}`. `file` is store-relative, such as `proposals/20261112T170301Z-7f3a.md`, here and in `invalid`. The status comes only from the front matter ([S6.7](../STORE.md#body)).
 - `invalid` lists each invalid file in `proposals/` ([S6.14](../STORE.md#status)): `{"file", "reason"}`.
 
 ### `propose` (Proposer)
@@ -144,7 +144,7 @@ Errors: `absent`, `memory_off`, `unsupported_spec`, `bad_path`, `not_found` (the
 
 The person deletes something ([H5.2](../HOST.md#5-revocation)).
 
-Request: `path`, and optionally `text` and `agent`. With `text`, the host removes each place where `text` fills whole lines, with their line breaks. Without `text`, it deletes the file.
+Request: `path` (the same paths as `edit`), and optionally `text` and `agent`. With `text`, the host removes each place where `text` fills whole lines, with their line breaks. Without `text`, it deletes the file.
 
 Answer: `memory`, `removed` (how many places, or 1 for a file), and `journal`. The host MUST add a notice that names what it cannot delete, such as copies the model provider kept ([H5.3](../HOST.md#5-revocation)). It MAY also delete accepted proposals that carry the same text ([S6.10](../STORE.md#status)), and journal each one.
 
