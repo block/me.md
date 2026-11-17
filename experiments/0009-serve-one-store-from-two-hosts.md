@@ -10,13 +10,13 @@ Can two unrelated agent surfaces serve the same person from the same context sto
 
 ## Setup
 
-- One synthetic context store: a spine with two operating rules, one topic file, one pending proposal, and a provenance record for each entry.
+- One synthetic context store: a `me.md` with two aims, one topic file, one pending proposal, and a provenance record for each entry.
 - Two hosts that share no code and no runtime. Candidates: a GUI agent application and a plain CLI harness; or any conforming pair. At least one host must not be the reference implementation.
 - No network coordination between hosts. The store is the only shared surface.
 
 ## Procedure
 
-1. **Mount both.** Each host reads the same store. Verify both recall the spine rules and neither errors on the other's presence.
+1. **Mount both.** Each host reads the same store. Verify both recall the `me.md` content and neither errors on the other's presence.
 2. **Absence and off.** Remove the store for host A: it must work normally. Re-add and disable via policy: both hosts must stop recalling, proposing, and surfacing memory tooling.
 3. **Cross-host proposal.** In host A, have an agent propose a durable entry. In host B, inspect and accept it. Verify the entry becomes canonical, is recalled by host A in a fresh session, and carries attribution naming host A's agent as origin and the person's decision in host B as authority.
 4. **Cross-host revocation.** In host B, delete the accepted entry. Verify host A does not recall or resurrect it in any later session.
