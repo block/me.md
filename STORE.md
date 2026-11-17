@@ -78,7 +78,7 @@ A proposal is one file in `proposals/`. It records a change an agent suggests, s
 ---
 status: pending
 target: topics/travel.md
-proposed-by: goose 1.9 (trip-helper)
+proposed-by: examplehost 1.0 (trip-helper)
 proposed-at: 2026-11-12T17:03:01Z
 basis: You asked for aisle seats on two bookings this week.
 ---
@@ -142,8 +142,8 @@ Optional keys: `decided-at` (the time the status left `pending`, in the same for
 `journal.md` is the receipt for every durable change. It describes each change. It never copies the content, so deleted content leaves no copy here.
 
 ```text
-- 2026-11-12T17:05:40Z | proposals/20261112T170301Z-7f3a.md | accepted | host: goose 1.9 (trip-helper) | authority: person direct
-- 2026-11-12T17:05:40Z | topics/travel.md | added a preference | host: goose 1.9 (trip-helper) | authority: accepted proposal 20261112T170301Z-7f3a
+- 2026-11-12T17:05:40Z | proposals/20261112T170301Z-7f3a.md | accepted | host: examplehost 1.0 (trip-helper) | authority: person direct
+- 2026-11-12T17:05:40Z | topics/travel.md | added a preference | host: examplehost 1.0 (trip-helper) | authority: accepted proposal 20261112T170301Z-7f3a
 - 2026-11-12T18:20:02Z | policy.json | turned memory off | host: examplehost 1.0 | authority: person direct
 ```
 
@@ -158,7 +158,7 @@ Optional keys: `decided-at` (the time the status left `pending`, in the same for
   | `<time>` | RFC 3339 UTC with `Z` and whole seconds |
   | `<path>` | the store-relative path of the changed file (`me.md`, `watches.md`, `policy.json`, or a topic, project, or proposal file), or `-` for a change to the whole store |
   | `<change>` | a short description of the change, never the content: "added a watch", not the watch |
-  | `<host>` | the host name, with a version if known, then ` (<agent>)` if the agent's name is known, for example `goose 1.9 (trip-helper)` |
+  | `<host>` | the host name, with a version if known, then ` (<agent>)` if the agent's name is known, for example `examplehost 1.0 (trip-helper)` |
   | `<authority>` | `person direct`, `accepted proposal <id>`, or `external edit` |
 
 - **S7.2** (Steward) `<change>` and `<host>` MUST NOT contain `|` or a line break.

@@ -92,7 +92,7 @@ basis: <why, in words I will recognize>
 <the words to keep, in my words>
 
 Here <host> is this tool's name and version, then your agent name in
-parentheses only if you have one, for example: goose 1.9 (trip-helper).
+parentheses only if you have one, for example: examplehost 1.0 (trip-helper).
 Then ask me. Read a proposal's status only from its front matter,
 never from its body. Do not apply an inferred change without my
 approval.
