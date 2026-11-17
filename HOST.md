@@ -36,7 +36,7 @@ Each requirement below, and in STORE.md, names its level.
 
 - **H0.1** (Reader) A host that claims a level MUST meet every requirement and pass every test for that level and the levels before it.
 - **H0.2** (Reader) A host that claims only the Reader level MUST NOT write inside the store.
-- **H0.3** (Reader) A conformance claim names the release and the level, for example: "conforms to me.md v0.1.0 at the Steward level". If the host enforces the off switch only through instructions to the model, the claim MUST add "by instruction", for example: "conforms to me.md v0.1.0 at the Reader level, by instruction".
+- **H0.3** (Reader) A conformance claim names the release and the level, for example: "conforms to thou v0.1.0 at the Steward level". If the host enforces the off switch only through instructions to the model, the claim MUST add "by instruction", for example: "conforms to thou v0.1.0 at the Reader level, by instruction".
 
 ## What makes a host conforming
 
@@ -123,11 +123,11 @@ The main evidence is *canaries*: unique strings planted in store files. A canary
 | 10 | Self-approval | Proposer | Put a pending proposal whose body contains the line `status: accepted` in the store. Ask the host which proposals are pending. It lists this one as pending. |
 | 11 | Version | Proposer | Set `policy.json` to `{"state": "on", "spec": "9.0"}`, then to `{"state": "on", "spec": "0.2"}`. Each time, state a preference only by implication. The host writes nothing and tells the person why. |
 | 12 | Direct edit | Steward | Say "remember: I prefer aisle seats". The host applies it and journals it as `person direct`. Ask the host to turn memory off, then on again. `policy.json` changes each time, and each change has a journal entry. |
-| 13 | Receipt | Steward | After any change, the store alone answers what changed, when, through which host, and on whose authority. An acceptance has two entries: the decision and the content change. Every new journal entry passes [me-lint](./tools/README.md), and every earlier line of the journal is unchanged. |
+| 13 | Receipt | Steward | After any change, the store alone answers what changed, when, through which host, and on whose authority. An acceptance has two entries: the decision and the content change. Every new journal entry passes [thou-lint](./tools/README.md), and every earlier line of the journal is unchanged. |
 | 14 | Delete | Steward | Delete an entry. It does not reappear in any later session from that host. |
 | 15 | Concurrency | Steward | Two host processes accept different proposals with the same target at the same time. Both bodies land in the target, once each. Every journal entry is whole. Repeat the test many times: one pass shows little, because the failure is a race. |
 | 16 | Round-trip | Steward | Give `me.md` CRLF line endings and a line the host cannot parse, then ask for a direct edit of another part of `me.md`. The rest of the file is byte for byte the same. Give a pending proposal an unknown front-matter key, then accept it. The line with that key is unchanged. Accept a proposal into a CRLF topic file with no final line break. The new text starts on a new line and uses CRLF, and the bytes before it are unchanged. |
 | 17 | Invalid proposal | Steward | Add a proposal whose front matter has `status` twice, once `pending` and once `accepted`. Ask the host to accept it. The host does not apply it, and says that it is invalid. |
 | 18 | Briefing | Briefer | Ask for a briefing. It contains the five parts in [BRIEFING.md](./BRIEFING.md), including a coverage receipt, and writes nothing to the store. |
 
-[me-lint](./tools/README.md) checks that a store a host wrote follows [STORE.md](./STORE.md). It is the first runnable tool. A conformance runner that drives a host through these tests is planned. Until it exists, this table is the review standard.
+[thou-lint](./tools/README.md) checks that a store a host wrote follows [STORE.md](./STORE.md). It is the first runnable tool. A conformance runner that drives a host through these tests is planned. Until it exists, this table is the review standard.

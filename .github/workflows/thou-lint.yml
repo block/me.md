@@ -1,4 +1,4 @@
-name: me-lint
+name: thou-lint
 
 on:
   pull_request:
@@ -6,14 +6,14 @@ on:
       - "*.md"
       - "tools/**"
       - "conformance/**"
-      - ".github/workflows/me-lint.yml"
+      - ".github/workflows/thou-lint.yml"
   push:
     branches: [main]
     paths:
       - "*.md"
       - "tools/**"
       - "conformance/**"
-      - ".github/workflows/me-lint.yml"
+      - ".github/workflows/thou-lint.yml"
 
 permissions:
   contents: read
@@ -41,4 +41,4 @@ jobs:
       - name: Unit tests and conformance fixtures
         run: python -m unittest discover -s tools -p 'test_*.py'
       - name: Lint the valid-full fixture
-        run: python tools/me_lint.py conformance/fixtures/valid-full/store
+        run: python tools/thou_lint.py conformance/fixtures/valid-full/store

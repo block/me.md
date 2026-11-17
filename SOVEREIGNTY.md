@@ -1,10 +1,12 @@
-# The me.md sovereignty contract
+# The thou sovereignty contract
 
 **Status:** Normative draft. These are the commitments to the person, in plain language. Every other document must keep them. [HOST.md](./HOST.md), [STORE.md](./STORE.md), and [BRIEFING.md](./BRIEFING.md) turn them into testable requirements, and [conformance/TRACEABILITY.md](./conformance/TRACEABILITY.md) shows which requirement and test carries each one. If a requirement seems to break a commitment, the requirement is wrong and gets fixed. The open questions are in [What remains under test](#what-remains-under-test).
 
-`me.md` is experimental. Its storage layout and implementation details will change as we learn. Each release fixes them for that release.
+In 1923 Martin Buber wrote that we can meet another being as a *Thou*, a whole person, or treat them as an *It*, a thing to know about and use ([Stanford Encyclopedia of Philosophy, "Martin Buber"](https://plato.stanford.edu/entries/buber/)). Agent memory is often an It relation: a profile inferred about you, kept by someone else, on their terms. Software can't meet you the way a person can. What the thou protocol changes is the record: what an agent keeps about you is what you agreed to, in words you can read, in files you own. The [README](./README.md#it-or-thou) sets the two side by side.
 
-These commitments are different. They are the conditions under which a personal context system remains meaningfully user-owned. An implementation should be able to explain how it preserves them before claiming compatibility with `me.md`.
+The thou protocol is experimental. Its storage layout and implementation details will change as we learn. Each release fixes them for that release.
+
+These commitments are different. They are the conditions under which a personal context system remains meaningfully user-owned. An implementation should be able to explain how it preserves them before claiming compatibility with the thou protocol.
 
 ## The person is the authority
 
@@ -46,7 +48,7 @@ Stored context may narrow what an agent is allowed to do—for example, by recor
 
 ## Revocation is real
 
-Turning context off must stop its use at the enforcement layer, not merely ask the agent to ignore it. A host that serves the store only through instructions to a model cannot promise this. It must say so in its conformance claim and its documentation ([HOST.md H0.3 and H6.4](./HOST.md#6-security-posture)).
+Turning context off must stop its use at the enforcement layer, not merely ask the agent to ignore it. A host that serves the store only through instructions to a model cannot promise this. It must say so in its conformance claim and its documentation ([HOST.md H0.3](./HOST.md#conformance-levels) and [H6.4](./HOST.md#6-security-posture)).
 
 Forgetting must remove context from active recall. Deletion must have a clear meaning, including how history, indexes, caches, proposals, backups, and projections are handled. An implementation must not describe something as deleted while continuing to use a retained copy.
 

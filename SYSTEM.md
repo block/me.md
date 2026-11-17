@@ -4,9 +4,9 @@
 
 Organizations are replacing coordination layers with intelligence systems. A world model can know the state of the organization, but it does not automatically know the state of the person. Without a personal layer, intelligence routes around the human instead of through them.
 
-`me.md` is that personal layer: a portable model of the person — identity, aims, sources, workstreams, people, watches, memory policy, and operating rules — that turns raw organizational activity into a person-shaped read: what moved, where the pull is, what is missing, and what to do next.
+The thou protocol is the contract for that personal layer. In v0.1 it defines a store of the person's own words, a proposal queue, a journal, and an on/off switch. A briefing turns raw activity into a person-shaped read: what moved, where the pull is, what is missing, and what to do next.
 
-To do that trustworthily, `me.md` does not need to standardize an entire agent product.
+To do that trustworthily, the protocol does not need to standardize an entire agent product.
 
 A useful application may include agents, source connectors, ranking, watches, feedback, actions, and presentation. The protocol's job is to make the person's authority and the movement of their context clear across those pieces.
 
@@ -223,9 +223,9 @@ A projection is never the canonical source of truth.
 | State class | Typical examples | Default ownership and portability |
 | --- | --- | --- |
 | Canonical context | Preferences, boundaries, topic facts, project context | User-owned; portable only within chosen scope |
-| Policy and authorization | Enabled state, audiences, capability limits | User-governed; may remain local to an implementation |
+| Policy and authorization | Enabled state (v0.1); audiences and capability limits (not defined in v0.1) | User-governed; may remain local to an implementation |
 | Proposals and decisions | Candidate expressions, acceptance, dismissal | Private; proposals inactive until admitted |
-| Intents | Watches (core, in `me.md`); declared priorities and stop conditions | User-owned; the richer intent model is an optional extension |
+| Intents | Watches (core, in `watches.md`); declared priorities and stop conditions | User-owned; the richer intent model is an optional extension |
 | Outcome events | Acted, dismissed, deferred, correction, useful/noisy | Private optional extension; not automatically memory |
 | External evidence | Calendar data, documents, code, messages | Source-governed; minimize persistence |
 | Derived state | Indexes, scores, summaries, patterns, caches | Local-private and rebuildable by default |

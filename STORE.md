@@ -18,7 +18,7 @@ Each requirement has an identifier, for example **S2.1**, and the lowest [confor
 ```text
 ~/.me/
   me.md          read at every session start: aims and durable context
-  watches.md     standing questions: read only for a briefing
+  watches.md     standing questions: read only for a briefing, or when asked
   topics/        one file per topic: read only when relevant
   projects/      one file per project: read only for that project
   proposals/     one file per proposal
@@ -29,7 +29,7 @@ Each requirement has an identifier, for example **S2.1**, and the lowest [confor
 - **S2.1** (Reader) Entry names in `topics/` and `projects/` match `[a-z0-9][a-z0-9._-]*\.md`, with at most 64 characters before `.md`. Names in `proposals/` follow [S6.1](#file-name). A file in `proposals/` whose name ends in `.md` but breaks S6.1 is an invalid proposal ([S6.14](#status)). A host MUST ignore other names: it does not read them and does not reject the store. A host SHOULD tell the person when it ignores a file because of its name, for example `Travel.md`.
 - **S2.2** (Reader) A host MUST ignore hidden files (names that start with `.`) and unknown top-level entries, including `.git/`. It MUST NOT read them for recall.
 - **S2.3** (Reader) Files are UTF-8 without a byte order mark. A host MUST accept CRLF line endings on read. When it writes a file, it MUST keep the file's line endings. New files use LF.
-- **S2.4** (Reader) The store root MAY be a symbolic link. Inside the store, a host MUST NOT follow a symbolic link. It treats a link as if no file were there, with two exceptions:
+- **S2.4** (Reader) The store root MAY be a symbolic link. Inside the store, a host MUST NOT follow a symbolic link. It treats a link as if no file were there, with three exceptions:
   - If `policy.json` is a link, memory is off.
   - If `me.md` is a link, the store is absent. The host SHOULD tell the person why, and that a link to the whole store works.
   - If `journal.md` is a link, a host does not append to it or replace it. Each change it makes is then a change without a receipt ([S8.7](#8-writing-safely)).
@@ -66,7 +66,7 @@ The file exists only after the person adds a first watch.
 - **S5.3** (Reader) A host MUST ignore members it does not know. An unknown member MUST NOT turn memory off.
 - **S5.4** (Proposer) `spec` is optional. It names the version of this format that the store follows, as a string `MAJOR.MINOR` made of digits, for example `"0.1"`. A missing `spec` means `0.1`. Any other value is a version no host supports. Before version 1.0, each minor version is a different format, so a v0.1 host supports only `"0.1"`. If `spec` names a version that the host does not support, the host MUST NOT write to the store, except to turn memory off ([S5.6](#5-policyjson)). It MUST tell the person why. It MAY still read.
 - **S5.5** (Steward) A host that creates `policy.json` SHOULD write `spec`.
-- **S5.6** (Steward) The person can change the switch at any time, including while memory is off. At the person's request, a host MUST write `policy.json` and append the journal entry for that change, even when memory is off. While memory is off, it reads and writes nothing else in the store, except the store lock ([S8.2](#8-writing-safely)). When it writes `policy.json`, it changes only `state` and keeps every other member and its value. It MAY change the file's spacing and member order. This is an exception to [S2.6](#2-layout). If the file is not a valid JSON object, the host replaces it.
+- **S5.6** (Steward) The person can change the switch at any time, including while memory is off. At the person's request, a host MUST write `policy.json` and append the journal entry for that change, even when memory is off. While memory is off, it reads and writes nothing else in the store, except the store lock ([S8.2](#8-writing-safely)) and `journal.md`, to append that entry. When it writes `policy.json`, it changes only `state` and keeps every other member and its value. It MAY change the file's spacing and member order. This is an exception to [S2.6](#2-layout). If the file is not a valid JSON object, the host replaces it.
 
 `policy.json` is a request that cooperative hosts honor. It is not access control. See [HOST.md §6](./HOST.md#6-security-posture).
 
@@ -78,7 +78,7 @@ A proposal is one file in `proposals/`. It records a change an agent suggests, s
 ---
 status: pending
 target: topics/travel.md
-proposed-by: goose 1.9 (trip-helper)
+proposed-by: examplehost 1.0 (trip-helper)
 proposed-at: 2026-11-12T17:03:01Z
 basis: You asked for aisle seats on two bookings this week.
 ---
@@ -142,9 +142,9 @@ Optional keys: `decided-at` (the time the status left `pending`, in the same for
 `journal.md` is the receipt for every durable change. It describes each change. It never copies the content, so deleted content leaves no copy here.
 
 ```text
-- 2026-11-12T17:05:40Z | proposals/20261112T170301Z-7f3a.md | accepted | host: goose 1.9 (trip-helper) | authority: person direct
-- 2026-11-12T17:05:40Z | topics/travel.md | added a preference | host: goose 1.9 (trip-helper) | authority: accepted proposal 20261112T170301Z-7f3a
-- 2026-11-12T18:20:02Z | policy.json | turned memory off | host: buzz-me 0.1 | authority: person direct
+- 2026-11-12T17:05:40Z | proposals/20261112T170301Z-7f3a.md | accepted | host: examplehost 1.0 (trip-helper) | authority: person direct
+- 2026-11-12T17:05:40Z | topics/travel.md | added a preference | host: examplehost 1.0 (trip-helper) | authority: accepted proposal 20261112T170301Z-7f3a
+- 2026-11-12T18:20:02Z | policy.json | turned memory off | host: examplehost 1.0 | authority: person direct
 ```
 
 - **S7.1** (Steward) Each entry is one line, with five fields separated by ` | `:
@@ -158,7 +158,7 @@ Optional keys: `decided-at` (the time the status left `pending`, in the same for
   | `<time>` | RFC 3339 UTC with `Z` and whole seconds |
   | `<path>` | the store-relative path of the changed file (`me.md`, `watches.md`, `policy.json`, or a topic, project, or proposal file), or `-` for a change to the whole store |
   | `<change>` | a short description of the change, never the content: "added a watch", not the watch |
-  | `<host>` | the host name, with a version if known, then ` (<agent>)` if the agent's name is known, for example `goose 1.9 (trip-helper)` |
+  | `<host>` | the host name, with a version if known, then ` (<agent>)` if the agent's name is known, for example `examplehost 1.0 (trip-helper)` |
   | `<authority>` | `person direct`, `accepted proposal <id>`, or `external edit` |
 
 - **S7.2** (Steward) `<change>` and `<host>` MUST NOT contain `|` or a line break.
@@ -211,4 +211,4 @@ Two hosts can serve one store at the same time. These rules keep one host from l
 - encrypted ("sealed") files;
 - signed decisions.
 
-[me-lint](./tools/README.md) checks a store against this format. It checks files, not host behavior. The behavior tests are in [HOST.md](./HOST.md#black-box-conformance).
+[thou-lint](./tools/README.md) checks a store against this format. It checks files, not host behavior. The behavior tests are in [HOST.md](./HOST.md#black-box-conformance).

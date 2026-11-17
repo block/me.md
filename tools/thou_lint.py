@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""me-lint: a static validator for a me.md v0.1 store (STORE.md).
+"""thou-lint: a static validator for a thou v0.1 store (STORE.md).
 
 It checks that the files in a store follow the v0.1 format. It is not a host.
 It never writes, never follows symlinks inside the store, and never reads
 `.git/` or unknown top-level entries. Standard library only.
 
-Usage: python3 me_lint.py <store-dir> [--json]
+Usage: python3 thou_lint.py <store-dir> [--json]
 Exit:  0 no errors, 1 errors found, 2 usage error.
 """
 
@@ -442,18 +442,18 @@ def render(rep):
     for label, bucket in (("ERROR", rep.errors), ("WARN", rep.warnings), ("NOTE", rep.notes)):
         lines.extend("%s %s: %s" % (label, f["path"], f["message"]) for f in bucket)
     if rep.present:
-        lines.append("me-lint: policy %s, %d error(s), %d warning(s)"
+        lines.append("thou-lint: policy %s, %d error(s), %d warning(s)"
                      % (rep.policy["state"], len(rep.errors), len(rep.warnings)))
     return lines
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Validate a me.md v0.1 store (static; not a host).")
+    parser = argparse.ArgumentParser(description="Validate a thou v0.1 store (static; not a host).")
     parser.add_argument("store", help="path to the store directory (the ME_HOME or ~/.me directory)")
     parser.add_argument("--json", action="store_true", help="print a JSON report")
     args = parser.parse_args(argv)
     if not os.path.isdir(args.store):
-        print("me-lint: not a directory: %s" % args.store, file=sys.stderr)
+        print("thou-lint: not a directory: %s" % args.store, file=sys.stderr)
         return 2
     rep = lint(args.store)
     if args.json:

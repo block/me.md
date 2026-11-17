@@ -6,7 +6,7 @@ The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RE
 
 Each requirement has an identifier, for example **B2**. All of them are at the Briefer level. [conformance/TRACEABILITY.md](./conformance/TRACEABILITY.md) maps each one to its evidence.
 
-The reason `me.md` exists is to help a person keep up with agents. The briefing is how. It turns everything that moved into a person-shaped read: **what moved, where the pull is, what is missing, and what to do next.**
+The reason the thou protocol exists is to help a person keep up with agents. The briefing is how. It turns everything that moved into a person-shaped read: **what moved, where the pull is, what is missing, and what to do next.**
 
 Memory makes the briefing possible. The briefing is what memory is for.
 
@@ -75,5 +75,5 @@ Every briefing ends with what was read, what was unavailable, and a confidence s
 - **The feed:** reporting everything that happened instead of what matters to this person. Volume is the problem the briefing exists to solve.
 - **The manager:** converting the read into assignments, scores, or completion tracking.
 - **The inference engine:** deriving aims and watches from behavior instead of taking them from the person.
-- **The confident blank:** presenting a shallow scan as a complete read. The coverage receipt exists to make this impossible.
+- **The confident blank:** presenting a shallow scan as a complete read. The coverage receipt exists to show what was not read.
 - **Silent memory:** letting briefing observations leak into durable context without the proposal path.
