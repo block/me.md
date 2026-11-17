@@ -1,0 +1,7 @@
+{
+  "name": "thou",
+  "version": "0.1.0",
+  "description": "Serve your thou store (~/.me, or $ME_HOME) in Claude Code: me.md at every session start, the off switch and the write rules enforced in code.",
+  "license": "Apache-2.0",
+  "repository": "https://github.com/block/thou"
+}

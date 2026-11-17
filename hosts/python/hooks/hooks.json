@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/thou_hooks.py\" session-start", "timeout": 10 }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Read|Write|Edit|MultiEdit|NotebookEdit|NotebookRead|Glob|Grep|LS|Bash",
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/thou_hooks.py\" pre-tool-use", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}
