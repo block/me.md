@@ -21,6 +21,8 @@ Nothing here changes the protocol or the store format. These are tools for testi
 - **A test driver interface** ([conformance/DRIVER.md](./conformance/DRIVER.md)): a few operations that a host can expose so that one runner can test any host. A host does not need a driver to conform.
 - **A conformance runner** ([conformance/runner/](./conformance/runner/README.md)): runs the parts of tests T1 to T17 that need no model against a host's driver, and checks the store the host leaves behind.
 - **thou-py** ([hosts/python/](./hosts/python/README.md)): a reference host at the Steward level that enforces the rules in its own code. It runs as a Claude Code plugin, as an MCP server for other agents, or as a driver. It makes no conformance claim.
+- **nodehost** ([hosts/node/](./hosts/node/README.md)): a second host, written from the spec alone. [SPEC_NOTES.md](./hosts/node/SPEC_NOTES.md) lists the places where the spec was unclear.
+- **Experiment 0009, first findings** ([experiments/0009](./experiments/0009-serve-one-store-from-two-hosts.md)): both hosts served one store. Forgetting forced a choice that the spec leaves open.
 
 ## 0.1.0 — 2026-11-17
 

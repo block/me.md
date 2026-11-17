@@ -95,7 +95,7 @@ The protocol is an experimental draft, and some of what it is for is not proven 
 - A proposal can only add text. It cannot change or remove a line. Edits you make by hand are not detected.
 - Syncing between devices, undo and encrypted files are not defined yet, and the store lock does not protect a sync folder. Whether Markdown is the right format is still under test. [STORE.md](./STORE.md#what-this-version-does-not-define) lists what the format does not define yet, and [SOVEREIGNTY.md](./SOVEREIGNTY.md#what-remains-under-test) lists the open questions.
 - The [conformance runner](./conformance/runner/README.md) checks what a host's code does, not what a model does with what it reads. Injection (T4), briefings (T18) and choosing what to recall still need an agent, so those tests in [HOST.md](./HOST.md#black-box-conformance) are a review standard.
-- The central test of portability has not been run yet: [two agents that have never met, serving the same store](./experiments/0009-serve-one-store-from-two-hosts.md). It is a proposed experiment.
+- The central test of portability has been run only in part: [two hosts that share no code, serving the same store](./experiments/0009-serve-one-store-from-two-hosts.md). Their code passed, and it showed a choice about forgetting that the spec leaves open. It has not been run with two agents.
 
 ## Where your files go
 

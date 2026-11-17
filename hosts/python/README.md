@@ -74,6 +74,6 @@ thou-py can't make these happen in code. They rest on the model, guided by the t
 
 - **Unit tests:** `python3 -m unittest discover -s hosts/python/tests -p 'test_*.py'`. They use temporary stores only.
 - **Model-level checks with Claude Code:** `python3 hosts/python/tests/claude_code_e2e.py`. This file is opt-in. It calls a model, so CI doesn't run it. It runs a real Claude Code session with this plugin on a temporary store, for the parts of tests T2, T3, T4, T7 and T8 that need a model. The results are in [experiment 0009](../../experiments/0009-serve-one-store-from-two-hosts.md).
-- **The conformance runner:** see [experiment 0009](../../experiments/0009-serve-one-store-from-two-hosts.md).
+- **The conformance runner:** every test it can run, alone and with nodehost as the second host. T4 and T18 need a model. See [experiment 0009](../../experiments/0009-serve-one-store-from-two-hosts.md#findings).
 
 Passing these does not make a conformance claim. A claim needs every test for the level, including the review items in [TRACEABILITY.md](../../conformance/TRACEABILITY.md).
