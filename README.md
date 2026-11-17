@@ -33,7 +33,7 @@ An agent notices something and can only ask. It writes a proposal in `~/.me/prop
 ---
 status: pending
 target: topics/travel.md
-proposed-by: goose 1.9 (trip-helper)
+proposed-by: examplehost 1.0 (trip-helper)
 proposed-at: 2026-11-12T17:03:01Z
 basis: You asked for aisle seats on two bookings this week.
 ---
@@ -44,8 +44,8 @@ Prefer aisle seats when booking flights.
 You accept it, in any agent that serves the store. The acceptance leaves two lines in `~/.me/journal.md`, your decision and the change:
 
 ```text
-- 2026-11-12T17:05:40Z | proposals/20261112T170301Z-7f3a.md | accepted | host: goose 1.9 (trip-helper) | authority: person direct
-- 2026-11-12T17:05:40Z | topics/travel.md | added a preference | host: goose 1.9 (trip-helper) | authority: accepted proposal 20261112T170301Z-7f3a
+- 2026-11-12T17:05:40Z | proposals/20261112T170301Z-7f3a.md | accepted | host: examplehost 1.0 (trip-helper) | authority: person direct
+- 2026-11-12T17:05:40Z | topics/travel.md | added a preference | host: examplehost 1.0 (trip-helper) | authority: accepted proposal 20261112T170301Z-7f3a
 ```
 
 Refuse it instead, and no agent that follows the protocol proposes those words again. Write `{"state": "off"}` in `~/.me/policy.json`, and every one of them stops using the store.
