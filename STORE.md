@@ -29,7 +29,7 @@ Each requirement has an identifier, for example **S2.1**, and the lowest [confor
 - **S2.1** (Reader) Entry names in `topics/` and `projects/` match `[a-z0-9][a-z0-9._-]*\.md`, with at most 64 characters before `.md`. Names in `proposals/` follow [S6.1](#file-name). A file in `proposals/` whose name ends in `.md` but breaks S6.1 is an invalid proposal ([S6.14](#status)). A host MUST ignore other names: it does not read them and does not reject the store. A host SHOULD tell the person when it ignores a file because of its name, for example `Travel.md`.
 - **S2.2** (Reader) A host MUST ignore hidden files (names that start with `.`) and unknown top-level entries, including `.git/`. It MUST NOT read them for recall.
 - **S2.3** (Reader) Files are UTF-8 without a byte order mark. A host MUST accept CRLF line endings on read. When it writes a file, it MUST keep the file's line endings. New files use LF.
-- **S2.4** (Reader) The store root MAY be a symbolic link. Inside the store, a host MUST NOT follow a symbolic link. It treats a link as if no file were there, with two exceptions:
+- **S2.4** (Reader) The store root MAY be a symbolic link. Inside the store, a host MUST NOT follow a symbolic link. It treats a link as if no file were there, with three exceptions:
   - If `policy.json` is a link, memory is off.
   - If `me.md` is a link, the store is absent. The host SHOULD tell the person why, and that a link to the whole store works.
   - If `journal.md` is a link, a host does not append to it or replace it. Each change it makes is then a change without a receipt ([S8.7](#8-writing-safely)).
@@ -144,7 +144,7 @@ Optional keys: `decided-at` (the time the status left `pending`, in the same for
 ```text
 - 2026-11-12T17:05:40Z | proposals/20261112T170301Z-7f3a.md | accepted | host: goose 1.9 (trip-helper) | authority: person direct
 - 2026-11-12T17:05:40Z | topics/travel.md | added a preference | host: goose 1.9 (trip-helper) | authority: accepted proposal 20261112T170301Z-7f3a
-- 2026-11-12T18:20:02Z | policy.json | turned memory off | host: buzz-me 0.1 | authority: person direct
+- 2026-11-12T18:20:02Z | policy.json | turned memory off | host: examplehost 1.0 | authority: person direct
 ```
 
 - **S7.1** (Steward) Each entry is one line, with five fields separated by ` | `:

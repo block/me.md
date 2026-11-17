@@ -1,6 +1,6 @@
 # Changelog
 
-Each release is a tag of the form `vX.Y.Z`. A host that claims conformance names the release it follows, for example "conforms to thou v0.1.0". Until version 1.0, any release can change the normative drafts.
+Each release is a tag of the form `vX.Y.Z`. A host that claims conformance names the release and the level, for example "conforms to thou v0.1.0 at the Steward level". Until version 1.0, any release can change the normative drafts.
 
 Each release lists changes for the person and for hosts. Read a release against the documents at its tag, not the changing main branch.
 
