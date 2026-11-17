@@ -2,7 +2,9 @@
 
 **Agents that turn toward you.**
 
-You say me. Your agents say thou.
+Your file says me. Your agents say thou.
+
+<p align="center"><img src="./assets/before-after.png" width="420" alt="A square field of small pointed marks, split down the middle by a blue line. On the right, before, the marks are grey and point every which way. On the left, after, they are black and all point toward one spot on the line, and the marks nearest it are blue."></p>
 
 Every agent you use is starting to remember you. Each one keeps what it learns in its own place, in its own format, under its own rules. There is no one place where you can read all of it, carry it to the next agent, or turn it all off. Some of it is not something you said. It was inferred about you, and it is kept on someone else's terms.
 
