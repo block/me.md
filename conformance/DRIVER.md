@@ -103,7 +103,7 @@ The agent suggests a change ([H3.1–H3.3](../HOST.md#3-writing)).
 
 Request: `target`, `body`, `basis`, and optionally `agent`, the agent's name for the `proposed-by` field.
 
-Answer: `memory`, `id`, and `file`, the store-relative path of the new proposal.
+Answer: `memory`, `proposal` (the new proposal's id), and `file`, the store-relative path of the new proposal. The field is `proposal`, not `id`, because `id` is the request's.
 
 Errors: `absent`, `memory_off`, `unsupported_spec`, `refused` (the normalized body equals a refused or invalid proposal's body, [S6.11](../STORE.md#status)), `bad_target`, `empty_body`.
 
@@ -115,7 +115,7 @@ Request: `proposal` (the id), `decision` (`"accept"` or `"refuse"`), and optiona
 
 Answer: `memory`, `status` (`"accepted"` or `"refused"`), `applied` (`"added"`, `"already"` when the body was already at the end of the target, or `null` for a refusal), and `journal`, the lines the host appended to `journal.md`, without their final line break.
 
-Errors: `absent`, `memory_off`, `unsupported_spec`, `not_found`, `invalid_proposal`, `not_pending`, `locked`.
+Errors: `absent`, `memory_off`, `unsupported_spec`, `not_found`, `invalid_proposal`, `not_pending`, `bad_target` (the target is a symbolic link or not a regular file, so the host will not write it), `locked`.
 
 ### `revise` (Steward)
 
@@ -168,7 +168,7 @@ Errors: `absent` (the host does not create a store, [S1.3](../STORE.md#1-locatio
 | `memory_off` | Memory is off. The host wrote nothing. |
 | `unsupported_spec` | `policy.json` names a `spec` the host does not support. The host wrote nothing. |
 | `refused` | The person refused this body before. |
-| `bad_target` | The target is not `me.md`, `topics/<name>.md` or `projects/<name>.md`. |
+| `bad_target` | The target is not `me.md`, `topics/<name>.md` or `projects/<name>.md`, or, for `decide`, it is a symbolic link or not a regular file. |
 | `bad_path` | The path is not one this operation may change. |
 | `empty_body` | The body is empty after normalization. |
 | `not_found` | No such proposal or file. |
