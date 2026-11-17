@@ -32,12 +32,14 @@ _OPS = {
 def handle(host, line):
     try:
         request = json.loads(line)
-    except ValueError:
+        json.dumps(request, ensure_ascii=False).encode("utf-8")  # rejects lone surrogates
+    except (ValueError, RecursionError):
         return {"id": None, "ok": False, "error": "bad_request", "message": "The request is not JSON."}
     if not isinstance(request, dict):
         return {"id": None, "ok": False, "error": "bad_request", "message": "The request is not a JSON object."}
     rid = request.get("id")
-    op = _OPS.get(request.get("op"))
+    name = request.get("op")
+    op = _OPS.get(name) if isinstance(name, str) else None
     if op is None:
         return {"id": rid, "ok": False, "error": "unsupported_op", "message": "thou-py does not support %r."
                 % (request.get("op"),)}
@@ -48,6 +50,8 @@ def handle(host, line):
         if exc.notices:
             out["notices"] = exc.notices
         return out
+    except OSError as exc:
+        return {"id": rid, "ok": False, "error": "io_error", "message": "A file operation failed: %s." % exc}
     out = {"id": rid, "ok": True}
     out.update({k: v for k, v in answer.items() if not (k == "notices" and not v)})
     return out

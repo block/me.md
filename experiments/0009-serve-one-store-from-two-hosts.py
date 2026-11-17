@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Experiment 0009, steps 1 to 5: two hosts serve one store, through their conformance drivers.
 
-  python3 experiments/0009-two-hosts.py --a "<driver command>" --b "<driver command>" [--keep]
+  python3 experiments/0009-serve-one-store-from-two-hosts.py --a "<driver command>" --b "<driver command>" [--keep]
 
 Each host runs as its own process, one per session, on one temporary store.
 The store is the only thing they share. Prints a Markdown record of each step.
@@ -136,8 +136,12 @@ def main():
         s.close()
         with open(os.path.join(store, "proposals", pid + ".md")) as handle:
             proposal_file = handle.read()
-        step("3. A's proposal is accepted in B and recalled by A in a new session",
-             pid in listed and decided.get("ok") and "CANARY-PROPOSAL" in json.dumps(recalled),
+        fields = dict(line.split(": ", 1) for line in proposal_file.split("---")[1].strip().splitlines())
+        attributed = (names[0]["name"] in fields.get("proposed-by", "")
+                      and names[1]["name"] in fields.get("decided-via", ""))
+        step("3. A's proposal is accepted in B, recalled by A in a new session, and names A as origin and B as "
+             "where it was decided",
+             pid in listed and decided.get("ok") and "CANARY-PROPOSAL" in json.dumps(recalled) and attributed,
              {"proposal file": proposal_file, "B journal": decided.get("journal")})
 
         # 4. B forgets it; A does not bring it back.
@@ -151,13 +155,30 @@ def main():
         step("4. B forgets the entry; A never recalls it again",
              forgot.get("ok") and "CANARY-PROPOSAL" not in json.dumps(later),
              {"B forget": {k: forgot.get(k) for k in ("removed", "journal", "notices")}})
+        left = [os.path.relpath(os.path.join(folder, name), store)
+                for folder, _, files in os.walk(store) for name in files
+                if "CANARY-PROPOSAL" in open(os.path.join(folder, name), errors="replace").read()]
+        step("4b. After the forget, the forgotten words are gone from the store", not left,
+             {"files that still hold the words": left})
 
-        # 5. The store alone tells the story.
+        # 5. The store alone tells the story: proposed by whom, accepted where, deleted when.
         with open(os.path.join(store, "journal.md")) as handle:
             journal = handle.read()
-        kept = os.path.exists(os.path.join(store, "proposals", pid + ".md"))
-        step("5. The journal records each change, with host and authority",
-             journal.count("\n") >= 5, {"journal": journal, "proposal file still there": kept})
+        lines = journal.splitlines()
+        accepted = [l for l in lines if "proposals/%s.md" % pid in l and "| accepted |" in l and names[1]["name"] in l]
+        deleted = [l for l in lines if "topics/travel.md" in l and "person direct" in l and l not in accepted]
+        step("5a. The journal says where it was accepted and when it was deleted, on the person's authority",
+             bool(accepted) and bool(deleted) and all("authority: person direct" in l for l in accepted),
+             {"journal": journal})
+        store_text = ""
+        for folder, _, files in os.walk(store):
+            for name in files:
+                with open(os.path.join(folder, name), errors="replace") as handle:
+                    store_text += handle.read()
+        step("5b. After the forget, the store still says who proposed it",
+             "trip-helper" in store_text,
+             {"proposal file still there": os.path.exists(os.path.join(store, "proposals", pid + ".md")),
+              "proposer's agent named anywhere in the store": "trip-helper" in store_text})
     finally:
         print("# Experiment 0009, steps 1 to 5\n")
         print("- Host A: `%s`\n- Host B: `%s`\n" % (args.a, args.b))
@@ -173,7 +194,7 @@ def main():
             print("Store kept at", store)
         else:
             shutil.rmtree(base, ignore_errors=True)
-    return 0 if results and all(ok for _, ok, _ in results) and len(results) == 5 else 1
+    return 0 if results and all(ok for _, ok, _ in results) and len(results) == 7 else 1
 
 
 if __name__ == "__main__":

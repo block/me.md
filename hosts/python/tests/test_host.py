@@ -409,5 +409,157 @@ class Concurrency(StoreTest):
         self.assertEqual(self.lint().warnings, [])
 
 
+class Robustness(StoreTest):
+    """Cases from a cold review: odd input must get an answer, never a crash or a corrupt file."""
+
+    def test_policy_numbers_survive_a_rewrite(self):
+        self.write("policy.json", '{"state": "off", "n": 1e400, "big": 123456789012345678901234567890, "f": 0.1}')
+        self.host.policy("on")
+        text = self.read("policy.json").decode()
+        obj = json.loads(text, parse_constant=lambda name: self.fail("wrote " + name))
+        self.assertEqual(obj["state"], "on")
+        self.assertIn("1E+400", text)
+        self.assertIn("123456789012345678901234567890", text)
+        self.assertEqual(self.host.state()["memory"], "on")
+
+    def test_deeply_nested_policy_is_off(self):
+        self.write("policy.json", '{"state": "on", "x": ' + "[" * 100000 + "]" * 100000 + "}")
+        self.assertEqual(self.host.state()["memory"], "off")
+
+    def test_overlapping_match_is_ambiguous(self):
+        self.write("me.md", "aaa\n")
+        self.assertEqual(self.code(self.host.edit, "me.md", "replace", old="aa", new="b"), "ambiguous")
+        self.assertEqual(self.read("me.md"), b"aaa\n")
+
+    def test_missing_fields_are_bad_requests(self):
+        self.assertEqual(self.code(self.host.propose, "me.md", None, "b"), "bad_request")
+        self.assertEqual(self.code(self.host.propose, "me.md", " \n", "b"), "empty_body")
+        self.assertEqual(self.code(self.host.edit, None, "append", text="x"), "bad_request")
+        self.assertEqual(self.code(self.host.decide, None, "accept"), "bad_request")
+        self.assertEqual(self.code(self.host.revise, "20261112T170301Z-7f3a", None), "bad_request")
+
+    def test_decide_applies_the_body_at_acceptance(self):
+        rel = "proposals/20261112T170301Z-7f3a.md"
+        self.write(rel, PROPOSAL)
+        self.write("topics/travel.md", "I travel.\n")
+        real = self.host.fs.replace
+        edited = []
+
+        def replace(path, change, *args):
+            if path == "topics/travel.md" and not edited:
+                edited.append(1)  # an editor that takes no lock changes the body mid-accept
+                self.write(rel, PROPOSAL.replace("Prefer aisle seats.", "Prefer window seats."))
+            return real(path, change, *args)
+        self.host.fs.replace = replace
+        answer = self.host.decide("20261112T170301Z-7f3a", "accept")
+        self.assertEqual(answer["status"], "accepted")
+        self.assertEqual(self.read("topics/travel.md"), b"I travel.\nPrefer window seats.\n")
+        self.assertIn(b"status: accepted", self.read(rel))
+        self.assertIn(b"Prefer window seats.", self.read(rel))
+
+    def test_failed_write_leaves_no_temp_file_or_lock(self):
+        from thou_host import storefs
+        real, calls = storefs._write_all, []
+
+        def flaky(fd, data):
+            calls.append(1)
+            if len(calls) == 2:  # the lock line goes through; the temp file write fails
+                raise OSError(28, "No space left on device")
+            return real(fd, data)
+        storefs._write_all = flaky
+        try:
+            with self.assertRaises(OSError):
+                self.host.edit("me.md", "append", text="More.")
+        finally:
+            storefs._write_all = real
+        self.assertEqual(sorted(os.listdir(self.root)), ["me.md"])
+        self.assertEqual(self.read("me.md"), b"I like blue.\n")
+
+    def test_driver_answers_odd_lines(self):
+        driver = os.path.join(os.path.dirname(HERE), "thou_driver.py")
+        env = {"PATH": os.environ.get("PATH", ""), "HOME": self.tmp, "ME_HOME": self.root}
+        lines = ['{"id": 1, "op": "mount"}', '{"id": 2, "op": [1]}',
+                 '{"id": 3, "op": "propose", "target": "me.md", "body": "\\ud800", "basis": "b"}',
+                 "[" * 100000, '{"id": 5, "op": "edit", "path": "me.md", "action": "replace", "old": "zz", "new": 1}']
+        out = subprocess.run([sys.executable, driver], input="\n".join(lines) + "\n", env=env, text=True,
+                             capture_output=True, timeout=30)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        answers = [json.loads(line) for line in out.stdout.splitlines()]
+        self.assertEqual([a.get("error") for a in answers],
+                         [None, "unsupported_op", "bad_request", "bad_request", "bad_request"])
+
+    def test_read_only_folder_is_an_io_error(self):
+        if os.geteuid() == 0:
+            self.skipTest("root ignores permissions")
+        os.mkdir(self.path("topics"))
+        os.chmod(self.path("topics"), 0o500)
+        try:
+            driver = os.path.join(os.path.dirname(HERE), "thou_driver.py")
+            env = {"PATH": os.environ.get("PATH", ""), "HOME": self.tmp, "ME_HOME": self.root}
+            lines = ['{"id": 1, "op": "mount"}',
+                     '{"id": 2, "op": "edit", "path": "topics/a.md", "action": "append", "text": "x"}']
+            out = subprocess.run([sys.executable, driver], input="\n".join(lines) + "\n", env=env, text=True,
+                                 capture_output=True, timeout=30)
+        finally:
+            os.chmod(self.path("topics"), 0o700)
+        answers = [json.loads(line) for line in out.stdout.splitlines()]
+        self.assertEqual(answers[-1].get("error"), "io_error", out.stdout + out.stderr)
+        self.assertFalse(os.path.exists(self.path(".me.lock")))
+
+
+class Mcp(StoreTest):
+    def serve(self, *messages):
+        import io
+        import thou_mcp
+        old = os.environ.get("ME_HOME")
+        os.environ["ME_HOME"] = self.root
+        try:
+            out = io.StringIO()
+            thou_mcp.Server(out).serve(json.dumps(m) for m in messages)
+        finally:
+            if old is None:
+                os.environ.pop("ME_HOME", None)
+            else:
+                os.environ["ME_HOME"] = old
+        return [json.loads(line) for line in out.getvalue().splitlines()]
+
+    def test_no_instructions_while_off(self):
+        init = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}}
+        self.assertIn("instructions", self.serve(init)[0]["result"])
+        self.write("policy.json", '{"state": "off"}')
+        self.assertNotIn("instructions", self.serve(init)[0]["result"])
+
+    def test_bad_calls_are_jsonrpc_errors(self):
+        answers = self.serve({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "nope"}},
+                             {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": ["x"]}},
+                             {"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+                              "params": {"name": "list", "arguments": [1]}},
+                             {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": [1]},
+                             {"jsonrpc": "2.0", "id": 5, "method": "nope"},
+                             {"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {"name": "where"}})
+        self.assertEqual([a.get("error", {}).get("code") for a in answers], [-32602, -32602, -32602, -32602, -32601, None])
+
+
+class Hooks(StoreTest):
+    def hook(self, event):
+        hooks = os.path.join(os.path.dirname(HERE), "thou_hooks.py")
+        env = {"PATH": os.environ.get("PATH", ""), "HOME": self.tmp, "ME_HOME": self.root}
+        out = subprocess.run([sys.executable, hooks, "pre-tool-use"], input=json.dumps(event), env=env, text=True,
+                             capture_output=True, timeout=30, cwd=self.tmp)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        return json.loads(out.stdout)["hookSpecificOutput"]["permissionDecision"] if out.stdout else "allow"
+
+    def test_fences(self):
+        me = os.path.join(self.root, "me.md")
+        self.assertEqual(self.hook({"tool_name": "Read", "tool_input": {"file_path": me}}), "deny")
+        self.assertEqual(self.hook({"tool_name": "Read", "tool_input": {"file_path": "/etc/hosts"}}), "allow")
+        self.assertEqual(self.hook({"tool_name": "Read", "tool_input": "not an object"}), "allow")
+        self.assertEqual(self.hook({"tool_name": "Bash", "tool_input": {"command": "cat me.md"},
+                                    "cwd": self.root}), "deny")
+        self.assertEqual(self.hook({"tool_name": "Grep", "tool_input": {"pattern": "x"}, "cwd": self.root}), "deny")
+        if sys.platform == "darwin":
+            self.assertEqual(self.hook({"tool_name": "Read", "tool_input": {"file_path": me.upper()}}), "deny")
+
+
 if __name__ == "__main__":
     unittest.main()

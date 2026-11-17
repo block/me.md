@@ -179,6 +179,7 @@ Errors: `absent` (the host does not create a store, [S1.3](../STORE.md#1-locatio
 | `locked` | Another host holds `.me.lock`. The host made no change, left the lock in place, and added a notice that names `.me.lock`. |
 | `unsupported_op` | The host does not support this operation at its level. |
 | `bad_request` | The request is not a JSON object, or a field is missing or has the wrong type. |
+| `io_error` | A file operation failed for a reason no other code names, such as a permission error. |
 
 When a change succeeds but the journal write fails, the answer is `ok: true` with a notice that the change has no receipt ([S8.7](../STORE.md#8-writing-safely)).
 

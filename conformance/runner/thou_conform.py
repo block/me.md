@@ -46,7 +46,7 @@ OP_LEVEL = {"host": 0, "mount": 0, "list": 0, "recall": 0, "pending": 1, "propos
             "decide": 2, "revise": 2, "edit": 2, "forget": 2, "policy": 2}
 ERROR_CODES = {"absent", "memory_off", "unsupported_spec", "refused", "bad_target", "bad_path",
                "empty_body", "not_found", "invalid_proposal", "not_pending", "no_match",
-               "ambiguous", "locked", "unsupported_op", "bad_request"}
+               "ambiguous", "locked", "unsupported_op", "bad_request", "io_error"}
 MEMORY_STATES = {"absent", "off", "on"}
 MEMORY_OPS = {"mount", "list", "recall", "pending", "propose", "decide", "revise", "edit",
               "forget", "policy"}

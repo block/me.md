@@ -47,13 +47,18 @@ def session_start(event):
     return {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}
 
 
+# macOS file systems usually ignore case, so /Users/Me/.ME is the same folder as /Users/me/.me.
+_FOLD = (lambda s: s.casefold()) if sys.platform == "darwin" else (lambda s: s)
+
+
 def _inside(path, cwd, roots):
     if not isinstance(path, str) or not path:
         return False
     path = os.path.expanduser(path)
     if not os.path.isabs(path):
         path = os.path.join(cwd or os.getcwd(), path)
-    candidates = {os.path.normpath(path), os.path.realpath(path)}
+    candidates = {_FOLD(os.path.normpath(path)), _FOLD(os.path.realpath(path))}
+    roots = {_FOLD(r) for r in roots}
     return any(c == r or c.startswith(r.rstrip(os.sep) + os.sep) for c in candidates for r in roots)
 
 
@@ -61,25 +66,34 @@ def _mentions(command, roots):
     end = r"(?![A-Za-z0-9._-])"
     patterns = [re.escape(r) + end for r in roots]
     patterns += [r"~/\.me" + end, r"\$\{?HOME\}?/\.me" + end, r"\$\{?ME_HOME\}?" + r"(?![A-Za-z0-9_])"]
-    return any(re.search(p, command) for p in patterns)
+    flags = re.IGNORECASE if sys.platform == "darwin" else 0
+    return any(re.search(p, command, flags) for p in patterns)
+
+
+DENY = ("The person's thou store is reached only through the thou tools (mount, recall, propose and the rest), "
+        "which check the off switch and keep the journal. Use those instead.")
+
+
+def _deny(reason=DENY):
+    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                   "permissionDecisionReason": reason}}
 
 
 def pre_tool_use(event):
     root = location()
     roots = {os.path.normpath(root), os.path.realpath(root)}
-    name, args = event.get("tool_name"), event.get("tool_input") or {}
-    cwd = event.get("cwd")
-    hit = False
+    name, args = event.get("tool_name"), event.get("tool_input")
+    args = args if isinstance(args, dict) else {}
+    cwd = event.get("cwd") if isinstance(event.get("cwd"), str) else None
+    if name not in FILE_TOOLS and name != "Bash":
+        return None
+    if _inside(cwd or os.getcwd(), None, roots):
+        return _deny()  # working inside the store: relative paths and bare commands reach it
     if name in FILE_TOOLS:
         hit = any(_inside(args.get(key), cwd, roots) for key in FILE_TOOLS[name])
-    elif name == "Bash":
+    else:
         hit = _mentions(str(args.get("command", "")), roots)
-    if not hit:
-        return None
-    reason = ("The person's thou store is reached only through the thou tools (mount, recall, propose and the "
-              "rest), which check the off switch and keep the journal. Use those instead.")
-    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
-                                   "permissionDecisionReason": reason}}
+    return _deny() if hit else None
 
 
 def main(argv):
@@ -90,7 +104,14 @@ def main(argv):
         event = json.load(sys.stdin)
     except ValueError:
         event = {}
-    out = (session_start if argv[1] == "session-start" else pre_tool_use)(event if isinstance(event, dict) else {})
+    event = event if isinstance(event, dict) else {}
+    if argv[1] == "session-start":
+        out = session_start(event)
+    else:
+        try:
+            out = pre_tool_use(event)
+        except Exception:  # fail closed: a hook that crashes must not let the call through
+            out = _deny("The thou plugin could not check this call, so it stopped it. " + DENY)
     if out is not None:
         sys.stdout.write(json.dumps(out, ensure_ascii=False))
     return 0

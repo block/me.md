@@ -12,7 +12,7 @@ import time
 
 from . import formats
 from .formats import Proposal, normalize
-from .storefs import Locked, Missing, StoreFS, location
+from .storefs import Changing, Locked, Missing, StoreFS, location
 
 NAME = "thou-py"
 VERSION = "0.1.0"
@@ -32,6 +32,10 @@ class HostError(Exception):
     def __init__(self, code, message, notices=()):
         Exception.__init__(self, message)
         self.code, self.message, self.notices = code, message, list(notices)
+
+
+class _Again(Exception):
+    """The proposal changed between reading it and applying it."""
 
 
 class Host:
@@ -87,7 +91,7 @@ class Host:
 
     def _spec_message(self, obj):
         return ("policy.json says this store follows spec %s. This host supports only %s, so it will not "
-                "write to the store, except to turn memory off (S5.4)." % (json.dumps(obj.get("spec")), formats.SPEC))
+                "write to the store, except to turn memory off (S5.4)." % (formats._json(obj.get("spec")), formats.SPEC))
 
     def _answer(self, s, **fields):
         out = {"memory": s["memory"]}
@@ -257,7 +261,9 @@ class Host:
     # --- Steward ---
 
     def _proposal_path(self, pid):
-        if not isinstance(pid, str) or not formats.ID_RE.fullmatch(pid):
+        if not isinstance(pid, str):
+            raise HostError("bad_request", "proposal is the proposal's id.")
+        if not formats.ID_RE.fullmatch(pid):
             raise HostError("not_found", "There is no proposal %r." % (pid,))
         return "proposals/%s.md" % pid
 
@@ -282,24 +288,38 @@ class Host:
         rel = self._proposal_path(proposal)
         who = self.who(agent)
         notices, applied = [], None
+        status = "accepted" if decision == "accept" else "refused"
         token = self._lock(agent)
         try:
-            data, p = self._read_pending(rel)
-            target = p.fields["target"]
-            status = "accepted" if decision == "accept" else "refused"
-            if status == "accepted":
+            for _ in range(5):
+                data, p = self._read_pending(rel)
+                target = p.fields["target"]
+                if status == "refused":
+                    break
+
+                def add(old):
+                    # S6.15: apply the body as it is at acceptance. If the file changed since it was read,
+                    # start again rather than apply words the person did not see.
+                    if self.fs.read_or_none(rel) != data:
+                        raise _Again()
+                    return formats.appended(old, p.body)
                 try:
-                    _, new = self.fs.replace(target, lambda old: formats.appended(old, p.body))
+                    _, new = self.fs.replace(target, add)
+                except _Again:
+                    continue
                 except Missing as exc:
                     raise HostError("bad_target", "I will not write %s: %s." % (target, exc.why))
                 applied = "added" if new is not None else "already"
+                break
+            else:
+                raise Changing("%s kept changing while I tried to accept it, so I made no change" % rel)
 
             def mark(old):
-                q = Proposal(p.name, old) if old is not None else None
-                if q is None or not q.valid or q.status != "pending":
-                    notices.append("%s changed while I was deciding it, so I left its status alone." % rel)
+                if old != data:
+                    notices.append("%s changed while I was deciding it, so I left its status alone. %s"
+                                   % (rel, "Its words as they were are in %s." % target if applied else ""))
                     return None
-                return q.decided(status, formats.now(), who)
+                return Proposal(p.name, old).decided(status, formats.now(), who)
             self.fs.replace(rel, mark)
         finally:
             self.fs.unlock(token)
@@ -328,7 +348,9 @@ class Host:
         return self._answer(self.state())
 
     def _editable(self, path):
-        if not isinstance(path, str) or not (path == "watches.md" or formats.TARGET_RE.fullmatch(path)):
+        if not isinstance(path, str):
+            raise HostError("bad_request", "path is the store-relative file to change.")
+        if not (path == "watches.md" or formats.TARGET_RE.fullmatch(path)):
             raise HostError("bad_path", "I change only me.md, watches.md, topics/<name>.md and projects/<name>.md.")
         return path
 
@@ -366,12 +388,12 @@ class Host:
                     eol = formats.line_break_of(data)
                     a = old.replace("\r\n", "\n").encode("utf-8").replace(b"\n", eol)
                     b = new.replace("\r\n", "\n").encode("utf-8").replace(b"\n", eol)
-                    count = data.count(a)
-                    if count == 0:
+                    at = data.find(a)
+                    if at < 0:
                         raise HostError("no_match", "Those words are not in %s." % path)
-                    if count > 1:
-                        raise HostError("ambiguous", "Those words appear %d times in %s." % (count, path))
-                    return data.replace(a, b)
+                    if data.find(a, at + 1) >= 0:  # counts overlapping places too
+                        raise HostError("ambiguous", "Those words appear more than once in %s." % path)
+                    return data[:at] + b + data[at + len(a):]
                 _, after = self.fs.replace(path, swap)
             except Missing as exc:
                 raise HostError("bad_path", "I will not write %s: %s." % (path, exc.why))
@@ -476,7 +498,10 @@ class Host:
                     return None
                 obj["state"] = state
                 return formats.policy_bytes(obj)
-            _, after = self.fs.replace("policy.json", flip)
+            try:
+                _, after = self.fs.replace("policy.json", flip)
+            except RecursionError:
+                raise HostError("io_error", "policy.json is nested too deeply for me to rewrite, so I changed nothing.")
         finally:
             self.fs.unlock(token)
         journal = []

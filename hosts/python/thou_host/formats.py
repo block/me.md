@@ -4,6 +4,7 @@ Pure functions only. Nothing here touches the file system.
 """
 
 import datetime
+import decimal
 import json
 import re
 import unicodedata
@@ -77,18 +78,22 @@ def parse_policy(data):
     JSON object with no repeated member, else None."""
     try:
         text = data.decode("utf-8")
-        obj = json.loads(text, object_pairs_hook=_strict, parse_constant=_no_constant)
+        # Numbers stay as written: 1e400 must not come back as Infinity when the host rewrites the file (S5.6).
+        obj = json.loads(text, object_pairs_hook=_strict, parse_constant=_no_constant,
+                         parse_float=decimal.Decimal, parse_int=decimal.Decimal)
     except _Duplicate as exc:
         return "off", 'policy.json repeats the member "%s"' % exc, None
     except (UnicodeDecodeError, ValueError):
         return "off", "policy.json is not valid JSON", None
+    except RecursionError:
+        return "off", "policy.json is nested too deeply to read", None
     if not isinstance(obj, dict):
         return "off", "policy.json is not a JSON object", None
     if obj.get("state") == "on":
         return "on", 'policy.json says "on"', obj
     if "state" not in obj:
         return "off", 'policy.json has no "state"', obj
-    return "off", 'policy.json says "state": %s, and only "on" means on' % json.dumps(obj["state"]), obj
+    return "off", 'policy.json says "state": %s, and only "on" means on' % _json(obj["state"]), obj
 
 
 def spec_supported(obj):
@@ -96,8 +101,30 @@ def spec_supported(obj):
     return obj is None or "spec" not in obj or obj["spec"] == SPEC
 
 
+def _json(value, level=0):
+    """JSON text with two-space indents. Numbers parsed as Decimal are written as they were read."""
+    pad, end = "  " * (level + 1), "  " * level
+    if isinstance(value, dict):
+        if not value:
+            return "{}"
+        items = []
+        for key, item in value.items():
+            items.append(pad + json.dumps(key, ensure_ascii=False) + ": " + _json(item, level + 1))
+        return "{\n" + ",\n".join(items) + "\n" + end + "}"
+    if isinstance(value, list):
+        if not value:
+            return "[]"
+        items = []
+        for item in value:
+            items.append(pad + _json(item, level + 1))
+        return "[\n" + ",\n".join(items) + "\n" + end + "]"
+    if isinstance(value, decimal.Decimal):
+        return str(value)
+    return json.dumps(value, ensure_ascii=False)
+
+
 def policy_bytes(obj):
-    return (json.dumps(obj, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    return (_json(obj) + "\n").encode("utf-8")
 
 
 # --- proposals (S6) ---------------------------------------------------------

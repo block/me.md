@@ -45,6 +45,10 @@ class Locked(Exception):
     pass
 
 
+class Changing(OSError):
+    """A program that does not take the lock kept changing the file, so the host gave up."""
+
+
 class StoreFS:
     def __init__(self, root):
         self.root = root
@@ -184,19 +188,23 @@ class StoreFS:
             tmp = os.path.join(folder, ".%s.%s.tmp" % (name, secrets.token_hex(4)))
             fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | O_NOFOLLOW | O_BINARY, 0o600)
             try:
-                _write_all(fd, new)
-                if old is not None and hasattr(os, "fchmod"):
-                    # Keep the person's permissions on a file the host rewrites.
-                    os.fchmod(fd, stat.S_IMODE(os.lstat(target).st_mode))
-                os.fsync(fd)
-            finally:
-                os.close(fd)
+                try:
+                    _write_all(fd, new)
+                    if old is not None and hasattr(os, "fchmod"):
+                        # Keep the person's permissions on a file the host rewrites.
+                        os.fchmod(fd, stat.S_IMODE(os.lstat(target).st_mode))
+                    os.fsync(fd)
+                finally:
+                    os.close(fd)
+            except BaseException:
+                os.unlink(tmp)  # leave no temp file behind
+                raise
             if self.read_or_none(rel) != old:
                 os.unlink(tmp)  # a program that does not take the lock changed it; start again
                 continue
             os.replace(tmp, target)
             return old, new
-        raise Locked("%s kept changing while the host tried to write it" % rel)
+        raise Changing("%s kept changing while the host tried to write it, so it made no change" % rel)
 
     def remove(self, rel):
         if self.kind(rel) != "file":
@@ -223,9 +231,13 @@ class StoreFS:
                 time.sleep(0.02 + secrets.randbelow(30) / 1000)
                 continue
             try:
-                _write_all(fd, line)
-            finally:
-                os.close(fd)
+                try:
+                    _write_all(fd, line)
+                finally:
+                    os.close(fd)
+            except BaseException:
+                os.unlink(path)  # this host created it: leave no empty lock behind
+                raise
             return token
 
     def unlock(self, token):
