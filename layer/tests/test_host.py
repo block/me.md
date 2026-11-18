@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(HERE)), "tools")
 
 from thou_host import formats  # noqa: E402
 from thou_host.host import Host, HostError  # noqa: E402
-from thou_host.storefs import location  # noqa: E402
+from thou_host.storefs import Missing, location  # noqa: E402
 
 import thou_lint  # noqa: E402
 
@@ -31,6 +31,8 @@ Prefer aisle seats.
 """
 
 OURS = PROPOSAL.replace("proposed-by: examplehost 1.0", "proposed-by: thou-layer 0.1.0 (test)")
+ACCEPTED = PROPOSAL.replace("status: pending", "status: accepted").replace(
+    "basis: You asked twice.", "basis: You asked twice.\ndecided-at: 2026-11-12T17:05:40Z")
 
 MCP_SERVER = os.path.join(os.path.dirname(HERE), "thou_mcp.py")
 INIT = '{"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}}'
@@ -462,6 +464,29 @@ class Hidden(StoreTest):
         self.assertEqual([("too_long" in p) for p in self.host.pending()["proposals"]], [False])
 
 
+class Limits(StoreTest):
+    def test_no_more_than_so_many_waiting(self):
+        from thou_host.host import MOST_PENDING
+        for n in range(MOST_PENDING):
+            self.write("proposals/20261112T170301Z-w%03d.md" % n, PROPOSAL.replace("Prefer aisle seats.", "Body %d." % n))
+        self.assertEqual(self.code(self.host.propose, "me.md", "One more.", "You said so."), "too_many")
+        self.write("proposals/20261112T170301Z-w000.md", PROPOSAL.replace("status: pending", "status: refused"))
+        self.assertTrue(self.host.propose("me.md", "One more.", "You said so.")["proposal"])  # only pending count
+
+    def test_a_name_that_is_not_utf8(self):
+        real = self.host.fs.listdir
+        self.host.fs.listdir = lambda folder: (["caf\udce9.md"], []) if folder == "proposals" else real(folder)
+        notices = self.host.pending()["notices"]
+        self.assertEqual(notices, ['I ignore proposals/"caf\\udce9.md" because its name is not UTF-8 (S2.1).'])
+        import io
+        import thou_mcp
+        out = io.StringIO()
+        thou_mcp.Server(out).send({"jsonrpc": "2.0", "id": 1, "result": {"file": "caf\udce9.md", "text": "café"}})
+        line = out.getvalue()
+        self.assertTrue(line.isascii())
+        self.assertEqual(json.loads(line)["result"]["text"], "café")
+
+
 class Revise(StoreTest):
     def test_revise_cannot_bring_back_refused_words(self):
         refused = PROPOSAL.replace("status: pending", "status: refused").replace("Prefer aisle seats.", "Book the cheapest.")
@@ -571,6 +596,60 @@ class Forget(StoreTest):
         self.assertIn("20261112T170301Z-bbbb", notices)
         self.assertNotIn("Prefer aisle", json.dumps(self.host.recall(["topics/travel.md"])))
         self.assertEqual(len(self.read("journal.md").decode().splitlines()), 4)
+
+    def test_forget_a_file_names_the_proposals_left_for_it(self):
+        self.write("topics/travel.md", "Prefer aisle seats.\n")
+        self.write("proposals/20261112T170301Z-pend.md", PROPOSAL.replace("Prefer aisle seats.", "Prefer trains."))
+        self.write("proposals/20261112T170301Z-refd.md", PROPOSAL.replace("status: pending", "status: refused"))
+        self.write("proposals/20261112T170301Z-else.md", PROPOSAL.replace("topics/travel.md", "topics/food.md"))
+        self.write("proposals/20261112T170301Z-done.md", ACCEPTED)
+        notices = " ".join(self.host.forget("topics/travel.md")["notices"])
+        self.assertFalse(os.path.exists(self.path("proposals/20261112T170301Z-done.md")))
+        self.assertIn("20261112T170301Z-pend.md still holds words for topics/travel.md. It is pending", notices)
+        self.assertIn("20261112T170301Z-refd.md still holds words for topics/travel.md. It is refused", notices)
+        self.assertNotIn("-else", notices)
+
+    def test_forget_words_keeps_an_accepted_proposal_for_another_file(self):
+        self.write("proposals/20261112T170301Z-food.md", ACCEPTED.replace("topics/travel.md", "topics/food.md"))
+        self.write("topics/travel.md", "Prefer aisle seats.\n")
+        self.write("topics/food.md", "Prefer aisle seats.\n")
+        answer = self.host.forget("topics/travel.md", "Prefer aisle seats.")
+        self.assertTrue(os.path.exists(self.path("proposals/20261112T170301Z-food.md")))
+        self.assertIn("20261112T170301Z-food.md still holds these words. It is accepted", " ".join(answer["notices"]))
+
+    def test_a_failure_after_a_change_still_journals_it(self):
+        rel = "proposals/20261112T170301Z-7f3a.md"
+        self.write(rel, PROPOSAL)
+        self.write("topics/travel.md", "I travel.\n")
+        real = self.host.fs.replace
+
+        def replace(path, change, *a):
+            if path.startswith("proposals/"):
+                raise OSError("the disk is full")
+            return real(path, change, *a)
+        self.host.fs.replace = replace
+        self.assertEqual(self.code(self.host.decide, "20261112T170301Z-7f3a", "refuse"), "io_error")
+        self.assertFalse(os.path.exists(self.path("journal.md")))
+        self.assertEqual(self.code(self.host.decide, "20261112T170301Z-7f3a", "accept"), "io_error")
+        self.assertEqual(self.read("topics/travel.md"), b"I travel.\nPrefer aisle seats.\n")
+        self.assertIn(b"status: pending", self.read(rel))
+        journal = self.read("journal.md").decode()
+        self.assertIn("topics/travel.md", journal)
+        self.assertIn("accepted proposal 20261112T170301Z-7f3a", journal)
+        self.assertEqual(len(journal.splitlines()), 1)
+
+        self.host.fs.replace = real
+        self.write(rel, ACCEPTED)
+
+        def remove(path):
+            raise Missing(path, "it went away")
+        self.host.fs.remove = remove
+        answer = self.host.forget("topics/travel.md", "Prefer aisle seats.")
+        self.assertEqual(answer["removed"], 1)
+        self.assertEqual(self.read("topics/travel.md"), b"I travel.\n")
+        self.assertIn("could not finish with the proposals for topics/travel.md (it went away)",
+                      " ".join(answer["notices"]))
+        self.assertIn("removed text", self.read("journal.md").decode().splitlines()[-1])
 
     def test_forget_only_whole_lines(self):
         self.write("me.md", "x blue\nblue\nblue")
@@ -743,6 +822,19 @@ class Robustness(StoreTest):
         self.assertEqual(tool_answer(by_id[5])["error"], "bad_request")
         self.assertTrue(tool_answer(by_id[6])["ok"])
         self.assertEqual(self.read("me.md"), b"I like blue.\n")
+
+    def test_a_byte_that_is_not_utf8_is_refused_and_the_server_goes_on(self):
+        env = {"PATH": os.environ.get("PATH", ""), "HOME": self.tmp, "ME_HOME": self.root, "THOU_CLIENT_ASKS": "1",
+               "PYTHONIOENCODING": "utf-8:strict"}  # as under a UTF-8 locale, where stdin is strict
+        bad = tool_call(1, "propose", target="me.md", body="cafe", basis="b").encode().replace(b"cafe", b"caf\xe9")
+        lines = [INIT.encode(), bad, tool_call(2, "where").encode()]
+        out = subprocess.run([sys.executable, MCP_SERVER], input=b"\n".join(lines) + b"\n", env=env,
+                             capture_output=True, timeout=30)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        by_id = {m.get("id"): m for m in map(json.loads, out.stdout.decode("ascii").splitlines())}
+        self.assertEqual(by_id[1]["error"]["code"], -32602)
+        self.assertTrue(tool_answer(by_id[2])["ok"])
+        self.assertFalse(os.path.exists(self.path("proposals")))
 
     def test_read_only_folder_is_an_io_error(self):
         if os.geteuid() == 0:

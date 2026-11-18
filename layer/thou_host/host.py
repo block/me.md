@@ -26,6 +26,7 @@ PROVIDER_NOTICE = ("I removed it from the store and from this host's memory. I c
                    "read, and backups, sync folders or exported copies keep their own.")
 OFF_NOTICE = ("Memory is off. This host enforces that in its own code, for its own tools. Another agent on "
               "this machine follows it only if it honors policy.json.")
+MOST_PENDING = 50  # proposals waiting for the person, at most: past that, propose asks them to decide first
 # One change holds at most this much, so that it fits in an approval prompt in an ordinary window. Claude Code
 # shows a change's words in full, so longer words run off the top of the window.
 MOST, MOST_LINES = 2000, 30
@@ -236,9 +237,9 @@ class Host:
         names, notices = self.fs.listdir("proposals")
         out = []
         for name in names:
-            if not name.endswith(".md"):
-                notices.append("I ignore proposals/%s because it does not end in .md (S2.1)."
-                               % formats.shown_name(name))
+            if not name.endswith(".md") or not formats.is_utf8(name):
+                why = "its name is not UTF-8" if name.endswith(".md") else "it does not end in .md"
+                notices.append("I ignore proposals/%s because %s (S2.1)." % (formats.shown_name(name), why))
                 continue
             try:
                 out.append(Proposal(name, self.fs.read("proposals/" + name)))
@@ -280,6 +281,10 @@ class Host:
         self._visible(body, "The proposal")
         self._visible(basis, "The basis")
         self._not_refused(body)  # H3.3: read the refusals first
+        waiting = sum(1 for p in self._proposals()[0] if p.valid and p.status == "pending")
+        if waiting >= MOST_PENDING:
+            raise HostError("too_many", "%d proposals already wait for the person, so I proposed nothing. Ask them "
+                                        "to decide some first." % waiting)
         for _ in range(20):
             stamp = time.gmtime()
             pid = time.strftime("%Y%m%dT%H%M%SZ", stamp) + "-" + "".join(
@@ -336,7 +341,7 @@ class Host:
         self._writable()
         rel = self._proposal_path(proposal)
         who = self.who(agent)
-        notices, applied = [], None
+        notices, applied, unmarked = [], None, None
         status = "accepted" if decision == "accept" else "refused"
         token = self._lock(agent)
         try:
@@ -385,9 +390,21 @@ class Host:
                                    % (rel, "Its words as they were are in %s." % target if applied else ""))
                     return None
                 return Proposal(p.name, old).decided(status, formats.now(), who)
-            self.fs.replace(rel, mark)
+            try:
+                self.fs.replace(rel, mark)
+            except (OSError, Missing) as exc:
+                unmarked = getattr(exc, "why", None) or str(exc)
         finally:
             self.fs.unlock(token)
+        if unmarked is not None:
+            if applied != "added":
+                raise HostError("io_error", "I could not mark %s %s: %s. Nothing changed." % (rel, status, unmarked))
+            # The words are in the file, so the journal says so (S8.7), though the proposal still says pending.
+            self._journal([formats.journal_entry(target, "added the text of an accepted proposal", who,
+                                                 "accepted proposal " + p.id)], notices)
+            raise HostError("io_error", "I added the words of %s to %s, but could not mark it accepted: %s. It "
+                                        "still says pending; the journal records the addition."
+                            % (rel, target, unmarked))
         when = formats.now()
         entries = [formats.journal_entry(rel, status, who, "person direct", when)]
         if status == "accepted":
@@ -518,19 +535,12 @@ class Host:
                 removed = counted[-1]
                 entries.append(formats.journal_entry(path, "removed text", who, "person direct"))
             wanted = normalize(text) if text is not None else None
-            found, _ = self._proposals()
-            for p in found:
-                body = normalize(p.body or "")
-                if p.valid and p.status == "accepted" and (
-                        body == wanted or (wanted is None and p.fields["target"] == path)):
-                    rel = "proposals/" + p.name
-                    self.fs.remove(rel)  # S6.10: an applied, journaled proposal may be deleted
-                    entries.append(formats.journal_entry(rel, "deleted an applied proposal", who, "person direct"))
-                elif wanted and wanted in body:
-                    state = p.status or "invalid"
-                    notices.append("proposals/%s still holds these words. It is %s; delete it yourself if you "
-                                   "want it gone%s." % (p.name, state, ", which ends the refusal"
-                                                        if state in ("refused", "invalid") else ""))
+            try:
+                self._forget_proposals(path, wanted, who, entries, notices)
+            except (OSError, Missing) as exc:
+                # The words are gone already, so the answer says so, with what was left undone.
+                notices.append("I could not finish with the proposals for %s (%s), so some may still hold %s."
+                               % (path, getattr(exc, "why", None) or exc, "these words" if wanted else "its words"))
         finally:
             self.fs.unlock(token)
         self.session.clear()
@@ -540,6 +550,22 @@ class Host:
                            "rewrite it.")
         journal = self._journal(entries, notices)
         return self._answer(self.state(), removed=removed, journal=journal, notices=notices)
+
+    def _forget_proposals(self, path, wanted, who, entries, notices):
+        found, _ = self._proposals()
+        for p in found:
+            body = normalize(p.body or "")
+            same_file = p.valid and p.fields["target"] == path
+            if same_file and p.status == "accepted" and (wanted is None or body == wanted):
+                rel = "proposals/" + p.name
+                self.fs.remove(rel)  # S6.10: an applied, journaled proposal may be deleted
+                entries.append(formats.journal_entry(rel, "deleted an applied proposal", who, "person direct"))
+            elif (wanted and wanted in body) or (wanted is None and same_file):
+                state = p.status if p.valid else "invalid"
+                notices.append("proposals/%s still holds %s. It is %s; delete it yourself if you want it "
+                               "gone%s." % (formats.shown_name(p.name),
+                                            "these words" if wanted else "words for %s" % path, state,
+                                            ", which ends the refusal" if state in ("refused", "invalid") else ""))
 
     def start(self, text, agent=None):
         """Create the store's me.md with the person's own words, at their request (S1.3, SETUP.md).

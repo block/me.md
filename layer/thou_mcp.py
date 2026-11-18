@@ -242,7 +242,9 @@ class Server:
         self.listed = None  # memory state when the tools were last listed
 
     def send(self, message):
-        self.out.write(json.dumps(message, ensure_ascii=False) + "\n")
+        # ASCII on the wire: any text, even a file name that isn't UTF-8, goes out as JSON escapes, whatever
+        # the encoding of stdout.
+        self.out.write(json.dumps(message) + "\n")
         self.out.flush()
 
     def handle(self, message):
@@ -330,6 +332,8 @@ class Server:
 
 
 def main():
+    # MCP's stdio transport is UTF-8. Bytes that aren't come in as lone surrogates, which a call refuses.
+    sys.stdin.reconfigure(encoding="utf-8", errors="surrogateescape")
     Server(sys.stdout).serve(sys.stdin)
     return 0
 

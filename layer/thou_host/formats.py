@@ -189,6 +189,15 @@ def quoted(value, most=40):
     return text if len(text) <= most else text[:most] + "..."
 
 
+def is_utf8(name):
+    """False for a file name that was not UTF-8 on disk: Python keeps its bytes as lone surrogates."""
+    try:
+        name.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
 def shown_name(name):
     """A file name from the store, for a message: as it is if it is plainly a name, else quoted."""
     return name if re.fullmatch(r"[A-Za-z0-9._-]{1,80}", name) else quoted(name, 60)
