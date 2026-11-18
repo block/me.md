@@ -89,12 +89,29 @@ def session_start(event):
 _FOLD = (lambda s: s.casefold()) if sys.platform == "darwin" else (lambda s: s)
 _NAME_END = r"(?![A-Za-z0-9._-])"
 _WILD = re.compile(r"[*?\[{(]")
-# Commands that read every file under a folder they are given, or under the working folder.
-_WALKERS = re.compile(r"(?<![\w.-])(?:rg|ag|ack|find|fd|tar|zip|7z|rsync)(?![\w.-])"
-                      r"|(?<![\w.-])[ef]?grep(?![\w.-])[^|;&]*\s-(?:[A-Za-z]*[rR]|-recursive|-dereference-recursive)"
-                      r"|(?<![\w.-])(?:cp|scp)(?![\w.-])[^|;&]*\s-[A-Za-z]*[rRa]"
-                      r"|(?<![\w.-])ls(?![\w.-])[^|;&]*\s-[A-Za-z]*R"
-                      r"|Get-ChildItem[^|;&]*-Recurse", re.IGNORECASE)
+# Commands that read every file under a folder they are given, or under the working folder: these always,
+_WALKERS = re.compile(r"(?<![\w.-])(?:rg|ag|ack|find|fd|tar|zip|7z|rsync)(?![\w.-])", re.IGNORECASE)
+# and these with a flag later in the same part of the command (up to the next |, ; or &).
+_FLAGGED_WALKERS = [
+    (re.compile(r"(?<![\w.-])[ef]?grep(?![\w.-])", re.IGNORECASE),
+     re.compile(r"\s-(?:[A-Za-z]*[rR]|-recursive|-dereference-recursive)", re.IGNORECASE)),
+    (re.compile(r"(?<![\w.-])(?:cp|scp)(?![\w.-])", re.IGNORECASE), re.compile(r"\s-[A-Za-z]*[rRa]", re.IGNORECASE)),
+    (re.compile(r"(?<![\w.-])ls(?![\w.-])", re.IGNORECASE), re.compile(r"\s-[A-Za-z]*R", re.IGNORECASE)),
+    (re.compile(r"Get-ChildItem", re.IGNORECASE), re.compile(r"-Recurse", re.IGNORECASE)),
+]
+
+
+def _walks(flat):
+    """Whether the command runs a walker. Linear in the command's length: each part is searched once for the
+    command's name, then once for the flag after it."""
+    if _WALKERS.search(flat):
+        return True
+    for part in re.split(r"[|;&]", flat):
+        for name, flag in _FLAGGED_WALKERS:
+            found = name.search(part)
+            if found and flag.search(part, found.end()):
+                return True
+    return False
 
 
 def _segments(path):
@@ -238,7 +255,7 @@ def _command_reaches(command, shell, cwd, roots):
     flags = re.IGNORECASE if sys.platform == "darwin" else 0
     if re.search(r"\$\{?ME_HOME\}?(?![A-Za-z0-9_])|env:ME_HOME|ME_HOME=", flat, re.IGNORECASE):
         return "store"
-    tokens = [t for t in re.split(r"[\s;&|<>()=]+", flat) if t]
+    tokens = list(dict.fromkeys(t for t in re.split(r"[\s;&|<>()=]+", flat) if t))  # each once, in order
     for root in roots:
         if re.search(re.escape(root) + _NAME_END, flat, flags):
             return "store"
@@ -254,7 +271,7 @@ def _command_reaches(command, shell, cwd, roots):
             continue
         if any(_reaches(token, folder, roots, itself=True) for folder in folders):
             return "store"
-    if _WALKERS.search(flat):
+    if _walks(flat):
         paths = [t for t in tokens if not t.startswith("-") and ("/" in t or t in (".", ".."))]
         if any(_holds(folder, folder, roots) or any(_holds(t, folder, roots) for t in paths) for folder in folders):
             return "walk"

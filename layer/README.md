@@ -16,7 +16,7 @@ Put it on once. From then on, every Claude Code session starts from your own wor
 
 ## Put it on
 
-You need Claude Code, and Python 3.9 or newer on macOS or Linux. In Claude Code, run:
+You need Claude Code v2.1.295 or later, and Python 3.9 or newer on macOS or Linux. In Claude Code, run:
 
 ```text
 /plugin marketplace add block/thou
@@ -94,7 +94,7 @@ The layer is this folder: a Claude Code plugin in Python, with only the standard
   - `start`, `decide`, `edit`, `forget` and `policy` act on your say-so, and their journal entries say `authority: person direct`. Each carries `_meta["anthropic/requiresUserInteraction"]`, so Claude Code asks you before every call, in every permission mode, and shows the call's arguments. The server offers them only because the plugin tells it that Claude Code asks, by setting `THOU_CLIENT_ASKS=1` for it. Each of those calls carries the words it writes. `decide` carries the proposal's target and words, and the server decides nothing if they differ from the proposal on disk in any way the prompt would show.
   - No call writes words with characters a person can't see, or more than 2,000 characters or 30 lines in one change. A pending proposal with hidden characters can be refused or revised, never accepted.
   - `start` creates `me.md` only when there is none, never from a template, and journals it as `created me.md` (S1.3, [SETUP.md](../SETUP.md)).
-- **A pre-tool hook** (`thou_hooks.py pre-tool-use`). It stops Claude Code's file tools, searches that start above the store, and shell commands that point into it, from reaching the store. If the hook fails or can't run, it stops the call.
+- **A pre-tool hook** (`thou_hooks.py pre-tool-use`). It stops Claude Code's file tools, searches that start above the store, and shell commands that point into it, from reaching the store. If the hook fails, can't run or runs out of time, it stops the call.
 
 The MCP server also works on its own, in any agent that speaks MCP: `python3 layer/thou_mcp.py`. There, it mounts only if the agent's model follows the server's instructions. And the server can't tell whether that agent asks you before a call, so it takes nothing on your say: it reads, proposes, and turns memory off when asked. It doesn't start, decide, edit, forget or turn memory on. If the agent asks you before every call to those tools and shows you the call, set `THOU_CLIENT_ASKS=1` in its settings for the server, and they're offered there too. The journal then says each of those changes was yours, so set it only for an agent that asks.
 
