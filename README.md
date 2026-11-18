@@ -91,6 +91,8 @@ The left column below is memory that treats you as an It. In our reading, most p
 
 Point any agent at this page and say: **"Set up my me.md."** The agent asks you a few questions, shows you the words, and creates your `me.md` only when you say yes. From then on it follows the protocol because you asked it to. Nothing checks that it does.
 
+In Claude Code, you can put on the [thou layer](./layer/README.md) instead. It keeps the rules in code: it reads `me.md` at the start of every session, honors the off switch, and asks you to approve every change, with its words in front of you.
+
 Agents: follow the [setup instruction](./SETUP.md#the-setup-instruction), then serve the store with the loop in [PROTOCOL.md](./PROTOCOL.md). SETUP.md is the only setup procedure. PROTOCOL.md summarizes the [store layout](./PROTOCOL.md#the-store), and [STORE.md](./STORE.md) defines it.
 
 Your store is the folder `~/.me/`, or the folder named in the `ME_HOME` environment variable if you set it, for example to try the protocol in a test folder. Your file holds only what you tell it. The protocol supplies no template and no default persona. A session does not hold your memory: delete any session, or all of them, and you keep all durable context.
@@ -133,7 +135,7 @@ The protocol is an experimental draft, and some of what it is for is not proven 
 
 - The off switch is a request that agents following the protocol honor, not a lock. It does not stop software that ignores the protocol, and it cannot take back what a session has already read.
 - Not every agent can enforce the off switch below the model. One that only follows instructions has to say so in its conformance claim, with the words "by instruction" ([H0.3](./HOST.md#conformance-levels)).
-- No host has claimed conformance yet. Today you try the protocol through the paste-in block in [PROTOCOL.md](./PROTOCOL.md#the-paste-in-form), which makes an agent follow it by instruction. That is the weakest form: the off switch, the refusal check and the journal all depend on the model following its instructions, and nobody has measured how often models do. An agent using the block also takes no store lock, so let one agent write at a time.
+- No host has claimed conformance yet. In Claude Code, the [thou layer](./layer/README.md) keeps the off switch, the refusal check and the journal in code. Elsewhere, you try the protocol through the paste-in block in [PROTOCOL.md](./PROTOCOL.md#the-paste-in-form), which makes an agent follow it by instruction. That is the weakest form: the off switch, the refusal check and the journal all depend on the model following its instructions, and nobody has measured how often models do. An agent using the block also takes no store lock, so let one agent write at a time.
 - The off switch covers these files only. It does not turn off the memory features built into the agents you use. An agent with its own memory can also copy what it reads into that memory, where neither the off switch nor deleting a line reaches.
 - The journal is an account that each host keeps of its own changes. It is not tamper-proof: any program that can write your files can write a false line. Signed decisions are not defined yet.
 - A proposal can only add text. It cannot change or remove a line. Edits you make by hand are not detected.
@@ -189,6 +191,7 @@ Every protocol document listed below starts with a status line. There are three 
 ## Tools
 
 - The [thou-lint](./tools/README.md) tool checks that a store follows [STORE.md](./STORE.md). It checks files, not host behavior.
+- The [thou layer for Claude Code](./layer/README.md) serves your store in Claude Code, with the rules kept in code.
 
 ## Status, and how to help
 
