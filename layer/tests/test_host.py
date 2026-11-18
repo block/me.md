@@ -1017,6 +1017,29 @@ class Hooks(StoreTest):
         for command in ["cat about.me", "git commit -m 'see.me'", "ls ~/.mempool"]:
             self.assertEqual(self.decision("Bash", command=command), "allow", command)
 
+    def test_a_cd_in_the_command_moves_the_working_folder(self):
+        t = self.tmp
+        for command in ["cd %s && cat store/me.md" % t, "cd .. && cat store/me.md", "cd ..; cat ./store/journal.md",
+                        "pushd %s; cat store/me.md" % t, "cd %s/store && ls" % t, "cd %s && cd store && cat me.md" % t,
+                        "cd %s && cat st*/me.md" % t, "cd -P .. && cat store/me.md", "(cd .. && cat store/me.md)",
+                        "cd %s/st?re" % t, "tar czf a.tgz %s/st*" % t, "cp -r %s/stor[e] /tmp/out" % t,
+                        "ls %s/*" % t, "cd && cat store/me.md"]:  # a bare cd goes home, which is the temp folder here
+            self.assertEqual(self.decision("Bash", command=command), "deny", command)
+        self.assertEqual(self.decision("PowerShell", command="Set-Location ..; Get-Content store\\me.md"), "deny")
+        for command in ["cd %s && cat notes.txt" % self.work, "cd .. && cat notes.txt", "cd .. && cat storefront/x",
+                        "cd /tmp && cat store/me.md", "ls %s/*.txt" % t, "echo cd .. && cat store/me.md"]:
+            self.assertEqual(self.decision("Bash", command=command), "allow", command)
+
+    def test_a_hidden_store_by_a_pattern(self):
+        dot = os.path.join(self.tmp, ".me")
+        os.rename(self.root, dot)
+        self.hook_env = {"me_home": False}
+        for command in ["cd ~ && cat .m?/me.md", "cd ~; cat .[m]e/me.md", "cd ~ && cat .m*/me.md", "cp -r ~/.m* /tmp/x",
+                        "cd \"$WHERE\" && cat .m?/me.md", "cd && cat .m[e]/journal.md", "cd ~ && ls -a .??"]:
+            self.assertEqual(self.decision("Bash", command=command), "deny", command)
+        for command in ["ls ~/*", "cd ~ && ls", "ls -d .*", "cat .mypy_cache/x", "cd ~ && cat notes/*.md"]:
+            self.assertEqual(self.decision("Bash", command=command), "allow", command)
+
     def test_fails_closed(self):
         for stdin in ("not json", "[1]", ""):
             out = self.run_hook("pre-tool-use", stdin)

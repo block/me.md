@@ -12,10 +12,11 @@ Both read the hook's JSON on stdin and write Claude Code's hook JSON on stdout.
 The pre-tool-use hook fails closed: if it can't check a call, it stops it.
 
 The fence reads paths and command text. It stops a file tool that points into
-the store, a search that would walk into it, and a shell command that names it,
-by path, by a path relative to the working folder, or by a pattern that matches
-it. A command that builds the path some other way gets through; Claude Code's
-sandbox is the wall for that (see README.md).
+the store, a search that would walk into it, and a shell command that names it
+in the common ways: by path, by a path relative to the working folder or to a
+cd earlier in the command, or by a pattern that matches it. A command that
+builds the path some other way, such as in a variable or a script, gets
+through; Claude Code's sandbox is the wall for that (see README.md).
 """
 
 import fnmatch
@@ -129,8 +130,16 @@ def _segment_matches(name, pattern):
     return fnmatch.fnmatchcase(name, pattern)
 
 
-def _pattern_reaches(pattern, roots):
-    """Whether an absolute path pattern (with *, ?, [], {} or **) can match a file inside the store."""
+def _shell_matches(name, pattern):
+    """As a shell matches one name: a leading dot is matched only by a pattern that starts with one."""
+    if name.startswith(".") and not pattern.startswith((".", "{", "(")):
+        return False
+    return _segment_matches(name, pattern)
+
+
+def _pattern_reaches(pattern, roots, itself=False):
+    """Whether an absolute path pattern (with *, ?, [], {} or **) can match a file inside the store, or, with
+    itself, the store's own folder, as a shell would expand it."""
     parts = _segments(pattern)
     for root in roots:
         want = [s for s in root.split(os.sep) if s]
@@ -141,15 +150,18 @@ def _pattern_reaches(pattern, roots):
                 return True  # the pattern goes on inside the store
             if not _segment_matches(want[i], part):
                 break
+        else:
+            if itself and len(parts) == len(want) and _shell_matches(want[-1], parts[-1]):
+                return True  # such as cp -r ~/.m* or tar c /tmp/x/st*: the folder and everything in it
     return False
 
 
-def _reaches(path, cwd, roots):
+def _reaches(path, cwd, roots, itself=False):
     """A path or path pattern, as a tool or command gives it, that points into the store."""
     if not isinstance(path, str) or not path:
         return False
     if _WILD.search(path):
-        return _pattern_reaches(_FOLD(_absolute(path, cwd)), roots)
+        return _pattern_reaches(_FOLD(_absolute(path, cwd)), roots, itself)
     return _inside(path, cwd, roots)
 
 
@@ -180,6 +192,39 @@ def _flat(command, shell):
     return command
 
 
+# A change of folder inside the command: cd, pushd and PowerShell's Set-Location, with what follows it.
+_CD = re.compile(r"(?:^|[;&|({\n])\s*(?:builtin\s+|command\s+)?(?:cd|pushd|chdir|set-location|push-location|sl)"
+                 r"(?=$|[\s;&|)}])([^;&|(){}\n]*)", re.IGNORECASE)
+MOST_FOLDERS = 8  # working folders a command can be in, at most, before the fence stops resolving more
+
+
+def _folders(flat, cwd):
+    """The working folders the command's paths can be relative to: the hook's, and each one a cd in the
+    command moves to, resolved from the folders before it. A cd's own target is one of the command's
+    tokens, so it is checked with the rest."""
+    folders = [cwd]
+    home = os.path.expanduser("~")
+    for match in _CD.finditer(flat):
+        words = [w for w in match.group(1).split() if not w.startswith("-") or w == "-"]
+        target = words[0] if words else home
+        if target == "-":
+            continue  # the folder before: one of those already listed
+        for folder in list(folders):
+            moved = _absolute(target, folder)
+            if len(folders) < MOST_FOLDERS and moved not in folders:
+                folders.append(moved)
+    return folders
+
+
+def _aims_at(segment, base):
+    """A pattern for a hidden folder's name, such as .m?, .[m]e or .m*: it starts with the dot, holds a
+    character of the name besides it, and matches the name."""
+    if not segment.startswith(".") or not _WILD.search(segment):
+        return False
+    literal = re.sub(r"\[[^\]]*\]|[*?{}(),|@!+]", "", segment[1:])
+    return bool(literal) and _shell_matches(base, segment)
+
+
 def _command_reaches(command, shell, cwd, roots):
     """"store" if the command names the store, "walk" if it walks a folder that holds it, else None."""
     if not isinstance(command, str) or not command:
@@ -188,21 +233,25 @@ def _command_reaches(command, shell, cwd, roots):
     flags = re.IGNORECASE if sys.platform == "darwin" else 0
     if re.search(r"\$\{?ME_HOME\}?(?![A-Za-z0-9_])|env:ME_HOME|ME_HOME=", flat, re.IGNORECASE):
         return "store"
+    tokens = [t for t in re.split(r"[\s;&|<>()=]+", flat) if t]
     for root in roots:
         if re.search(re.escape(root) + _NAME_END, flat, flags):
             return "store"
         base = os.path.basename(root)
-        if base.startswith(".") and re.search(r"(?<![A-Za-z0-9._-])" + re.escape(base) + _NAME_END, flat, flags):
-            return "store"  # a hidden folder's name, such as .me, wherever it appears as a path segment
-    tokens = [t for t in re.split(r"[\s;&|<>()=]+", flat) if t]
+        if base.startswith("."):
+            if re.search(r"(?<![A-Za-z0-9._-])" + re.escape(base) + _NAME_END, flat, flags):
+                return "store"  # a hidden folder's name, such as .me, wherever it appears as a path segment
+            if any(_aims_at(_FOLD(part), _FOLD(base)) for t in tokens for part in t.split("/")):
+                return "store"  # a pattern for that name, wherever it appears
+    folders = _folders(flat, cwd)
     for token in tokens:
         if token.startswith("-") and "/" not in token:
             continue
-        if _reaches(token, cwd, roots):
+        if any(_reaches(token, folder, roots, itself=True) for folder in folders):
             return "store"
     if _WALKERS.search(flat):
-        paths = [t for t in tokens if not t.startswith("-")]
-        if _holds(cwd, cwd, roots) or any(_holds(t, cwd, roots) for t in paths if "/" in t or t in (".", "..")):
+        paths = [t for t in tokens if not t.startswith("-") and ("/" in t or t in (".", ".."))]
+        if any(_holds(folder, folder, roots) or any(_holds(t, folder, roots) for t in paths) for folder in folders):
             return "walk"
     return None
 
