@@ -142,7 +142,8 @@ class StoreFS:
             except OSError:
                 continue
             if stat.S_ISLNK(mode):
-                notices.append("%s/%s is a symbolic link, so it is ignored (S2.4)." % (folder, name))
+                notices.append("%s/%s is a symbolic link, so it is ignored (S2.4)."
+                               % (folder, formats.shown_name(name)))
             elif stat.S_ISREG(mode):
                 names.append(name)
         return names, notices

@@ -103,7 +103,8 @@ class Host:
 
     def _spec_message(self, obj):
         return ("policy.json says this store follows spec %s. This host supports only %s, so it will not "
-                "write to the store, except to turn memory off (S5.4)." % (formats._json(obj.get("spec")), formats.SPEC))
+                "write to the store, except to turn memory off (S5.4)."
+                % (formats.quoted(obj.get("spec")), formats.SPEC))
 
     def _answer(self, s, **fields):
         out = {"memory": s["memory"]}
@@ -197,7 +198,7 @@ class Host:
                         out[folder].append(name)
                     else:
                         notices.append("I ignore %s/%s because of its name. Names are lowercase letters, digits, "
-                                       "., _ and -, ending in .md (S2.1)." % (folder, name))
+                                       "., _ and -, ending in .md (S2.1)." % (folder, formats.shown_name(name)))
             out["watches"] = self.fs.kind("watches.md") == "file"
         return self._answer(s, notices=notices, **out)
 
@@ -236,7 +237,8 @@ class Host:
         out = []
         for name in names:
             if not name.endswith(".md"):
-                notices.append("I ignore proposals/%s because it does not end in .md (S2.1)." % name)
+                notices.append("I ignore proposals/%s because it does not end in .md (S2.1)."
+                               % formats.shown_name(name))
                 continue
             try:
                 out.append(Proposal(name, self.fs.read("proposals/" + name)))

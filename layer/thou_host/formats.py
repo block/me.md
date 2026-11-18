@@ -141,7 +141,7 @@ def parse_policy(data):
         obj = json.loads(text, object_pairs_hook=_strict, parse_constant=_no_constant,
                          parse_float=decimal.Decimal, parse_int=decimal.Decimal)
     except _Duplicate as exc:
-        return "off", 'policy.json repeats the member "%s"' % exc, None
+        return "off", "policy.json repeats the member %s" % quoted(str(exc)), None
     except (UnicodeDecodeError, ValueError):
         return "off", "policy.json is not valid JSON", None
     except RecursionError:
@@ -152,7 +152,7 @@ def parse_policy(data):
         return "on", 'policy.json says "on"', obj
     if "state" not in obj:
         return "off", 'policy.json has no "state"', obj
-    return "off", 'policy.json says "state": %s, and only "on" means on' % _json(obj["state"]), obj
+    return "off", 'policy.json says "state": %s, and only "on" means on' % quoted(obj["state"]), obj
 
 
 def spec_supported(obj):
@@ -180,6 +180,18 @@ def _json(value, level=0):
     if isinstance(value, decimal.Decimal):
         return str(value)
     return json.dumps(value, ensure_ascii=False)
+
+
+def quoted(value, most=40):
+    """A value from a store file, for a message: compact JSON with every character a person can't see escaped,
+    cut to about most characters, so that it reads as a quotation and not as text of the message."""
+    text = json.dumps(value, ensure_ascii=True, separators=(",", ":"), default=str)
+    return text if len(text) <= most else text[:most] + "..."
+
+
+def shown_name(name):
+    """A file name from the store, for a message: as it is if it is plainly a name, else quoted."""
+    return name if re.fullmatch(r"[A-Za-z0-9._-]{1,80}", name) else quoted(name, 60)
 
 
 def policy_bytes(obj):
