@@ -30,6 +30,7 @@ basis: You asked twice.
 Prefer aisle seats.
 """
 
+OURS = PROPOSAL.replace("proposed-by: examplehost 1.0", "proposed-by: thou-layer 0.1.0 (test)")
 
 MCP_SERVER = os.path.join(os.path.dirname(HERE), "thou_mcp.py")
 INIT = '{"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}}'
@@ -320,6 +321,7 @@ class Decide(StoreTest):
         self.assertEqual(self.read(".me.lock"), b"someone-elses-token-123 otherhost 2026-11-12T17:03:01Z\n")
 
     def test_revise_then_accept(self):
+        self.write("proposals/20261112T170301Z-7f3a.md", OURS)
         self.host.revise("20261112T170301Z-7f3a", "Prefer exit rows.")
         self.host.decide("20261112T170301Z-7f3a", "accept")
         self.assertEqual(self.read("topics/travel.md"), b"Prefer exit rows.\n")
@@ -464,11 +466,20 @@ class Revise(StoreTest):
     def test_revise_cannot_bring_back_refused_words(self):
         refused = PROPOSAL.replace("status: pending", "status: refused").replace("Prefer aisle seats.", "Book the cheapest.")
         self.write("proposals/20261110T090000Z-old1.md", refused)
-        self.write("proposals/20261112T170301Z-7f3a.md", PROPOSAL)
+        self.write("proposals/20261112T170301Z-7f3a.md", OURS)
         self.assertEqual(self.code(self.host.revise, "20261112T170301Z-7f3a", "Book  the cheapest. "), "refused")
         self.assertIn(b"Prefer aisle seats.", self.read("proposals/20261112T170301Z-7f3a.md"))
         self.host.revise("20261112T170301Z-7f3a", "Prefer window seats.")
         self.assertIn(b"Prefer window seats.", self.read("proposals/20261112T170301Z-7f3a.md"))
+
+    def test_only_its_own_proposals(self):
+        for by in ("examplehost 1.0", "Ana, by hand", "thou-layered 2.0"):
+            self.write("proposals/20261112T170301Z-7f3a.md", PROPOSAL.replace("examplehost 1.0", by))
+            self.assertEqual(self.code(self.host.revise, "20261112T170301Z-7f3a", "Prefer window seats."), "not_ours")
+            self.assertIn(b"Prefer aisle seats.", self.read("proposals/20261112T170301Z-7f3a.md"))
+        pid = self.host.propose("topics/travel.md", "Prefer aisle seats too.", "You said so.")["proposal"]
+        self.host.revise(pid, "Prefer window seats.")
+        self.assertIn(b"Prefer window seats.", self.read("proposals/%s.md" % pid))
 
 
 class Start(StoreTest):

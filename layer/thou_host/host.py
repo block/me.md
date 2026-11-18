@@ -397,7 +397,10 @@ class Host:
         return self._answer(self.state(), status=status, applied=applied, journal=journal, notices=notices)
 
     def revise(self, proposal, body, agent=None):
-        """S6.15: the person changes a pending body. Not journaled (S6.13)."""
+        """S6.15: the person changes a pending body. Not journaled (S6.13).
+
+        Only a proposal this host wrote: one the person wrote by hand, or another host proposed, keeps its
+        words, and its proposed-by would no longer say who wrote them."""
         self._writable()
         if not isinstance(body, str):
             raise HostError("bad_request", "revise needs a body: the new words.")
@@ -409,6 +412,11 @@ class Host:
         token = self._lock(agent)
         try:
             data, p = self._read_pending(rel)
+            by = formats.one_line(p.fields["proposed-by"])
+            if not by.startswith(NAME + " "):
+                raise HostError("not_ours", "%s was proposed by %s, not by this host, so I will not change its "
+                                            "words. Propose the new words instead, and the person can refuse "
+                                            "the old ones." % (rel, formats.quoted(by, 60)))
             self.fs.replace(rel, lambda old: Proposal(p.name, old).revised(body) if old == data else None)
         finally:
             self.fs.unlock(token)

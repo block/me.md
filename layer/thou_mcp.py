@@ -87,7 +87,8 @@ TOOLS = [
                                                  "sees the target and words when they approve. If either differs "
                                                  "from the proposal, nothing is decided."}},
      ["proposal", "decision", "target", "words"], False),
-    ("revise", "Change the words of a pending proposal to what the person asked for, before they decide.",
+    ("revise", "Change the words of a pending proposal this host wrote to what the person asked for, before they "
+               "decide. For a proposal the person or another agent wrote, propose the new words instead.",
      {"proposal": _PROPOSAL, "body": _TEXT}, ["proposal", "body"], False),
     ("edit", "Make an edit the person explicitly asked for in this session, such as 'remember that Mondays are "
              "soccer'. For anything you inferred yourself, use propose instead.",
