@@ -31,6 +31,15 @@ OFF_NOTICE = ("Memory is off. This host enforces that in its own code, for its o
 MOST, MOST_LINES = 2000, 30
 
 
+def _too_long(text):
+    """Why text is too long for one approval prompt, or None."""
+    lines = len(formats.body_lines(text))
+    if len(text) > MOST or lines > MOST_LINES:
+        return ("has %d characters on %d lines. One change holds at most %d characters and %d lines, so that the "
+                "person can read all of it when they approve it." % (len(text), lines, MOST, MOST_LINES))
+    return None
+
+
 class HostError(Exception):
     def __init__(self, code, message, notices=()):
         Exception.__init__(self, message)
@@ -143,12 +152,9 @@ class Host:
         if found:
             raise HostError("hidden_characters", "%s holds characters a person can't see (%s), so I wrote nothing. "
                                                  "Use only words the person can read." % (what, formats.code_points(found)))
-        lines = len(formats.body_lines(text))
-        if len(text) > MOST or lines > MOST_LINES:
-            raise HostError("too_long", "%s has %d characters on %d lines. One change holds at most %d characters "
-                                        "and %d lines, so that the person can read all of it when they approve it. "
-                                        "I wrote nothing; split it into smaller changes."
-                            % (what, len(text), lines, MOST, MOST_LINES))
+        too_long = _too_long(text)
+        if too_long:
+            raise HostError("too_long", "%s %s I wrote nothing; split it into smaller changes." % (what, too_long))
 
     def _not_refused(self, body):
         """H3.3, S6.11: refused words, and the words of an invalid proposal, are never proposed again."""
@@ -252,6 +258,9 @@ class Host:
                     if found:
                         item["hidden"] = ("These words hold characters a person can't see (%s). They can be refused "
                                           "or revised, not accepted." % formats.code_points(found))
+                    too_long = _too_long(p.body)
+                    if too_long:
+                        item["too_long"] = "These words %s They can be refused or revised, not accepted." % too_long
                     proposals.append(item)
         return self._answer(s, proposals=proposals, invalid=invalid, notices=notices)
 
@@ -346,6 +355,10 @@ class Host:
                     raise HostError("hidden_characters", "%s holds characters a person can't see (%s), so I will "
                                                          "not add it. Refuse it, or revise it to words the person "
                                                          "can read." % (rel, formats.code_points(found)))
+                too_long = _too_long(p.body)
+                if too_long:
+                    raise HostError("too_long", "%s %s So I will not add it. Refuse it, or revise it shorter."
+                                    % (rel, too_long))
 
                 def add(old):
                     # S6.15: apply the body as it is at acceptance. If the file changed since it was read,

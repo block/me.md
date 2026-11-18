@@ -442,6 +442,23 @@ class Hidden(StoreTest):
         self.assertTrue(self.host.edit("me.md", "append", "word " * (MOST // 5 - 1))["journal"])
         self.assertTrue(self.host.edit("me.md", "append", "line\n" * MOST_LINES)["journal"])
 
+    def test_a_long_proposal_can_be_refused_not_accepted(self):
+        from thou_host.host import MOST, MOST_LINES
+        for n, body in enumerate(("word " * (MOST // 5 + 1), "line\n" * (MOST_LINES + 1))):
+            pid = "20261112T170301Z-long%d" % n
+            self.write("proposals/%s.md" % pid, PROPOSAL.replace("Prefer aisle seats.\n", body))
+            item = [p for p in self.host.pending()["proposals"] if p["id"] == pid][0]
+            self.assertIn("refused or revised, not accepted", item["too_long"])
+            words = item["body"]
+            self.assertEqual(self.code(self.host.decide, pid, "accept", words=words, target="topics/travel.md"),
+                             "too_long")
+            self.assertFalse(os.path.exists(self.path("topics/travel.md")))
+            self.assertIn(b"status: pending", self.read("proposals/%s.md" % pid))
+            self.assertEqual(self.host.decide(pid, "refuse", words=words, target="topics/travel.md")["status"],
+                             "refused")
+        self.host.propose("me.md", "Short.", "You said so.")
+        self.assertEqual([("too_long" in p) for p in self.host.pending()["proposals"]], [False])
+
 
 class Revise(StoreTest):
     def test_revise_cannot_bring_back_refused_words(self):
