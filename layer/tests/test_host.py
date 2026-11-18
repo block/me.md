@@ -567,7 +567,7 @@ class Formats(unittest.TestCase):
 
 class Concurrency(StoreTest):
     def test_two_processes_accept_same_target(self):
-        env = {"PATH": os.environ.get("PATH", ""), "HOME": self.tmp, "ME_HOME": self.root}
+        env = {"PATH": os.environ.get("PATH", ""), "HOME": self.tmp, "ME_HOME": self.root, "THOU_CLIENT_ASKS": "1"}
         for round_ in range(15):
             ids = []
             for n in range(2):
@@ -695,7 +695,7 @@ class Robustness(StoreTest):
         self.assertEqual(self.read("me.md"), b"I like blue.\n")
 
     def run_server(self, lines):
-        env = {"PATH": os.environ.get("PATH", ""), "HOME": self.tmp, "ME_HOME": self.root}
+        env = {"PATH": os.environ.get("PATH", ""), "HOME": self.tmp, "ME_HOME": self.root, "THOU_CLIENT_ASKS": "1"}
         out = subprocess.run([sys.executable, MCP_SERVER], input="\n".join(lines) + "\n", env=env, text=True,
                              capture_output=True, timeout=30)
         self.assertEqual(out.returncode, 0, out.stderr)
@@ -730,22 +730,32 @@ class Robustness(StoreTest):
         self.assertFalse(os.path.exists(self.path(".me.lock")))
 
 
-class Mcp(StoreTest):
+class Served(StoreTest):
+    asks = True  # as the plugin runs it: Claude Code asks the person before each consent call
+
     def serve(self, *messages):
         import io
         import thou_mcp
-        old = os.environ.get("ME_HOME")
-        os.environ["ME_HOME"] = self.root
+        env = {"ME_HOME": self.root, "THOU_CLIENT_ASKS": "1" if self.asks else None}
+        old = {k: os.environ.get(k) for k in env}
+        for k, v in env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
         try:
             out = io.StringIO()
             thou_mcp.Server(out).serve(json.dumps(m) for m in messages)
         finally:
-            if old is None:
-                os.environ.pop("ME_HOME", None)
-            else:
-                os.environ["ME_HOME"] = old
+            for k, v in old.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
         return [json.loads(line) for line in out.getvalue().splitlines()]
 
+
+class Mcp(Served):
     def test_no_instructions_while_off(self):
         init = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}}
         self.assertIn("instructions", self.serve(init)[0]["result"])
@@ -845,6 +855,72 @@ class Tools(Mcp):
                 "params": {"name": "start", "arguments": {"text": "Hello."}}}
         self.assertEqual(tool_answer(self.serve(call)[0])["error"], "memory_off")
         self.assertFalse(os.path.exists(self.path("me.md")))
+
+
+class Unasked(Served):
+    """A client that doesn't ask the person first, such as the bare server in another agent."""
+    asks = False
+    LIST = Tools.LIST
+    tools = Tools.tools
+
+    def call(self, n, name, **arguments):
+        return {"jsonrpc": "2.0", "id": n, "method": "tools/call", "params": {"name": name, "arguments": arguments}}
+
+    def test_offers_no_change_on_the_persons_say(self):
+        tools = self.tools()
+        self.assertEqual(sorted(tools), sorted(n for n in thou_mcp_names() if n not in ("start", "decide", "edit",
+                                                                                         "forget")))
+        self.assertEqual(tools["policy"]["inputSchema"]["properties"]["state"]["enum"], ["off"])
+        init = {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}}
+        text = self.serve(init)[0]["result"]["instructions"]
+        self.assertIn("there is no decide, edit, forget or start here", text)
+        self.write("policy.json", '{"state": "off"}')
+        self.assertEqual(sorted(self.tools()), ["where"])
+        shutil.rmtree(self.root)
+        self.assertEqual(sorted(self.tools()), ["where"])
+        self.assertNotIn("call start", self.serve(init)[0]["result"]["instructions"])
+
+    def test_refuses_calls_that_would_be_the_persons(self):
+        self.write("proposals/20261112T170301Z-7f3a.md", PROPOSAL)
+        calls = [self.call(10, "decide", proposal="20261112T170301Z-7f3a", decision="accept",
+                           target="topics/travel.md", words="Prefer aisle seats."),
+                 self.call(11, "edit", path="me.md", action="append", text="I like red."),
+                 self.call(12, "forget", path="me.md"),
+                 self.call(13, "policy", state="on")]
+        before = {rel: self.read(rel) for rel in ("me.md", "proposals/20261112T170301Z-7f3a.md")}
+        for message in self.serve(*calls):
+            self.assertEqual(tool_answer(message)["error"], "not_asked")
+        for rel, data in before.items():
+            self.assertEqual(self.read(rel), data)
+        self.assertFalse(os.path.exists(self.path("journal.md")))
+        self.assertFalse(os.path.exists(self.path("topics/travel.md")))
+        shutil.rmtree(self.root)
+        out = self.serve(self.call(14, "start", text="I build bikes."))
+        self.assertEqual(tool_answer(out[0])["error"], "not_asked")
+        self.assertFalse(os.path.exists(self.root))
+
+    def test_still_proposes_and_turns_memory_off(self):
+        out = self.serve(self.call(10, "propose", target="me.md", body="I like red.", basis="You said so."),
+                         self.call(11, "policy", state="off"))
+        self.assertTrue(tool_answer(out[0])["ok"])
+        self.assertTrue(tool_answer(out[1])["ok"])
+        self.assertEqual(self.read("me.md"), b"I like blue.\n")
+        self.assertIn(b"turned memory off", self.read("journal.md"))
+        self.lint()
+
+    def test_only_the_exact_setting_counts(self):
+        import thou_mcp
+        for value in ("", "0", "true", "yes", " 1"):
+            os.environ["THOU_CLIENT_ASKS"] = value
+            try:
+                self.assertFalse(thou_mcp.client_asks(), value)
+            finally:
+                os.environ.pop("THOU_CLIENT_ASKS", None)
+
+    def test_the_plugin_says_claude_code_asks(self):
+        with open(os.path.join(os.path.dirname(HERE), ".mcp.json")) as handle:
+            server = json.load(handle)["mcpServers"]["thou"]
+        self.assertEqual(server["env"], {"THOU_CLIENT_ASKS": "1"})
 
 
 def thou_mcp_names():
