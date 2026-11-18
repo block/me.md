@@ -479,9 +479,12 @@ class Limits(StoreTest):
         notices = self.host.pending()["notices"]
         self.assertEqual(notices, ['I ignore proposals/"caf\\udce9.md" because its name is not UTF-8 (S2.1).'])
         import io
+        from unittest import mock
         import thou_mcp
         out = io.StringIO()
-        thou_mcp.Server(out).send({"jsonrpc": "2.0", "id": 1, "result": {"file": "caf\udce9.md", "text": "café"}})
+        with mock.patch.dict(os.environ, {"ME_HOME": self.root}):
+            server = thou_mcp.Server(out)
+        server.send({"jsonrpc": "2.0", "id": 1, "result": {"file": "caf\udce9.md", "text": "café"}})
         line = out.getvalue()
         self.assertTrue(line.isascii())
         self.assertEqual(json.loads(line)["result"]["text"], "café")
