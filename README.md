@@ -6,17 +6,67 @@ Your file says me. Your agents say thou.
 
 <p align="center"><img src="./assets/before-after.png" width="420" alt="A square field of small pointed marks, split down the middle by a blue line. On the right, before, the marks are grey and point every which way. On the left, after, they are black and all point toward one spot on the line, and the marks nearest it are blue."></p>
 
-The thou protocol keeps what your agents know about you in plain Markdown files that you own, starting with `~/.me/me.md`. The file is yours, so it is called `me.md`. The protocol is how agents address you, so it is called thou. The protocol requires every agent that follows it to read those files the same way, to ask before it keeps anything it inferred about you, to record each change it makes, and to stop using the files when you turn memory off. It is an experimental draft, and no agent has claimed to conform yet. Today you try it by giving an agent the setup instruction below.
+The thou protocol is an experimental draft of rules for how AI agents remember the people they work for. This page starts with why. The practical part starts at [How it works](#how-it-works).
+
+## To be remembered
+
+Being remembered is one of the oldest kinds of care. A friend remembers what worried you last month, how you like to work, and the thing you said you would never do again. You trust what they remember because you can see it in how they treat you. You can correct them, and you can ask them to let something go.
+
+Agents now remember people too. They notice what you ask for, what you come back to, and what you seem to want. Some of that is a kindness. But what an agent keeps is often held in a place or a format you can't easily read, under rules you didn't write. Some of it is not something you said. It was inferred about you, so you are its subject, not its author. There is usually no one place where you can read all of it, carry it to the next agent, or turn it all off.
+
+The thou protocol starts from one question: what does an agent owe the person it remembers?
+
+## Two ways to meet
+
+In 1923 the philosopher Martin Buber wrote that a person stands toward the world in two ways ([Stanford Encyclopedia of Philosophy, "Martin Buber"](https://plato.stanford.edu/entries/buber/)). You can treat what you meet as an *It*: something to experience and use. Or you can meet it as a *Thou*: whole and present, in a relation that goes both ways. Buber did not think a person could do without the It. He wrote that "without It man cannot live. But he who lives with It alone is not a man."
+
+He also saw a difference in time. A self that meets nothing as a *Thou*, he wrote, "has no present, only the past."
+
+In Buber's terms, agent memory belongs to the world of It, and that is not a fault. It is how an agent can be of use to you at all. The danger is a memory that only looks back: a profile that knows who you were and treats it as who you are, that can't hear "that isn't me any more", and that can't tell what you said from what it guessed.
+
+Software can't meet you the way a person can, and no name can change that. Buber wrote that the primary word I-Thou "can be spoken only with the whole being." What a protocol can change is the record: what is kept about you, in whose words, in whose hands, and on whose say. The thou protocol asks every agent that follows it to work from a record you can read and change, and to let what you say now override it.
+
+The quotations are from Martin Buber, *I and Thou*, translated by Ronald Gregor Smith (Edinburgh: T. & T. Clark, 1937).
+
+## What it asks of an agent
+
+Not every agent does all of this. An agent claims a level, and the higher levels add the duties about proposals, decisions and deleting. [It, or thou](#it-or-thou) lists the levels.
+
+**You are the authority on you.** What an agent inferred about you is a guess. Your own words rank above it, and what you say now outweighs anything stored. The record is the past. You are the present.
+
+**Memory is chosen.** What an agent notices is not memory yet. To keep something it inferred, it has to ask. You can say yes, change the words, or say no. Silence is not a yes.
+
+**A no is kept.** When you refuse, the refusal is kept, so no agent that follows the protocol proposes those words again. It lasts until you delete it.
+
+**You can change.** Your memory lives in plain text files that you can read, correct or delete, so the record can change when you do.
+
+**Being known is not permission.** Knowing what you prefer doesn't let an agent send, buy, publish or approve anything for you. What you have told it can narrow what it may do. It never adds a power.
+
+**Forgetting is part of care.** You can delete anything in your files. Copies outside them, such as a model provider's logs, are beyond the protocol's reach. One switch turns memory off for every agent that follows the protocol. That switch is a request those agents honor, not a lock, and it can't take back what a session has already read.
+
+**It is not for watching people.** The protocol commits never to become a productivity score or a way to watch people at work, and context about other people should stay minimal. That is a commitment, not yet something a test can check.
+
+**You can leave.** No agent should be the only one that can read what you have shared. Every agent on one computer that follows the protocol serves the same files, so you can change agents and keep your context. This has not been tested with two real agents yet, and syncing between devices is not defined.
+
+The protocol is an experimental draft, and no agent has claimed to conform yet. An agent that can keep the off switch only by asking a model to obey must say so in its conformance claim, with the words "by instruction". Today, every agent that follows the protocol through the [paste-in block](./PROTOCOL.md#the-paste-in-form) is in that position. [What it can't promise yet](#what-it-cant-promise-yet) lists what is still missing.
+
+## Why the name
+
+The file is yours, so it is called `me.md`. The protocol is how your agents should address you, so it is called thou. The word is how English once said "you" to one person, and it is the *Thou* of Buber's *I and Thou*. It rhymes with "how", and it is written here in lowercase.
+
+The first drafts of the protocol were called `me.md`, the name your file keeps.
+
+## How it works
+
+The thou protocol keeps what your agents know about you in plain Markdown files that you own, starting with `~/.me/me.md`. The protocol requires every agent that follows it to read those files the same way, to ask before it keeps anything it inferred about you, to record each change it makes, and to stop using the files when you turn memory off. Today you try it by giving an agent the setup instruction in the [Quickstart](#quickstart).
 
 The files also feed the protocol's main output, a [briefing](./BRIEFING.md): what moved, where the pull is, what is missing, and what to do next. It is meant to help you keep up with your agents, on your terms.
 
+The Markdown files are not the new part: some agents, coding agents especially, already keep memory in Markdown files. What the thou protocol adds is a contract around the files, the same in every agent that follows it. In the spec, an agent or the app that runs it is a *host*, and your folder of files is the *store*.
+
 ## It, or thou
 
-In 1923 the philosopher Martin Buber described two ways to meet another being ([Stanford Encyclopedia of Philosophy, "Martin Buber"](https://plato.stanford.edu/entries/buber/)). You can meet them as a *Thou*: a whole person, in a relation that goes both ways. Or you can treat them as an *It*: a thing to know about and use. Buber saw both as part of life.
-
-Many agents now remember you, and that memory is often an It relation. Each agent keeps what it learns in its own place, in its own format, under its own rules. Some of it is not something you said. It was inferred about you. There is usually no one place where you can read all of it, carry it to the next agent, or turn it all off. In the EU, the right to take your data to another service covers what you gave a service and what it observed you doing. Official guidance says it does not cover data the service creates "by a personalisation or recommendation process, by user categorisation or profiling" ([Article 29 Working Party, *Guidelines on the right to data portability*, WP242, 2016](https://ec.europa.eu/information_society/newsroom/image/document/2016-51/wp242_en_40852.pdf)). You can still ask to see that data, under the right of access, but the service doesn't have to let you take it with you.
-
-Software can't meet you the way a person can. What the protocol can change is the record, and who controls it. The Markdown files are not the new part: some agents, coding agents especially, already keep memory in Markdown files. What the thou protocol adds is a contract around the files, the same in every agent that follows it. In the spec, an agent or the app that runs it is a *host*, and your folder of files is the *store*.
+The law reaches only part of what is inferred about you. In the EU, the right to take your data to another service covers what you gave a service and what it observed you doing. Official guidance says it does not cover data the service creates "by a personalisation or recommendation process, by user categorisation or profiling" ([Article 29 Working Party, *Guidelines on the right to data portability*, WP242, 2016](https://ec.europa.eu/information_society/newsroom/image/document/2016-51/wp242_en_40852.pdf)). You can still ask to see that data, under the right of access, but the service doesn't have to let you take it with you.
 
 The left column below is memory that treats you as an It. In our reading, most products today sit somewhere between the two columns. The right column is what the spec requires of a host. A host picks a level, and each level adds duties to the one before: a Reader only reads, a Proposer also proposes, a Steward also applies your decisions and records them, and a Briefer also produces briefings. The rows on new memory, refusals, the journal and deleting start at the Proposer or Steward level. No host has claimed conformance yet.
 
@@ -76,12 +126,6 @@ You accept it, in any agent that serves the store. The acceptance leaves two lin
 ```
 
 Refuse it instead, and no agent that follows the protocol proposes those words again. Write `{"state": "off"}` in `~/.me/policy.json`, and every agent that follows the protocol is required to stop using the store.
-
-## Why the name
-
-The name rhymes with "how". It is how English once said "you" to one person. It is also Buber's word in *I and Thou*, above, written here in lowercase.
-
-The first drafts of the protocol were called `me.md`, the name your file keeps.
 
 ## What it can't promise yet
 
