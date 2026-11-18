@@ -58,8 +58,8 @@ def one_line(text):
 _FLAG_RE = re.compile("\U0001F3F4[\U000E0030-\U000E0039\U000E0061-\U000E007A]{2,6}\U000E007F")
 _SELECTOR_RE = re.compile("[︀-️\U000E0100-\U000E01EF]")
 _JOINERS = ("‌", "‍")  # they shape scripts and emoji, and carry no text of their own
-# Letters and marks that show nothing, and line breaks a terminal may not show as one.
-_BLANK = ("͏", "ᅟ", "ᅠ", "ㅤ", "ﾠ", " ", " ")
+# Letters, marks and symbols that show nothing, and line breaks a terminal may not show as one.
+_BLANK = ("͏", "ᅟ", "ᅠ", "ㅤ", "ﾠ", " ", " ", "\u17b4", "\u17b5", "\u2800", "\U0001d159")
 
 
 def hidden(text):

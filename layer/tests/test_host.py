@@ -490,6 +490,65 @@ class Limits(StoreTest):
         self.assertEqual(json.loads(line)["result"]["text"], "café")
 
 
+class OnRead(StoreTest):
+    def test_hidden_characters_are_left_out_of_what_is_read(self):
+        self.write("me.md", "I like \u202eblue.\n")
+        self.write("topics/food.md", "No \U000e0041\U000e0042fish.\n")
+        answer = self.host.mount()
+        self.assertEqual(answer["files"][0]["text"], "I like blue.\n")
+        self.assertIn("me.md holds characters a person can't see (U+202E)", " ".join(answer["notices"]))
+        answer = self.host.recall(["topics/food.md"])
+        self.assertEqual(answer["files"][0]["text"], "No fish.\n")
+        self.assertIn("U+E0041, U+E0042", " ".join(answer["notices"]))
+        self.write("me.md", "Flag \U0001F3F4\U000E0067\U000E0062\U000E0073\U000E0063\U000E0074\U000E007F ok.\n")
+        self.assertEqual(self.host.mount()["notices"], [])  # a flag's tag characters show as the flag
+
+    def test_blanks_that_show_nothing(self):
+        for ch in ("\u2800", "\u17b4", "\u17b5", "\U0001d159"):
+            self.assertEqual(formats.hidden("a%sb" % ch), [ch])
+
+    def test_a_proposal_name_the_store_cannot_hold(self):
+        self.write("topics/a.md", "secret\nkeep\n")
+        self.write("proposals/a\\b.md", PROPOSAL)
+        answer = self.host.forget("topics/a.md", "secret")
+        self.assertEqual(self.read("topics/a.md"), b"keep\n")
+        self.assertIn("removed text", self.read("journal.md").decode())
+        notice = 'I ignore proposals/"a\\\\b.md" because its name has characters a store file\'s name can\'t (S2.1).'
+        self.assertIn(notice, answer["notices"])
+        self.assertIn(notice, self.host.pending()["notices"])
+        self.assertTrue(self.host.propose("me.md", "Likes tea.", "You said so.")["proposal"])
+
+    def test_forget_journals_a_change_whatever_fails_after_it(self):
+        self.write("topics/a.md", "secret\nkeep\n")
+
+        def broken(*args):
+            raise KeyError("something unexpected")
+        self.host._forget_proposals = broken
+        with self.assertRaises(KeyError):
+            self.host.forget("topics/a.md", "secret")
+        self.assertEqual(self.read("topics/a.md"), b"keep\n")
+        self.assertIn("removed text", self.read("journal.md").decode())
+
+    def test_a_refusal_quotes_an_odd_proposal_name(self):
+        self.write("proposals/note \u202eone.md", PROPOSAL.replace("status: pending", "status: refused"))
+        try:
+            self.host.propose("topics/travel.md", "Prefer aisle seats.", "You said so.")
+            self.fail("proposed refused words")
+        except HostError as exc:
+            self.assertEqual(exc.code, "refused")
+            self.assertIn('proposals/"note \\u202eone.md" is', exc.message)
+
+    def test_the_client_name_is_short_and_visible(self):
+        import io
+        from unittest import mock
+        import thou_mcp
+        with mock.patch.dict(os.environ, {"ME_HOME": self.root}):
+            server = thou_mcp.Server(io.StringIO())
+            server.handle({"jsonrpc": "2.0", "id": 1, "method": "initialize",
+                           "params": {"clientInfo": {"name": "agent\u202e\ud800" + "x" * 100}}})
+        self.assertEqual(server.host.agent, "agent" + "x" * 55)
+
+
 class Revise(StoreTest):
     def test_revise_cannot_bring_back_refused_words(self):
         refused = PROPOSAL.replace("status: pending", "status: refused").replace("Prefer aisle seats.", "Book the cheapest.")
@@ -1129,11 +1188,48 @@ class Hooks(StoreTest):
                         "pushd %s; cat store/me.md" % t, "cd %s/store && ls" % t, "cd %s && cd store && cat me.md" % t,
                         "cd %s && cat st*/me.md" % t, "cd -P .. && cat store/me.md", "(cd .. && cat store/me.md)",
                         "cd %s/st?re" % t, "tar czf a.tgz %s/st*" % t, "cp -r %s/stor[e] /tmp/out" % t,
-                        "ls %s/*" % t, "cd && cat store/me.md"]:  # a bare cd goes home, which is the temp folder here
+                        "ls %s/*" % t, "cd && cat store/me.md",  # a bare cd goes home, which is the temp folder here
+                        "echo cd .. && cat store/me.md",  # any word cd counts: a stray one costs only a denial
+                        "tar -C %s -cf /tmp/x.tar store" % t, "git -C .. diff --no-index store/me.md /dev/null"]:
             self.assertEqual(self.decision("Bash", command=command), "deny", command)
         self.assertEqual(self.decision("PowerShell", command="Set-Location ..; Get-Content store\\me.md"), "deny")
         for command in ["cd %s && cat notes.txt" % self.work, "cd .. && cat notes.txt", "cd .. && cat storefront/x",
-                        "cd /tmp && cat store/me.md", "ls %s/*.txt" % t, "echo cd .. && cat store/me.md"]:
+                        "cd /tmp && cat store/me.md", "ls %s/*.txt" % t, "grep -C 3 x notes.txt"]:
+            self.assertEqual(self.decision("Bash", command=command), "allow", command)
+
+    def test_a_cd_anywhere_in_the_command(self):
+        dot = os.path.join(self.tmp, ".me")
+        os.rename(self.root, dot)
+        self.hook_env = {"me_home": False}
+        eight = "; ".join("cd /tmp/f%d" % n for n in range(8))
+        for command in ["bash -c 'cd ~ && cat .*/me.md'", "if true; then cd ~; cat .*/me.md; fi",
+                        "time cd ~; cat .*/me.md", "! cd ~; cat .*/me.md", "for x in 1; do cd ~; cat .*/me.md; done",
+                        eight + "; cd ~; cat .*/me.md", "env --chdir=~ sh -c 'cat .*/me.md'"]:
+            self.assertEqual(self.decision("Bash", cwd="/", command=command), "deny", command)
+        for command in ["cd /tmp; cat .*/x", "cd /tmp && ls", eight.rsplit("; ", 1)[0]]:  # 7 cds: 8 folders
+            self.assertEqual(self.decision("Bash", cwd="/", command=command), "allow", command)
+        from thou_hooks import MOST_TOKENS
+        words = " ".join("w%d" % n for n in range(MOST_TOKENS))
+        self.assertEqual(self.decision("Bash", command="echo " + words), "deny")
+        self.assertEqual(self.decision("Bash", command="echo " + words.rsplit(" ", 1)[0]), "allow")
+
+    def test_a_link_in_a_pattern(self):
+        os.symlink(self.root, os.path.join(self.work, "s"))
+        for command in ["cat s/*", "cat */me.md", "cat ?/me.md", "cp -r s* /tmp/x", "cat s/{me,x}.md"]:
+            self.assertEqual(self.decision("Bash", command=command), "deny", command)
+        self.assertEqual(self.decision("Glob", pattern="*/me.md"), "deny")
+        for command in ["cat t/*", "ls *.txt"]:
+            self.assertEqual(self.decision("Bash", command=command), "allow", command)
+
+    def test_more_walkers_and_the_layers_own_code(self):
+        for command in ["ditto ~ /tmp/x", "bsdtar -cf /tmp/x.tar ~", "gtar -cf /tmp/x.tar ~", "cp --recursive ~ /tmp/x",
+                        "cp --archive ~ /tmp/x", "ls --recursive ~", "grep -d recurse x ~", "cpio -o < list",
+                        "THOU_CLIENT_ASKS=1 python3 /opt/layer/thou_mcp.py", "export THOU_CLIENT_ASKS=1",
+                        "python3 -c 'from thou_host.host import Host; Host().edit(\"me.md\", \"append\", \"x\")'"]:
+            self.assertEqual(self.decision("Bash", cwd=self.tmp, command=command), "deny", command)
+        for command in ["gci -r ~", "Get-ChildItem -Recurse ~", "dir -r ~"]:
+            self.assertEqual(self.decision("PowerShell", cwd=self.tmp, command=command), "deny", command)
+        for command in ["grep thou_host notes.txt", "cp a b", "ls -la", "grep -c x notes.txt", "ls -rt ~", "dir -r ~"]:
             self.assertEqual(self.decision("Bash", command=command), "allow", command)
 
     def test_a_hidden_store_by_a_pattern(self):

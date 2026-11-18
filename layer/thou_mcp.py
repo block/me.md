@@ -256,7 +256,7 @@ class Server:
         if method == "initialize":
             client = params.get("clientInfo")
             client = client if isinstance(client, dict) else {}
-            agent = formats.one_line(str(client.get("name") or ""))
+            agent = formats.one_line(formats.visible(str(client.get("name") or "")))[:60]
             self.host = Host(agent=agent or None)
             wanted = params.get("protocolVersion")
             result = {"protocolVersion": wanted if wanted in PROTOCOLS else PROTOCOLS[0],

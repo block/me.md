@@ -14,12 +14,16 @@ The pre-tool-use hook fails closed: if it can't check a call, it stops it.
 The fence reads paths and command text. It stops a file tool that points into
 the store, a search that would walk into it, and a shell command that names it
 in the common ways: by path, by a path relative to the working folder or to a
-cd earlier in the command, or by a pattern that matches it. A command that
-builds the path some other way, such as in a variable or a script, gets
-through; Claude Code's sandbox is the wall for that (see README.md).
+cd or -C anywhere in the command, or by a pattern that matches it, through
+links too. It stops commands that run the layer's own code, and commands too
+long to check. A command that builds the path some other way, such as in a
+variable or a script, gets through; Claude Code's sandbox is the wall for that
+(see README.md).
 """
 
 import fnmatch
+import glob
+import itertools
 import json
 import os
 import re
@@ -90,24 +94,30 @@ _FOLD = (lambda s: s.casefold()) if sys.platform == "darwin" else (lambda s: s)
 _NAME_END = r"(?![A-Za-z0-9._-])"
 _WILD = re.compile(r"[*?\[{(]")
 # Commands that read every file under a folder they are given, or under the working folder: these always,
-_WALKERS = re.compile(r"(?<![\w.-])(?:rg|ag|ack|find|fd|tar|zip|7z|rsync)(?![\w.-])", re.IGNORECASE)
+_WALKERS = re.compile(r"(?<![\w.-])(?:rg|ag|ack|find|fd|tar|bsdtar|gtar|zip|7z|rsync|ditto|cpio|pax)(?![\w.-])",
+                      re.IGNORECASE)
 # and these with a flag later in the same part of the command (up to the next |, ; or &).
 _FLAGGED_WALKERS = [
     (re.compile(r"(?<![\w.-])[ef]?grep(?![\w.-])", re.IGNORECASE),
-     re.compile(r"\s-(?:[A-Za-z]*[rR]|-recursive|-dereference-recursive)", re.IGNORECASE)),
-    (re.compile(r"(?<![\w.-])(?:cp|scp)(?![\w.-])", re.IGNORECASE), re.compile(r"\s-[A-Za-z]*[rRa]", re.IGNORECASE)),
-    (re.compile(r"(?<![\w.-])ls(?![\w.-])", re.IGNORECASE), re.compile(r"\s-[A-Za-z]*R", re.IGNORECASE)),
-    (re.compile(r"Get-ChildItem", re.IGNORECASE), re.compile(r"-Recurse", re.IGNORECASE)),
+     re.compile(r"\s-(?:[A-Za-z]*[rR]|-recursive|-dereference-recursive|d\s*recurse|-directories=recurse)",
+                re.IGNORECASE)),
+    (re.compile(r"(?<![\w.-])(?:cp|scp)(?![\w.-])", re.IGNORECASE),
+     re.compile(r"\s-(?:[A-Za-z]*[rRa]|-recursive|-archive)", re.IGNORECASE)),
+    (re.compile(r"(?<![\w.-])ls(?![\w.-])"), re.compile(r"\s-(?:[A-Za-z]*R|-recursive)")),
 ]
+# In PowerShell, Get-ChildItem and its aliases walk with -Recurse, or any short form of it such as -r.
+_POWERSHELL_WALKER = (re.compile(r"(?<![\w.-])(?:Get-ChildItem|gci|dir|ls)(?![\w.-])", re.IGNORECASE),
+                      re.compile(r"\s-r", re.IGNORECASE))
 
 
-def _walks(flat):
+def _walks(flat, shell):
     """Whether the command runs a walker. Linear in the command's length: each part is searched once for the
     command's name, then once for the flag after it."""
     if _WALKERS.search(flat):
         return True
+    flagged = _FLAGGED_WALKERS + ([_POWERSHELL_WALKER] if shell == "PowerShell" else [])
     for part in re.split(r"[|;&]", flat):
-        for name, flag in _FLAGGED_WALKERS:
+        for name, flag in flagged:
             found = name.search(part)
             if found and flag.search(part, found.end()):
                 return True
@@ -125,12 +135,20 @@ def _absolute(path, cwd):
     return os.path.normpath(path)
 
 
+LONGEST_PATH = 4096  # a longer path can't be opened in one call, so it reaches nothing through links
+
+
+def _real(path):
+    """The path with its links resolved, when a system call could take it as one path."""
+    return os.path.realpath(path) if len(path) <= LONGEST_PATH else path
+
+
 def _inside(path, cwd, roots):
     """Whether path is in the store, or is the store."""
     if not isinstance(path, str) or not path:
         return False
     path = _absolute(path, cwd)
-    candidates = {_FOLD(path), _FOLD(os.path.realpath(path))}
+    candidates = {_FOLD(path), _FOLD(_real(path))}
     return any(c == r or c.startswith(r.rstrip(os.sep) + os.sep) for c in candidates for r in roots)
 
 
@@ -139,7 +157,7 @@ def _holds(path, cwd, roots):
     if not isinstance(path, str) or not path:
         return False
     path = _absolute(path, cwd)
-    for candidate in {_FOLD(path), _FOLD(os.path.realpath(path))}:
+    for candidate in {_FOLD(path), _FOLD(_real(path))}:
         for r in roots:
             if r == candidate or r.startswith(candidate.rstrip(os.sep) + os.sep):
                 return True
@@ -178,12 +196,37 @@ def _pattern_reaches(pattern, roots, itself=False):
     return False
 
 
+MOST_MATCHES = 200  # files a pattern is matched against on disk, at most
+
+
+def _real_prefix(pattern):
+    """The pattern with the links in its literal start resolved, such as s/* for a link s to the store."""
+    parts = pattern.split(os.sep)
+    for i, part in enumerate(parts):
+        if _WILD.search(part):
+            return os.sep.join([_real(os.sep.join(parts[:i]) or os.sep)] + parts[i:])
+    return pattern
+
+
+def _matches_into(pattern, roots, itself):
+    """Whether a file the pattern matches on disk is in the store (or, with itself, is the store)."""
+    for found in itertools.islice(glob.iglob(pattern), MOST_MATCHES):
+        for candidate in {_FOLD(os.path.normpath(found)), _FOLD(_real(found))}:
+            for r in roots:
+                if candidate.startswith(r.rstrip(os.sep) + os.sep) or (itself and candidate == r):
+                    return True
+    return False
+
+
 def _reaches(path, cwd, roots, itself=False):
     """A path or path pattern, as a tool or command gives it, that points into the store."""
     if not isinstance(path, str) or not path:
         return False
     if _WILD.search(path):
-        return _pattern_reaches(_FOLD(_absolute(path, cwd)), roots, itself)
+        full = _absolute(path, cwd)
+        if any(_pattern_reaches(_FOLD(p), roots, itself) for p in {full, _real_prefix(full)}):
+            return True
+        return len(full) <= LONGEST_PATH and _matches_into(full, roots, itself)
     return _inside(path, cwd, roots)
 
 
@@ -214,26 +257,38 @@ def _flat(command, shell):
     return command
 
 
-# A change of folder inside the command: cd, pushd and PowerShell's Set-Location, with what follows it.
-_CD = re.compile(r"(?:^|[;&|({\n])\s*(?:builtin\s+|command\s+)?(?:cd|pushd|chdir|set-location|push-location|sl)"
-                 r"(?=$|[\s;&|)}])([^;&|(){}\n]*)", re.IGNORECASE)
-MOST_FOLDERS = 8  # working folders a command can be in, at most, before the fence stops resolving more
+# A change of folder inside the command, wherever it stands (after then, time, !, bash -c and the rest): cd,
+# pushd and PowerShell's Set-Location, with what follows it; and a flag that runs one command in a folder, such
+# as git -C, tar -C, make --directory or env --chdir.
+_CD = re.compile(r"(?<![\w.-])(?:cd|pushd|chdir|set-location|push-location|sl)(?=$|[\s;&|)}])([^;&|(){}\n]*)",
+                 re.IGNORECASE)
+_IN_FOLDER = re.compile(r"(?<![\w-])(?:-C|--directory|--chdir|--cwd|-WorkingDirectory)(?:=|\s+)([^\s;&|(){}]+)")
+MOST_FOLDERS = 8  # working folders a command can be in, at most: past that, the fence can't check it
+MOST_TOKENS = 5000  # different words in a command, at most, for the same reason
+
+
+class _TooManyFolders(Exception):
+    pass
 
 
 def _folders(flat, cwd):
     """The working folders the command's paths can be relative to: the hook's, and each one a cd in the
     command moves to, resolved from the folders before it. A cd's own target is one of the command's
-    tokens, so it is checked with the rest."""
+    tokens, so it is checked with the rest. Raises _TooManyFolders past MOST_FOLDERS."""
     folders = [cwd]
     home = os.path.expanduser("~")
-    for match in _CD.finditer(flat):
-        words = [w for w in match.group(1).split() if not w.startswith("-") or w == "-"]
+    moves = sorted([(m.start(), m.group(1).split()) for m in _CD.finditer(flat)]
+                   + [(m.start(), [m.group(1)]) for m in _IN_FOLDER.finditer(flat)])
+    for _, words in moves:
+        words = [w for w in words if not w.startswith("-") or w == "-"]
         target = words[0] if words else home
         if target == "-":
             continue  # the folder before: one of those already listed
         for folder in list(folders):
             moved = _absolute(target, folder)
-            if len(folders) < MOST_FOLDERS and moved not in folders:
+            if moved not in folders:
+                if len(folders) == MOST_FOLDERS:
+                    raise _TooManyFolders()
                 folders.append(moved)
     return folders
 
@@ -255,6 +310,9 @@ def _command_reaches(command, shell, cwd, roots):
     flags = re.IGNORECASE if sys.platform == "darwin" else 0
     if re.search(r"\$\{?ME_HOME\}?(?![A-Za-z0-9_])|env:ME_HOME|ME_HOME=", flat, re.IGNORECASE):
         return "store"
+    if re.search(r"THOU_CLIENT_ASKS", flat, re.IGNORECASE) or (
+            re.search(r"thou_(?:host|mcp)", flat) and re.search(r"(?<![\w-])py(?:thon[\d.]*)?(?![\w-])", flat)):
+        return "store"  # the layer's own code, run from the shell, would write as if the person had asked
     tokens = list(dict.fromkeys(t for t in re.split(r"[\s;&|<>()=]+", flat) if t))  # each once, in order
     for root in roots:
         if re.search(re.escape(root) + _NAME_END, flat, flags):
@@ -265,13 +323,18 @@ def _command_reaches(command, shell, cwd, roots):
                 return "store"  # a hidden folder's name, such as .me, wherever it appears as a path segment
             if any(_aims_at(_FOLD(part), _FOLD(base)) for t in tokens for part in t.split("/")):
                 return "store"  # a pattern for that name, wherever it appears
-    folders = _folders(flat, cwd)
+    if len(tokens) > MOST_TOKENS:
+        return "unchecked"
+    try:
+        folders = _folders(flat, cwd)
+    except _TooManyFolders:
+        return "unchecked"
     for token in tokens:
         if token.startswith("-") and "/" not in token:
             continue
         if any(_reaches(token, folder, roots, itself=True) for folder in folders):
             return "store"
-    if _walks(flat):
+    if _walks(flat, shell):
         paths = [t for t in tokens if not t.startswith("-") and ("/" in t or t in (".", ".."))]
         if any(_holds(folder, folder, roots) or any(_holds(t, folder, roots) for t in paths) for folder in folders):
             return "walk"
@@ -299,6 +362,8 @@ DENY = ("The person's thou store is reached only through the thou tools (mount, 
         "asks to set one up, use start.")
 WALK = ("This would walk a folder that holds the person's thou store, at {store}. Use a narrower folder that "
         "doesn't hold it, and reach the store only through the thou tools.")
+UNCHECKED = ("This command is longer, or moves between more folders, than the thou layer can check against the "
+             "person's store. Split it into smaller commands, and write long text with the file tools.")
 
 
 def _deny(reason=DENY):
@@ -327,6 +392,8 @@ def pre_tool_use(event):
     found = {_command_reaches(s, name, cwd, roots) for s in _strings(args)}
     if "store" in found:
         return _deny()
+    if "unchecked" in found:
+        return _deny(UNCHECKED)
     return _deny(WALK.format(store=root)) if "walk" in found else None
 
 

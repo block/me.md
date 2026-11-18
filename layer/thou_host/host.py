@@ -146,7 +146,13 @@ class Host:
         if data.startswith(b"\xef\xbb\xbf"):
             notices.append("%s starts with a byte order mark. thou files are UTF-8 without one (S2.3)." % rel)
             data = data[3:]
-        return data.decode("utf-8")
+        text = data.decode("utf-8")
+        found = formats.hidden(text)
+        if found:  # the agent reads what the person would see, as for words the host writes
+            notices.append("%s holds characters a person can't see (%s). I left them out of what I read here."
+                           % (rel, formats.code_points(found)))
+            text = formats.visible(text)
+        return text
 
     def _visible(self, text, what, check_hidden=True):
         """Words that will be written must be words the person can see in full when they approve them."""
@@ -166,7 +172,7 @@ class Host:
             if (not p.valid or p.status == "refused") and normalize(p.body or "") == wanted:
                 why = "refused" if p.valid else "invalid, which counts as refused (S6.14)"
                 raise HostError("refused", "You refused these words before (proposals/%s is %s), so I will not "
-                                           "propose them again (S6.11)." % (p.name, why))
+                                           "propose them again (S6.11)." % (formats.shown_name(p.name), why))
 
     # --- Reader ---
 
@@ -240,6 +246,12 @@ class Host:
             if not name.endswith(".md") or not formats.is_utf8(name):
                 why = "its name is not UTF-8" if name.endswith(".md") else "it does not end in .md"
                 notices.append("I ignore proposals/%s because %s (S2.1)." % (formats.shown_name(name), why))
+                continue
+            try:
+                self.fs.check("proposals/" + name)
+            except ValueError:
+                notices.append("I ignore proposals/%s because its name has characters a store file's name can't "
+                               "(S2.1)." % formats.shown_name(name))
                 continue
             try:
                 out.append(Proposal(name, self.fs.read("proposals/" + name)))
@@ -510,7 +522,7 @@ class Host:
         if text is not None and (not isinstance(text, str) or normalize(text) == ""):
             raise HostError("bad_request", "text is the words to forget.")
         who = self.who(agent)
-        notices, entries, removed = [], [], 0
+        notices, entries, removed, done = [], [], 0, False
         token = self._lock(agent)
         try:
             kind = self.fs.kind(path)
@@ -541,8 +553,12 @@ class Host:
                 # The words are gone already, so the answer says so, with what was left undone.
                 notices.append("I could not finish with the proposals for %s (%s), so some may still hold %s."
                                % (path, getattr(exc, "why", None) or exc, "these words" if wanted else "its words"))
+            done = True
         finally:
             self.fs.unlock(token)
+            if not done:
+                self.session.clear()
+                self._journal(entries, [])  # whatever went wrong, a change that happened has its receipt (S8.7)
         self.session.clear()
         notices.append(PROVIDER_NOTICE)
         if os.path.lexists(os.path.join(self.root, ".git")):
@@ -552,7 +568,8 @@ class Host:
         return self._answer(self.state(), removed=removed, journal=journal, notices=notices)
 
     def _forget_proposals(self, path, wanted, who, entries, notices):
-        found, _ = self._proposals()
+        found, more = self._proposals()
+        notices += more  # a proposal it ignores may hold the words too
         for p in found:
             body = normalize(p.body or "")
             same_file = p.valid and p.fields["target"] == path
