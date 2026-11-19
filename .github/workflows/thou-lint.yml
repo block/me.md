@@ -6,6 +6,8 @@ on:
       - "*.md"
       - "tools/**"
       - "conformance/**"
+      - "layer/**"
+      - ".claude-plugin/**"
       - ".github/workflows/thou-lint.yml"
   push:
     branches: [main]
@@ -13,6 +15,8 @@ on:
       - "*.md"
       - "tools/**"
       - "conformance/**"
+      - "layer/**"
+      - ".claude-plugin/**"
       - ".github/workflows/thou-lint.yml"
 
 permissions:
@@ -42,3 +46,5 @@ jobs:
         run: python -m unittest discover -s tools -p 'test_*.py'
       - name: Lint the valid-full fixture
         run: python tools/thou_lint.py conformance/fixtures/valid-full/store
+      - name: The thou layer for Claude Code
+        run: python -m unittest discover -s layer/tests -p 'test_*.py'

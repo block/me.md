@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "thou": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/thou_mcp.py"],
+      "env": { "THOU_CLIENT_ASKS": "1" }
+    }
+  }
+}

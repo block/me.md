@@ -14,6 +14,16 @@ To publish a release:
 2. On GitHub’s Releases page, create the tag at that merge commit. Title the release "thou vX.Y.Z" and take the notes from the changelog entry. Publish it as a full release, not a pre-release, so that `releases/latest` shows it. Do this right after the merge: until the tag exists, the setup links do not resolve.
 3. Share the release URL.
 
+## Unreleased
+
+### For the person
+
+- The [thou layer for Claude Code](./layer/README.md). Install it once, and every Claude Code session starts from your `me.md`. What Claude notices about you waits for your yes, Claude Code asks you to approve every change with its words in front of you, and `policy.json` turns it off. It can also start your `me.md`, with only your words. It refuses words you couldn't see in full, and its README shows how to make its fence a wall with Claude Code's sandbox.
+
+### For hosts
+
+- `layer/` is a host at the Steward level that keeps the rules in code: the off switch, the store's edges, proposals, refusals, the lock and the journal. Its MCP server marks the tools that act on the person's say-so as needing the person's approval on every call, and `decide` names the proposal's target and words so the approval shows them. It makes no conformance claim.
+
 ## 0.1.0 — 2026-11-17
 
 The first tagged draft. It gives hosts and experiments a version to name. It also fixes the file formats, so that two hosts that have never met can read and write the same store the same way. That has not been tested with two real hosts yet. Some formats change from the drafts on main before this release: see [Upgrading a store from earlier drafts](#upgrading-a-store-from-earlier-drafts).
