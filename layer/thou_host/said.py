@@ -14,8 +14,9 @@ forget, and applies the change at once only when the person's own words ask for 
 - the words match what that sentence says. To remember, every word that carries meaning must be the
   person's, in their order. To forget, all but one at most, so "forget about Mochi" can take the line "I have a
   cat called Mochi." but "forget that my test is in March" can't take "I'm learning to drive and my test is in
-  March." A negator ("not", "no longer", "anymore", "used to") counts as a word that carries meaning, both
-  ways. Only an ask with no words of its own ("forget that") takes them from the sentence before it.
+  March." Or the person names a line by its subject, the words before its is/are/was/were: "forget my old
+  address" takes "My old address is 4 Elm St.", when the value after the verb is one clause. A negator ("not",
+  "no longer", "anymore", "used to") counts as a word that carries meaning, both ways. Only an ask with no words of its own ("forget that") takes them from the sentence before it.
 
 Words from an email or a web page are not in what the person typed, so they can't pass. Everything that
 doesn't pass changes nothing. Where the person named some of the words to forget, the agent may ask them, and
@@ -622,6 +623,37 @@ def _sources(own, at, op):
             yield _blanked(own[i - 1], op) + " " + own[i], False
 
 
+_COPULA = frozenset(("is", "are", "was", "were"))
+_LIST_MARK = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+# What starts a second clause in a line's value: another verb, a relative word, or a contraction that is one.
+_SECOND_VERB = re.compile(r"(?i)\b(?:is|are|was|were|am|be|been|being|has|have|had|do|does|did|will|would|can|"
+                          r"could|shall|should|may|might|must|who|whom|whose|which|that|where|when|because)\b|"
+                          r"'(?:m|re|ve|ll|d)\b|n't\b|\b(?:it|he|she|that|there|what|who|where|here)'s\b")
+
+
+def _subject_named(sentence, said):
+    """Whether the person named a line by its subject: "forget my old address" names "My old address is 4 Elm
+    St.", though not its value. The subject is the words before the line's first is/are/was/were, which stands
+    within its first six words; it has a word that carries meaning, and the person named every one. The value
+    after the verb is one clause: no "and", comma or semicolon, and no second verb, so "My test is in March and
+    I'm learning to drive." can't go on "forget my test"."""
+    parts = _LIST_MARK.sub("", sentence.replace("\u2019", "'")).split()
+    at = next((i for i, w in enumerate(parts[:6]) if w.lower().strip(".,;:!?\"'") in _COPULA), None)
+    if at is None:
+        return False
+    subject, value = " ".join(parts[:at]), " ".join(parts[at + 1:])
+    named = words(subject)
+    return bool(named) and named <= words(said) and not _CLAUSE.search(value) and not _SECOND_VERB.search(value)
+
+
+def _forget_named(text, said):
+    """A forget whose words the person didn't all name passes when the lines they named by subject
+    (_subject_named) leave the rest of the text with one unnamed word at most, as any forget may have."""
+    lines = _SENTENCES.split(text.replace("\r\n", "\n"))
+    hits, total = _counts(" ".join(x for x in lines if not _subject_named(x, said)), said)
+    return total - hits <= 1
+
+
 def _judge(op, text, said, needs_yes):
     hits, total = _counts(text, said)
     if hits == 0:
@@ -635,7 +667,7 @@ def _judge(op, text, said, needs_yes):
         if not _in_order(text, said):
             return Verdict(False, "To remember, use the person's words in the order they said them.")
         return Verdict(True)
-    if total - hits > 1:
+    if total - hits > 1 and not _forget_named(text, said):
         return Verdict(False, "Forget only what the person named. They didn't name: %s. Or pass only the words "
                               "they named, where those make a whole clause of the line." % gone, hits * 3 >= total)
     if needs_yes:

@@ -1606,21 +1606,62 @@ class Quoted(Served):
         self.assertEqual(self.one("forget", **dict(self.WHOLE, quote="Yes"))["error"], "not_said")
         self.assertEqual(self.read("me.md"), self.LINE.encode())
 
-    def test_a_short_name_asks_for_the_whole_line(self):
-        """"forget my old address" names the line, not its words: the agent asks, and a yes takes the line. Words
-        from inside the line would leave "My is 4 Elm St.", so they change nothing."""
+    def test_a_line_named_by_its_subject_goes_at_once(self):
+        """"forget my old address" names the line by its subject, the words before "is": the line goes, value
+        and all, and the receipt quotes all of it. Words from inside the line would leave "My is 4 Elm St.", so
+        they change nothing."""
         self.write("me.md", "- I'm allergic to shellfish.\n- My old address is 4 Elm St.\n")
         self.say("Please forget my old address.")
-        args = dict(path="me.md", text="- My old address is 4 Elm St.", quote="Please forget my old address")
-        answer = self.one("forget", **args)
-        self.assertEqual(answer["error"], "not_said")
-        self.assertIn('Do you want me to forget "- My old address is 4 Elm St."?', answer["message"])
         answer = self.one("forget", path="me.md", text="old address", quote="Please forget my old address")
         self.assertEqual(answer["error"], "inside_a_clause")
         self.assertIn(b"My old address is 4 Elm St.", self.read("me.md"))
-        self.say("Yes")
-        self.assertTrue(self.one("forget", **dict(args, quote="Yes"))["ok"])
+        answer = self.one("forget", path="me.md", text="- My old address is 4 Elm St.",
+                          quote="Please forget my old address")
+        self.assertTrue(answer["ok"])
+        self.assertIn("My old address is 4 Elm St.", answer["receipt"])
+        self.assertIn("undo", answer["receipt"])
         self.assertEqual(self.read("me.md"), b"- I'm allergic to shellfish.\n")
+
+    def test_a_subject_names_one_clause_only(self):
+        """The value after "is" must be one clause: "forget my test" can't take "and I'm learning to drive"
+        with it, but it takes the clause that is the test. A subject the person didn't name in full ("my
+        address" for "My old address"), or a line with no is/are/was/were in its first six words ("My sister
+        Rania lives…"), still needs its words named."""
+        from thou_host import said
+        line = "My test is in March and I'm learning to drive."
+        self.write("me.md", "- %s\n" % line)
+        self.say("Please forget my test.")
+        answer = self.one("forget", path="me.md", text=line, quote="Please forget my test")
+        self.assertEqual(answer["error"], "not_said")
+        self.assertNotIn("Do you want me to forget", answer["message"])
+        self.assertTrue(self.one("forget", path="me.md", text="My test is in March",
+                                 quote="Please forget my test")["ok"])
+        self.assertNotIn(b"March", self.read("me.md"))
+        self.assertIn(b"learning to drive", self.read("me.md"))
+        for value in ("is, sadly, in March.", "is in March; it moved.", "is in March which I hate.",
+                      "is in March but it might move.", "is in March. I'm learning to drive."):
+            self.assertFalse(said.check("forget", "forget my test", "My test " + value, "Please forget my test.").ok,
+                             value)
+        self.assertFalse(said.check("forget", "forget my address", "My old address is 4 Elm St.",
+                                    "Please forget my address.").ok)
+        self.assertFalse(said.check("forget", "forget my sister's eldest son in Leeds", "My sister's eldest son in "
+                                    "Leeds is Omar Haddad.", "Please forget my sister's eldest son in Leeds.").ok)  # 7th
+        self.assertFalse(said.check("forget", "forget my old address", "It is 4 Elm St.",
+                                    "Please forget my old address.").ok)  # a subject with no word of its own
+        asked = "Please forget that I'm vegetarian and what my go-to dish is."
+        self.assertTrue(said.check("forget", asked, "I'm vegetarian. I live here. My go-to dish is risotto.", asked).ok)
+        self.assertFalse(said.check("forget", asked, "I'm vegetarian. I live in Porto. My go-to dish is risotto.",
+                                    asked).ok)  # the lines not named by subject keep the one-word allowance only
+        sister = said.check("forget", "forget my sister", "My sister Rania lives in Manchester with her two boys.",
+                            "Please forget my sister.")
+        self.assertEqual((sister.ok, sister.confirm), (False, False))  # as before: no copula in the first six words
+        self.assertFalse(said.check("forget", "forget my old address", "My old address is not 4 Elm St.",
+                                    "Please forget my old address.").ok)  # the "not" the person didn't say
+        self.assertFalse(said.check("remember", "remember my old address", "My old address is 4 Elm St.",
+                                    "Please remember my old address.").ok)  # remember still takes every word
+        bare = said.check("forget", "Please forget that", "My old address is 4 Elm St.",
+                          "My old address is 4 Elm St. Please forget that.")
+        self.assertEqual((bare.ok, bare.confirm), (False, True))  # "forget that" still needs a yes
 
     def test_what_isnt_an_ask_changes_nothing(self):
         """The review's prompts, and the attack set's: a question, a negator before the verb, the words of a
