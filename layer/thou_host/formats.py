@@ -455,10 +455,11 @@ def _cut(line, chunk):
     return out + line[start:], count
 
 
-def without_text(data, text):
+def without_text(data, text, kept=None):
     """Forget words: remove each place text fills whole lines, with its line break (without_lines); then, for
     words on one line, remove them from inside each line where they stand as whole words. A line left with
-    nothing but a list marker or punctuation goes too. Returns (bytes, count)."""
+    nothing but a list marker or punctuation goes too. Returns (bytes, count); kept, a list, gets what stays
+    of each line the words were cut from."""
     data, count = without_lines(data, text)
     chunk, _ = as_target_text(text, data)
     if not chunk or b"\n" in chunk:
@@ -471,6 +472,8 @@ def without_text(data, text):
             count += n
             if _EMPTIED.match(cut):
                 continue
+            if kept is not None:
+                kept.append(cut.decode("utf-8", "replace"))
             line = cut + line[len(content):]
         out.append(line)
     return b"".join(out), count

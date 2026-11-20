@@ -534,7 +534,7 @@ class Host:
         journal = self._journal([formats.journal_entry(path, change, who, "person direct")], notices)
         return self._answer(self.state(), journal=journal, notices=notices)
 
-    def forget(self, path, text=None, agent=None):
+    def forget(self, path, text=None, agent=None, kept=None):
         """H5.2, H5.3: remove the content, its applied proposals, and any cached copy. Say what can't be deleted."""
         self._writable()
         path = self._editable(path)
@@ -557,7 +557,9 @@ class Host:
                 counted = []
 
                 def cut(data):
-                    out, count = formats.without_text(data or b"", text)
+                    if kept is not None:
+                        del kept[:]
+                    out, count = formats.without_text(data or b"", text, kept)
                     if count == 0:
                         raise HostError("no_match", "Those words are not in %s as whole words." % path)
                     counted.append(count)

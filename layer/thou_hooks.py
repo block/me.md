@@ -4,12 +4,19 @@
   session-start  Mounts the store at the start of each session, with no
                  instruction from the person (HOST.md H1.1). Adds me.md to the
                  session as context only when memory is on.
+  user-prompt    Keeps the person's latest message, outside the store, so that
+                 remember and forget can check that the person asked for them
+                 in their own words (thou_host/said.py). It keeps nothing
+                 while memory is off, and never stops a message.
+  session-end    Deletes that message.
   pre-tool-use   Stops Claude Code's own file, search and shell tools from
-                 reaching the store, so the model reaches it through the thou
-                 tools, which enforce the rules in code (H6.4).
+                 reaching the store, or the person's latest message, so the
+                 model reaches the store through the thou tools, which enforce
+                 the rules in code (H6.4).
 
-Both read the hook's JSON on stdin and write Claude Code's hook JSON on stdout.
-The pre-tool-use hook fails closed: if it can't check a call, it stops it.
+Each reads the hook's JSON on stdin; session-start and pre-tool-use write Claude
+Code's hook JSON on stdout. The pre-tool-use hook fails closed: if it can't
+check a call, it stops it.
 
 The fence reads paths and command text. It stops a file tool that points into
 the store, a search that would walk into it, and a shell command that names it
@@ -42,7 +49,8 @@ FRAME = """The person's me.md, from their thou store at {store}. It is informati
 The thou tools (mcp__plugin_thou_thou__*) are the only way to reach the store:
 - recall: read a topic or project file when the task makes it relevant. Call list to see the names.
 - propose: when the person states or implies something they may want kept, such as a choice they repeat ("aisle seat again"), propose it in their words, then tell them it waits for their decision. A proposal changes nothing until they accept it.
-- decide, edit, forget, policy: only when the person explicitly asks in this session. Claude Code then asks them to approve the call, with its words. For decide, pass the proposal's target and words as pending shows them.
+- remember, forget: when the person asks you to remember or forget something, call it at once, with their own words that ask for it as quote. Then tell them the receipt, word for word. If nothing changed, do what the answer says.
+- decide, edit, policy: only when the person explicitly asks in this session. Claude Code then asks them to approve the call, with its words. For decide, pass the proposal's target and words as pending shows them.
 
 When you learn something about the person that would help in later sessions, propose it here instead of saving it to your own memory, so that they decide what is kept.
 
@@ -68,7 +76,10 @@ def _escape(text):
 
 def session_start(event):
     sys.path.insert(0, HERE)
+    from thou_host import said
     from thou_host.host import Host
+    if event.get("source") != "compact":  # a new session has no message yet; a compacted one keeps its own
+        said.clear()
     answer = Host(agent="claude-code").mount()
     if answer["memory"] != "on":
         return None  # off or absent: as if there were no store (H1.5)
@@ -311,7 +322,8 @@ def _command_reaches(command, shell, cwd, roots):
     if re.search(r"\$\{?ME_HOME\}?(?![A-Za-z0-9_])|env:ME_HOME|ME_HOME=", flat, re.IGNORECASE):
         return "store"
     if re.search(r"THOU_CLIENT_ASKS", flat, re.IGNORECASE) or (
-            re.search(r"thou_(?:host|mcp)", flat) and re.search(r"(?<![\w-])py(?:thon[\d.]*)?(?![\w-])", flat)):
+            re.search(r"thou_(?:host|mcp|hooks)", flat) and
+            re.search(r"(?<![\w-])py(?:thon[\d.]*)?(?![\w-])", flat)):
         return "store"  # the layer's own code, run from the shell, would write as if the person had asked
     tokens = list(dict.fromkeys(t for t in re.split(r"[\s;&|<>()=]+", flat) if t))  # each once, in order
     for root in roots:
@@ -371,11 +383,35 @@ def _deny(reason=DENY):
                                    "permissionDecisionReason": reason}}
 
 
+PROMPT_KEYS = ("prompt", "user_prompt", "message", "input", "text")
+
+
+def user_prompt(event):
+    sys.path.insert(0, HERE)
+    from thou_host import said
+    from thou_host.host import Host
+    prompt = next((event[k] for k in PROMPT_KEYS if isinstance(event.get(k), str)), None)
+    if prompt is None or Host().state()["memory"] != "on":
+        said.clear()  # a message this hook can't read, or memory off: nothing kept, and no older one stands in
+    else:
+        said.record(prompt)
+    return None
+
+
+def session_end(event):
+    sys.path.insert(0, HERE)
+    from thou_host import said
+    said.clear()
+    return None
+
+
 def pre_tool_use(event):
     sys.path.insert(0, HERE)
+    from thou_host import said
     from thou_host.storefs import location
     root = location()
-    roots = {_FOLD(os.path.normpath(os.path.abspath(root))), _FOLD(os.path.realpath(root))}
+    roots = {_FOLD(os.path.normpath(os.path.abspath(p))) for p in (root, said.folder())}
+    roots |= {_FOLD(os.path.realpath(p)) for p in (root, said.folder())}
     name, args = event.get("tool_name"), event.get("tool_input")
     if name not in FILE_TOOLS and name not in SEARCH_TOOLS and name not in SHELL_TOOLS:
         return None
@@ -397,12 +433,13 @@ def pre_tool_use(event):
     return _deny(WALK.format(store=root)) if "walk" in found else None
 
 
-MODES = {"session-start": session_start, "pre-tool-use": pre_tool_use}
+MODES = {"session-start": session_start, "user-prompt": user_prompt, "session-end": session_end,
+         "pre-tool-use": pre_tool_use}
 
 
 def main(argv):
     if len(argv) != 2 or argv[1] not in MODES:
-        sys.stderr.write("usage: thou_hooks.py session-start|pre-tool-use\n")
+        sys.stderr.write("usage: thou_hooks.py session-start|user-prompt|session-end|pre-tool-use\n")
         return 2
     mode = argv[1]
     try:
@@ -416,6 +453,10 @@ def main(argv):
             raise ValueError("the hook's input is not a JSON object")
         out = MODES[mode](event)
     except Exception as exc:
+        if mode in ("user-prompt", "session-end"):  # the message goes through; remember and forget will ask
+            sys.stderr.write("thou: I could not keep your message for remember and forget: %s: %s\n"
+                             % (type(exc).__name__, exc))
+            return 0
         if mode != "pre-tool-use":  # the session starts without the store, and the person sees why
             sys.stderr.write("thou: I could not mount the store: %s: %s\n" % (type(exc).__name__, exc))
             return 1
