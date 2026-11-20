@@ -518,7 +518,6 @@ PASTED_WHY = ("These words are only in text the person pasted or quoted, not in 
               "they aren't the person's ask.")
 NEGATION_WHY = ("The person said this with a \"not\" (or \"no longer\", \"anymore\", \"used to\") that these "
                 "words leave out, or the other way round.")
-_BORROWS = re.compile(r"(?i)\b(?:that|this|those|these)\b")
 
 
 def _own_words(sentence, op):
@@ -528,18 +527,19 @@ def _own_words(sentence, op):
 def _sources(own, at, op):
     """The person's words a change may rest on: each sentence that holds the quote and asks for op. An ask with no
     words of its own ("forget that") takes them from the sentence before it, and one that ends in a colon
-    ("Remember these:") from the line after it. (words, needs a yes)."""
+    ("Remember these:") from the line after it. A forget that borrows from the sentence next to it needs a yes:
+    "forget that" may only mean "never mind". (words, needs a yes)."""
     for i in at:
         if asks(own[i], op):
             if _own_words(own[i], op):
                 yield _blanked(own[i], op), False
             else:
                 if i > 0:
-                    yield own[i - 1] + " " + _blanked(own[i], op), not (op == "remember" or _BORROWS.search(own[i]))
+                    yield own[i - 1] + " " + _blanked(own[i], op), op == "forget"
                 if own[i].rstrip().endswith(":") and i + 1 < len(own):
                     yield _blanked(own[i], op) + " " + own[i + 1], False
         if i + 1 < len(own) and asks(own[i + 1], op) and not _own_words(own[i + 1], op):
-            yield own[i] + " " + _blanked(own[i + 1], op), not (op == "remember" or _BORROWS.search(own[i + 1]))
+            yield own[i] + " " + _blanked(own[i + 1], op), op == "forget"
         if i > 0 and own[i - 1].rstrip().endswith(":") and asks(own[i - 1], op) and not _own_words(own[i - 1], op):
             yield _blanked(own[i - 1], op) + " " + own[i], False
 
@@ -561,7 +561,8 @@ def _judge(op, text, said, needs_yes):
         return Verdict(False, "Forget only what the person named. They didn't name: %s. Or pass only the words "
                               "they named, where those make a whole clause of the line." % gone, hits * 3 >= total)
     if needs_yes:
-        return Verdict(False, "The person said to forget \"it\", so thou can't tell which words they mean.", True)
+        return Verdict(False, "The person didn't say which words to forget, and \"forget that\" or \"forget it\" "
+                              "can just mean \"never mind\".", True)
     return Verdict(True)
 
 

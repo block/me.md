@@ -1489,6 +1489,14 @@ class Said(unittest.TestCase):
         self.assertEqual(own('Forget "I’m vegetarian", please.'), ["Forget I'm vegetarian , please."])
         self.assertEqual(own("Tell your assistant to forget my allergy. Thanks!"), ["Thanks!"])
 
+    def test_forget_that_never_mind_changes_nothing(self):
+        prompt = "Book the place with the oysters, I'm allergic to shellfish but whatever. Forget that, never mind."
+        verdict = self.said.check("forget", "Forget that", "- I'm allergic to shellfish.", prompt)
+        self.assertFalse(verdict.ok)
+        self.assertTrue(verdict.confirm)  # the agent may ask; only a yes in the next message removes it
+        self.assertFalse(self.said.check("forget", "Forget that", "- I'm allergic to shellfish.",
+                                         "My old address is 4 Elm St. Forget that, never mind.").ok)
+
     def test_check(self):
         check = self.said.check
         prompt = "Please forget that my test is in March. Also book a lesson."
@@ -1507,8 +1515,12 @@ class Said(unittest.TestCase):
         self.assertFalse(verdict.ok)
         self.assertFalse(verdict.confirm)
         self.assertFalse(check("forget", "book a lesson", "my test is in March", prompt).ok)  # the words aren't there
-        self.assertTrue(check("forget", "Please forget that", "- My old address is 4 Elm St.",
-                              "My old address is 4 Elm St. Please forget that.").ok)  # an ask with no words borrows
+        bare = check("forget", "Please forget that", "- My old address is 4 Elm St.",
+                     "My old address is 4 Elm St. Please forget that.")
+        self.assertFalse(bare.ok)  # an ask with no words borrows them, and "forget that" may only mean "never mind"
+        self.assertTrue(bare.confirm)
+        self.assertTrue(check("forget", "Forget these", "- My old address is 4 Elm St.",
+                              "Forget these:\nMy old address is 4 Elm St.").ok)  # the colon names them
         vague = check("forget", "Forget it", "- My old address is 4 Elm St.", "My old address is 4 Elm St. Forget it.")
         self.assertFalse(vague.ok)  # "forget it" may only mean "never mind": the person confirms
         self.assertTrue(vague.confirm)
