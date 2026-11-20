@@ -1893,8 +1893,14 @@ class Said(unittest.TestCase):
         gone_client = (2 ** 22 + 12345, "a process that has gone")
         said.record("My test is in March, and I'm nervous.", who=gone_client)
         other = os.path.join(said.folder(), "client-%d.json" % gone_client[0])
+        said.record("My test is in March, the writer saw.", sid="writer")  # another session of this client
+        said.mark(None)
         said.scrub("my test is in March")
         self.assertEqual(said.latest()[0], "Book a lesson.")
+        self.assertNotIn("March", json.dumps(said._read(said.client())))
+        said.mark("writer")
+        self.assertEqual(said.latest()[0], "")
+        said.mark(None)
         with open(other) as handle:
             self.assertNotIn("March", json.load(handle)["prompt"])
         reused = (os.getpid(), "a start time this process doesn't have")
@@ -2090,7 +2096,7 @@ class Hooks(StoreTest):
         self.assertEqual(len(found), 1, found)
         self.assertEqual(os.stat(found[0]).st_mode & 0o777, 0o600)
         with open(found[0]) as handle:
-            return json.load(handle)["prompt"]
+            return json.load(handle).get("prompt")
 
     def test_the_prompt_hook_keeps_the_latest_message(self):
         for message in ({"prompt": "Remember that Mondays are soccer."}, {"prompt": "Forget my test date."}):
@@ -2208,10 +2214,44 @@ class Hooks(StoreTest):
         out = subprocess.run(["sh", "-c", fallback], capture_output=True, text=True, timeout=10)
         self.assertEqual(json.loads(out.stdout)["hookSpecificOutput"]["permissionDecision"], "deny")
         fence = hooks["PreToolUse"][0]["matcher"]
-        for name in ("Bash", "apply_patch", "view_image"):
+        for name in ("Bash", "apply_patch", "view_image", "mcp__thou__forget", "mcp__thou__remember"):
             self.assertTrue(re.search(fence, name), name)
-        for name in ("mcp__thou__forget", "mcp__personal__send", "Bashful"):
+        for name in ("mcp__personal__send", "mcp__thou__mount", "Bashful"):
             self.assertIsNone(re.search(fence, name), name)
+
+    def test_two_sessions_in_one_client(self):
+        """Codex runs its memory writer as a second session in the same process: each session keeps its own
+        message, and the session that calls remember or forget is the one whose message the server reads."""
+        def prompt(sid, text):
+            out = self.run_hook("user-prompt", json.dumps({"session_id": sid, "prompt": text}))
+            self.assertEqual((out.returncode, out.stdout), (0, ""), out.stderr)
+
+        def calls(sid, tool="mcp__thou__forget"):
+            out = self.run_hook("pre-tool-use", json.dumps({"session_id": sid, "tool_name": tool, "cwd": self.work,
+                                                            "tool_input": {"path": "me.md", "quote": "x"}}))
+            self.assertEqual((out.returncode, out.stdout), (0, ""), out.stderr)  # allowed, with nothing to say
+        prompt("person", "Please forget that I'm vegetarian.")
+        prompt("writer", "Consolidate the supplied rollout summaries into memory_summary.md.")
+        self.assertEqual(self.kept(), "Consolidate the supplied rollout summaries into memory_summary.md.")
+        calls("person")
+        self.assertEqual(self.kept(), "Please forget that I'm vegetarian.")
+        calls("writer", "mcp__thou__remember")
+        self.assertEqual(self.kept(), "Consolidate the supplied rollout summaries into memory_summary.md.")
+        calls("person")
+        self.run_hook("session-end", json.dumps({"session_id": "writer"}))
+        self.assertEqual(self.kept(), "Please forget that I'm vegetarian.")  # the person's session keeps its own
+        calls("stranger")  # a session with no message kept: none on top, so nothing rests on another's words
+        self.assertIsNone(self.kept())
+        calls("person")
+        self.assertEqual(self.kept(), "Please forget that I'm vegetarian.")
+        prompt("person", "Also forget my test date.")
+        prompt("writer", "Write the memory.")
+        calls("person", "mcp__thou__remember")
+        self.assertEqual(self.kept(), "Also forget my test date.")
+        self.run_hook("session-end", json.dumps({"session_id": "person"}))
+        self.assertIsNone(self.kept())
+        self.run_hook("session-end", json.dumps({"session_id": "writer"}))
+        self.assertEqual(glob_files(os.path.join(self.tmp, ".local", "state", "thou", "said")), [])
 
     def test_the_fence_covers_the_kept_message(self):
         folder = os.path.join(self.tmp, ".local", "state", "thou", "said")

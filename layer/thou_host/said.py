@@ -98,14 +98,59 @@ def _path(who):
     return os.path.join(folder(), "client-%d.json" % who[0])
 
 
-def record(prompt, who=None):
-    """The hook: keep the person's latest message for this client, replacing the one before."""
+_RECORD = ("prompt", "at", "n", "session")
+
+
+def _parked(data):
+    """The other sessions' messages in this client's file, by the client's session id."""
+    others = data.get("others") if data else None
+    return {k: v for k, v in others.items() if isinstance(v, dict)} if isinstance(others, dict) else {}
+
+
+def _switch(data, who, sid):
+    """This client's file with session sid's message on top, where latest reads it, and the one that was on top
+    parked under its own session id. One client process can run more than one session at a time (Codex runs its
+    memory writer beside the person's session), and each keeps its own latest message."""
+    data = data or {}
+    others = _parked(data)
+    if data.get("sid") != sid and any(k in data for k in _RECORD):
+        others[data.get("sid") or ""] = {k: data[k] for k in _RECORD if k in data}
+    mine = others.pop(sid or "", {})
+    out = dict({k: mine[k] for k in _RECORD if k in mine} if data.get("sid") != sid else
+               {k: data[k] for k in _RECORD if k in data}, client=list(who), sid=sid)
+    if others:
+        out["others"] = others
+    return out
+
+
+def record(prompt, who=None, sid=None):
+    """The hook: keep the person's latest message for this client and session, replacing the one before."""
     who = who or client()
-    before = _read(who)
-    number = before["n"] + 1 if before and isinstance(before.get("n"), int) else 1
-    session = before.get("session") if before and isinstance(before.get("session"), str) else os.urandom(8).hex()
-    _write(who, {"prompt": prompt[:MOST_PROMPT], "at": time.time(), "n": number, "session": session,
-                 "client": list(who)})
+    before = _switch(_read(who), who, sid)
+    number = before["n"] + 1 if isinstance(before.get("n"), int) else 1
+    session = before.get("session") if isinstance(before.get("session"), str) else os.urandom(8).hex()
+    before.update(prompt=prompt[:MOST_PROMPT], at=time.time(), n=number, session=session)
+    _write(who, before)
+
+
+def unreadable(sid=None, who=None):
+    """The hook, for a message it can't read: this session's latest message is none, and no older one stands in."""
+    who = who or client()
+    data = {k: v for k, v in _switch(_read(who), who, sid).items() if k not in _RECORD}
+    if "others" in data:
+        _write(who, data)
+    else:
+        clear(who)
+
+
+def mark(sid, who=None):
+    """The pre-tool hook, as a session calls remember or forget: that session's message is the one the server
+    reads. A session with no message kept leaves none on top, so nothing rests on another session's words."""
+    who = who or client()
+    data = _read(who)
+    if data is None or data.get("sid") == sid:
+        return
+    _write(who, _switch(data, who, sid))
 
 
 def _files():
@@ -132,17 +177,24 @@ def scrub(text, who=None):
     gone = words(text) - {NOT}
     if not gone:
         return
+    def cut(prompt):
+        kept = [x for x in _SENTENCES.split(_apostrophes(prompt).replace("\r\n", "\n"))
+                if x.strip() and not (words(x) & gone)]
+        return "\n".join(kept)
     for path in _files():
         for _ in range(3):
             data = _load(path)
-            if not data or not isinstance(data.get("prompt"), str):
+            if not data:
                 break
-            kept = [x for x in _SENTENCES.split(_apostrophes(data["prompt"]).replace("\r\n", "\n"))
-                    if x.strip() and not (words(x) & gone)]
-            prompt = "\n".join(kept)
-            if prompt == data["prompt"]:
+            after = dict(data)
+            if isinstance(data.get("prompt"), str):
+                after["prompt"] = cut(data["prompt"])
+            if _parked(data):
+                after["others"] = {k: dict(v, prompt=cut(v["prompt"])) if isinstance(v.get("prompt"), str) else v
+                                   for k, v in _parked(data).items()}
+            if after == data:
                 break
-            if _replace(path, dict(data, prompt=prompt), data):
+            if _replace(path, after, data):
                 break
 
 
@@ -212,10 +264,26 @@ def _replace(path, record, before=None):
         raise
 
 
-def clear(who=None):
-    """At session start: no message yet."""
+def clear(who=None, sid=None):
+    """At session start: no message yet. At a session's end, with its id: that session's message goes, and the
+    client's other sessions keep theirs."""
+    who = who or client()
+    data = _read(who) if sid is not None else None
+    if data is not None:
+        others = _parked(data)
+        others.pop(sid, None)
+        if data.get("sid") == sid:
+            data = {k: v for k, v in data.items() if k not in _RECORD}
+        data["others"] = others
+        if not others and not any(k in data for k in _RECORD):
+            data = None
+        else:
+            data = {k: v for k, v in data.items() if k != "others" or v}
+    if data is not None:
+        _write(who, data)
+        return
     try:
-        os.unlink(_path(who or client()))
+        os.unlink(_path(who))
     except OSError:
         pass
 

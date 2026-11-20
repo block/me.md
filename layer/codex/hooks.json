@@ -24,7 +24,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "^(?:Bash|apply_patch|view_image)$",
+        "matcher": "^(?:Bash|apply_patch|view_image)$|^mcp__.+__(?:remember|forget)$",
         "hooks": [
           {
             "type": "command",

@@ -120,7 +120,7 @@ sed "s|@LAYER@|$PWD/layer|g" layer/codex/hooks.json > ~/.codex/hooks.json
 codex mcp add thou -- python3 "$PWD/layer/thou_mcp.py"
 ```
 
-Codex asks you to review new hooks before they run. If you set `ME_HOME`, set it for Codex itself, which runs the hooks, and for the server with `--env ME_HOME=…`, so that both use the same store. The pre-tool hook stops Codex's shell, `apply_patch` and `view_image` from reaching the store, and a call it can't check doesn't run. If the hook can't run on your message, the message still goes through, and remember and forget ask you instead. Codex asks you to approve `forget` before it runs, as it does for any tool that removes things.
+Codex asks you to review new hooks before they run. If you set `ME_HOME`, set it for Codex itself, which runs the hooks, and for the server with `--env ME_HOME=…`, so that both use the same store. The pre-tool hook stops Codex's shell, `apply_patch` and `view_image` from reaching the store, and a call it can't check doesn't run. If the hook can't run on your message, the message still goes through, and remember and forget ask you instead. Codex can run more than one session in one process, such as its memory writer beside yours, so the hooks keep each session's latest message apart, and remember and forget read the message of the session that calls them. Codex asks you to approve `forget` before it runs, as it does for any tool that removes things.
 
 ## What it has passed
 

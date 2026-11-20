@@ -26,7 +26,10 @@ since they run scripts and read paths. A call it stops exits 2 with the reason
 on stderr, which goose reads as a deny. Other extensions' tools pass.
 
 Codex sends Claude Code's hook JSON, so its hooks (codex/hooks.json) use the
-modes as they are. Its shell arrives as Bash. Its apply_patch arrives with the
+modes as they are. One Codex process can run more than one session at once (its
+memory writer runs beside the person's session), so the message is kept per
+session, and the pre-tool hook marks the session that calls remember or forget
+as the one whose message the server reads. Its shell arrives as Bash. Its apply_patch arrives with the
 patch as text: a patch that adds, updates, deletes or moves a file in the store
 is stopped, and so is one the fence can't read. Its view_image is checked as a
 read of the path it names.
@@ -412,6 +415,14 @@ def _deny(reason=DENY):
 
 
 PROMPT_KEYS = ("prompt", "user_prompt", "message", "input", "text")
+# A client's remember and forget, as its pre-tool hook sees them: the session that calls is the one whose message
+# the server reads.
+CONSENT_CALLS = re.compile(r"^mcp__.+__(?:remember|forget)$")
+
+
+def _sid(event):
+    sid = event.get("session_id")
+    return sid if isinstance(sid, str) and sid else None
 
 
 def user_prompt(event):
@@ -419,17 +430,19 @@ def user_prompt(event):
     from thou_host import said
     from thou_host.host import Host
     prompt = next((event[k] for k in PROMPT_KEYS if isinstance(event.get(k), str)), None)
-    if prompt is None or Host().state()["memory"] != "on":
-        said.clear()  # a message this hook can't read, or memory off: nothing kept, and no older one stands in
+    if Host().state()["memory"] != "on":
+        said.clear()  # memory off: nothing kept
+    elif prompt is None:
+        said.unreadable(_sid(event))  # a message this hook can't read: no older one stands in
     else:
-        said.record(prompt)
+        said.record(prompt, sid=_sid(event))
     return None
 
 
 def session_end(event):
     sys.path.insert(0, HERE)
     from thou_host import said
-    said.clear()
+    said.clear(sid=_sid(event))
     return None
 
 
@@ -441,6 +454,13 @@ def pre_tool_use(event):
     roots = {_FOLD(os.path.normpath(os.path.abspath(p))) for p in (root, said.folder())}
     roots |= {_FOLD(os.path.realpath(p)) for p in (root, said.folder())}
     name, args = event.get("tool_name"), event.get("tool_input")
+    if isinstance(name, str) and CONSENT_CALLS.match(name):
+        if _sid(event):
+            try:
+                said.mark(_sid(event))
+            except OSError:
+                pass  # the server then reads whatever is on top, and words of another session don't pass
+        return None
     if name not in FILE_TOOLS and name not in SEARCH_TOOLS and name not in SHELL_TOOLS and name not in PATCH_TOOLS:
         return None
     args = args if isinstance(args, dict) else {}
