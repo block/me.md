@@ -215,8 +215,10 @@ RECEIPT_FORGOT = "Forgotten: \"%s\". Every agent that uses your thou store will 
 RECEIPT_FORGOT_FILE = "Forgotten: %s, the whole file. Every agent that uses your thou store will stop using it."
 RECEIPT_KEPT = " The rest of that line stays: \"%s\"."
 RECEIPT_UNDO = " Say \"undo\" to bring it back."
-AFTER_FORGET = ("After you tell the person the receipt, don't restate the forgotten words anywhere: not in your own "
-                "notes, not in proposals, not as \"you asked me to forget X\".")
+AFTER_FORGET = ("If the same words are in your own memory or instruction files, such as CLAUDE.md, AGENTS.md, "
+                ".goosehints or MEMORY.md, remove those words there too, and nothing else. Tell the person which "
+                "file you changed. After you tell the person the receipt, don't restate the forgotten words "
+                "anywhere: not in your own notes, not in proposals, not as \"you asked me to forget X\".")
 RECEIPT_BACK = "Brought back: \"%s\". Every agent that uses your thou store will know it again."
 NOT_UNDONE = ("The person said \"undo\", but these aren't the words forgotten in their last message, so nothing "
               "changed. Pass the forgotten words, and nothing more, as a sentence of their own.")

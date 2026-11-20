@@ -1640,6 +1640,11 @@ class Quoted(Served):
         self.assertTrue(self.one("remember", text="I'm allergic to shellfish.",
                                  quote="Please don't ever forget that I'm allergic to shellfish.")["ok"])
         self.assertEqual(self.read("me.md"), b"- I'm allergic to shellfish and nuts.\n- I'm allergic to shellfish.\n")
+        self.assertFalse(formats.has_lines(kept.encode(), " . "))  # no words: none of them is already kept
+        self.assertFalse(formats.has_lines(kept.encode(), "I'm allergic to shellfish.\nI like green."))
+        self.write("me.md", kept)
+        self.host.edit("me.md", "append", text="I'm allergic to shellfish.")  # a direct edit adds what it's given
+        self.assertEqual(self.read("me.md"), (kept + "I'm allergic to shellfish.\n").encode())
 
     def test_the_agent_is_told_not_to_restate_forgotten_words(self):
         """The agent's own notes and proposals are out of the layer's reach, so the rule and the forget's answer
@@ -1657,6 +1662,14 @@ class Quoted(Served):
         self.assertEqual(answer["after"], thou_mcp.AFTER_FORGET)
         self.assertIn("don't restate the forgotten words anywhere", answer["after"])
         self.assertNotIn("restate", answer["receipt"])  # the person hears the receipt; this is for the agent
+        self.assertTrue(answer["after"].startswith("If the same words are in your own memory or instruction files, "
+                                                   "such as CLAUDE.md, AGENTS.md, .goosehints or MEMORY.md, remove "
+                                                   "those words there too, and nothing else. Tell the person which "
+                                                   "file you changed."), answer["after"])  # the agent's own copy
+        notices = " ".join(answer["notices"])
+        self.assertIn("I removed it from your thou store and from what thou kept of this conversation. I can't "
+                      "delete copies outside the store: your agent's own memory files,", notices)
+        self.assertNotIn("this host's memory", notices)  # the layer doesn't reach the agent's own files
         answer = self.one("remember", text="Mondays are soccer", quote="And remember that Mondays are soccer.")
         self.assertTrue(answer["ok"], answer)
         self.assertNotIn("after", answer)

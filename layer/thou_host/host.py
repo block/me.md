@@ -23,9 +23,9 @@ LEVEL = "steward"
 _RECALL_PURPOSES = ("task", "briefing", "watches")
 _ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
 
-PROVIDER_NOTICE = ("I removed it from the store and from this host's memory. I can't delete copies outside "
-                   "the store: saved agent sessions and the model provider may keep what earlier sessions "
-                   "read, and backups, sync folders or exported copies keep their own.")
+PROVIDER_NOTICE = ("I removed it from your thou store and from what thou kept of this conversation. I can't delete "
+                   "copies outside the store: your agent's own memory files, saved sessions, what the model provider "
+                   "keeps, and backups, sync folders or exported copies.")
 OFF_NOTICE = ("Memory is off. This host enforces that in its own code, for its own tools. Another agent on "
               "this machine follows it only if it honors policy.json.")
 # S5.1: a journal entry for policy.json, whatever its change says. Hosts journal every write of policy.json and
