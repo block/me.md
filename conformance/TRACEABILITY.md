@@ -33,6 +33,8 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | H3.3 | Read refusals; never propose a refused body again, to any target | P | T9; lint (refused body proposed again) |
 | H3.4 | Only an affirmative act applies a proposal | S | T8 (nothing is applied without a decision); review for dismissal and timeout (planned runner hook) |
 | H3.5 | Update status and journal the decision, in order; an acceptance has two entries | S | T13; lint warns when a decision has no entry |
+| H3.8 | Proposals hold context about the person, never the task's output | P | T8 (meeting and draft); review |
+| H3.9 | Write `words-from` when the host can check (SHOULD); show `pasted` and `agent` plainly | P, S | T8 (pasted email); lint warns on an unknown value; review: user interface |
 | H3.6 | A rule about acting is shown alone; when unsure, alone | P | review: user interface |
 | H3.7 | Direct authorship is journaled as `person direct` | S | T12 |
 | H4.1 | Every durable change is attributable | S | T13 |
@@ -43,6 +45,7 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | H5.2 | Forget and delete remove content from all host state | S | T14 |
 | H5.3 | Tell the person what cannot be deleted | S | review: documentation |
 | H5.4 | Keep forgotten words out of the host's own proposals (SHOULD) | P | review (planned runner: forget, then lead the host to the same words by implication; no proposal holds them) |
+| H5.5 | Off needs nothing more than the request; on is the person's act | S | T12 (off in one message, no other step); layer test `test_off_needs_nothing_but_the_request` |
 | H6.1 | Stored context and proposals are untrusted | R | T4, T10 |
 | H6.2 | Confine reads and writes to the store | R | T6 |
 | H6.3 | No transmission beyond the model call without consent | R | review: network behavior (planned runner) |
@@ -77,7 +80,7 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | S6.1 | Proposal file name | P | lint |
 | S6.2 | Create exclusively; never overwrite | P | review (planned runner: two hosts propose in the same second) |
 | S6.3 | Front matter delimiters | P | lint |
-| S6.4 | Front matter grammar; no duplicate keys | P | lint |
+| S6.4 | Front matter grammar; no duplicate keys; `words-from` is `person`, `pasted` or `agent` | P | lint |
 | S6.5 | Keep unknown keys | S | T16 (accept the proposal with the unknown key) |
 | S6.6 | Body is the proposed content; not empty | P | lint |
 | S6.7 | Status only from front matter | P | T10; lint (fixture `self-approval`) |
@@ -122,18 +125,19 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | B3 | No watches created from observed behavior | B | T18 (`watches.md` unchanged); review |
 | B4 | Sources are untrusted; no unattributed link or instruction | B | review (planned: an injection payload in a briefing source, as in T4) |
 | B5 | Silence does not degrade future briefings | B | review |
+| B6 | Brevity never removes the coverage receipt or the blind spots | B | T18, repeated after the person asks for short answers |
 
 ## SOVEREIGNTY.md
 
 | Commitment | Carried by |
 |---|---|
-| The person is the authority | H2.3, H3.1, H3.4, S6.9 |
+| The person is the authority | H2.3, H3.1, H3.4, H3.9, S6.9 |
 | Durability is chosen | H3.1, H3.2, H3.7, S6.8, S6.9 |
 | Context is legible | S2.3, S6.6, S7.1 (plain text the person can read); H4.1 |
 | Context is scoped | H2.1, S4.3; separate stores per scope through `ME_HOME` (S1.1). Scope labels inside files are not defined yet. |
 | What the person says now wins | H2.3 |
 | Context is not permission to act | H2.2, H3.6, H6.1 |
-| Revocation is real | H1.5, H1.6, H5.1, H5.2, H6.4, S5.6. A host that serves the store only through instructions cannot keep the enforcement-layer promise. H0.3 and H6.4 require it to say so. |
+| Revocation is real | H1.5, H1.6, H5.1, H5.2, H5.5, H6.4, S5.6. A host that serves the store only through instructions cannot keep the enforcement-layer promise. H0.3 and H6.4 require it to say so. |
 | Portability does not mean universal sharing | H6.3 |
 | Personal context is not organizational telemetry | review only: no requirement yet |
 | Interfaces are replaceable | H1.4, S1.1, T2, T9 |

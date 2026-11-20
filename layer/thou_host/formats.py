@@ -357,14 +357,20 @@ def body_lines(text):
     return re.sub(r"(\r?\n)+\Z", "", text).replace("\r\n", "\n").split("\n")
 
 
-def new_proposal(target, body, basis, proposed_by, when):
+WORDS_FROM = ("person", "pasted", "agent")  # S6.4: whose words the body is, when the proposing host could check
+
+
+def new_proposal(target, body, basis, proposed_by, when, words_from=None):
     def value(text):
         text = one_line(text)
         if text.startswith('"') or text != text.strip():
             text = '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
         return text
     head = ["---", "status: pending", "target: " + target, "proposed-by: " + value(proposed_by),
-            "proposed-at: " + when, "basis: " + value(basis), "---", ""]
+            "proposed-at: " + when, "basis: " + value(basis)]
+    if words_from is not None:
+        head.append("words-from: " + words_from)
+    head += ["---", ""]
     return ("\n".join(head + body_lines(body)) + "\n").encode("utf-8")
 
 

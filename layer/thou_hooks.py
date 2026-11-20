@@ -448,7 +448,17 @@ def session_end(event):
     return None
 
 
+# HOST.md H5.5: turning memory off needs nothing more than the person's request, so the plugin answers Claude
+# Code's permission prompt for its own off tool, and for nothing else.
+OFF_CALL = "mcp__plugin_thou_thou__off"
+OFF_ALLOWED = {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow",
+                                      "permissionDecisionReason": "Turning thou memory off needs only the person's "
+                                                                  "request."}}
+
+
 def pre_tool_use(event):
+    if event.get("tool_name") == OFF_CALL:
+        return OFF_ALLOWED
     sys.path.insert(0, HERE)
     from thou_host import said
     from thou_host.storefs import location
@@ -539,6 +549,8 @@ def main(argv):
             return 1
         # fail closed: a hook that can't check a call must not let it through
         out = _deny("The thou plugin could not check this call, so it stopped it. " + DENY)
+    if out is OFF_ALLOWED and goose:
+        return 0  # goose has no allow answer: the call goes on as it would
     if out is not None and goose:
         sys.stderr.write(out["hookSpecificOutput"]["permissionDecisionReason"] + "\n")
         return 2  # goose: a deny, with the reason the agent sees

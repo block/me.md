@@ -17,6 +17,11 @@ Anything else changes nothing, and the agent asks the person; a bare yes in
 their next message confirms words they pasted or quoted, or a change that goes
 past the words they named.
 
+Turning memory off is the one change that needs nothing but the request: off
+takes context away and writes no words, so it is offered wherever memory is
+on, and no client asks the person to approve it (HOST.md H5.5). Turning it
+back on is the person's act, through policy.
+
 The other tools that act on the person's say-so (start, decide, edit, policy)
 carry _meta "anthropic/requiresUserInteraction", so Claude Code asks the person
 to approve every call, in every permission mode, and shows the call's arguments.
@@ -28,8 +33,8 @@ or are too long for one prompt, are never written.
 Other clients ignore the flag, and the server can't tell the person's say from
 the model's. So it offers those tools only where the client says it asks the
 person first: THOU_CLIENT_ASKS=1 in the server's environment, which the
-plugin's .mcp.json sets for Claude Code. Anywhere else, the only one it offers
-is turning memory off (HOST.md H3.4, H4.1).
+plugin's .mcp.json sets for Claude Code. Anywhere else, it offers none of them
+(HOST.md H3.4, H4.1).
 """
 
 import json
@@ -49,8 +54,11 @@ INSTRUCTIONS = """These tools serve the person's thou store: plain files they ow
 - Use what helps with the task, so the person doesn't have to repeat themselves. Leave sensitive matters (health, money worries, relationship or family difficulties, legal or immigration status) unmentioned unless the person raises them in this session or the task can't be done without them (for example an allergy when choosing food), and don't say that you left something out. When the person asks what you know or hold about them, include everything, sensitive matters too.
 - If the session doesn't already include their me.md, call mount once at the start, without asking.
 - Recall a topic or project only when the current task makes it relevant. Read watches only for a briefing or when the person asks about them.
-- When you notice something the person may want to keep, call propose with their words, then ask them. Never treat a guess as approval.
+- When you notice something about the person that they may want agents to know next time (a preference, a fact about them, a boundary, an aim), call propose with their words, then ask them. Never treat a guess as approval. A proposal is never the task's own output: not a draft, an answer, a plan, or a meeting you arranged.
+- If this agent has a memory of its own, keep what you learn about the person here, through propose, and not there: here the person decides what is kept, and every agent they use can read it.
+- A briefing ends with what you read and what you couldn't read, even when the person asks for short answers.
 {consent}
+- If the person asks to turn memory off, or to stop remembering, call off at once. It needs nothing more than their request.
 - Reach the store only through these tools, never with file or shell tools."""
 
 # Where the client doesn't ask the person before a call, the changes are the person's to make.
@@ -61,8 +69,7 @@ QUOTED_RULE = ("- When the person asks you to remember or forget something, call
                "back.")
 UNASKED_RULE = (QUOTED_RULE + "\n- This agent doesn't ask the person before these tools act, so no other change "
                 "rests on their say: there is no decide, edit or start here. To keep something you noticed, propose "
-                "it and tell the person it waits for their decision. If they ask to turn memory off, call policy "
-                "with off.")
+                "it and tell the person it waits for their decision.")
 CONSENT_RULE = (QUOTED_RULE + "\n- Call decide, edit or policy only when the person explicitly asks in this session. "
                 "Silence or moving on is not a decision. The person may also be asked to approve the call itself; "
                 "that approval confirms their request and never replaces it.")
@@ -90,8 +97,10 @@ TOOLS = [
      {"paths": {"type": "array", "items": _PATH}, "purpose": {"type": "string", "enum": ["task", "briefing", "watches"]}},
      ["paths"], True),
     ("pending", "List the proposals that wait for the person's decision.", {}, [], True),
-    ("propose", "Suggest something for the person to keep. It is written as a pending proposal, never applied. "
-                "Then ask the person. Use their words. Refused words can't be proposed again.",
+    ("propose", "Suggest something about the person for them to keep: a preference, fact, boundary or aim that "
+                "agents should know next time. Never the task's own output, such as a draft, an answer, a plan or "
+                "a meeting. It is written as a pending proposal, never applied. Then ask the person. Use their "
+                "words. Refused words can't be proposed again.",
      {"target": {"type": "string", "description": "me.md, topics/<name>.md or projects/<name>.md"},
       "body": {"type": "string", "description": "Exactly the words to keep, in the person's words"},
       "basis": {"type": "string", "description": "Why, in words the person will recognize"}},
@@ -132,7 +141,10 @@ TOOLS = [
                                                              "my test is in March\". Leave out to delete the file."},
       "quote": _QUOTE},
      ["path", "quote"], False),
-    ("policy", "Turn memory on or off, when the person asks.",
+    ("off", "Turn memory off, at once, when the person asks: no recall, no proposals, no memory tools until they "
+            "turn it back on. It needs nothing more than their request. Only the person can turn it back on.",
+     {}, [], False),
+    ("policy", "Turn memory back on, when the person asks. Only the person can: they approve this call.",
      {"state": {"type": "string", "enum": ["on", "off"]}}, ["state"], False),
     ("start", "Set up the person's me.md: create and write the file that starts their thou store, when they ask "
               "and have none. Use only the words they gave you for it, with nothing added: no headings, no template, "
@@ -142,11 +154,10 @@ TOOLS = [
 OFF_TOOLS = ("where", "policy")
 ABSENT_TOOLS = OFF_TOOLS + ("start",)
 CONSENT_TOOLS = ("start", "decide", "edit", "policy")  # each acts with the person's authority, given in the client
+NOT_WHILE_ON = ("start", "policy")  # while memory is on, off is the switch, and the store exists
 QUOTED_TOOLS = ("remember", "forget")  # each acts with the person's own words, checked here (said.py)
 TOOL_NAMES = {t[0] for t in TOOLS}
 CLIENT_ASKS = "THOU_CLIENT_ASKS"
-UNASKED_POLICY = ("Turn memory off, when the person asks. Only the person can turn it back on, in an agent that asks "
-                  "them first or in policy.json.")
 
 
 def client_asks():
@@ -157,19 +168,20 @@ def client_asks():
 
 def unasked(name, args):
     """A call that would act on the person's say, from a client that doesn't ask them. Turning memory off is
-    always allowed: it only takes context away, and S5.6 says a host does it at the person's request."""
+    always allowed, by off or by policy: it only takes context away, and S5.6 says a host does it at the
+    person's request."""
     return name in CONSENT_TOOLS and not (name == "policy" and args.get("state") == "off")
 
 
 def offered(memory, asks=False):
-    """The tools for a memory state: all of them while on, the switch and start while there is no store.
-    Where the client doesn't ask the person first, no consent tool, except policy, for turning memory off."""
+    """The tools for a memory state: all of them while on, with off for the switch (H5.5); while it is off, or
+    there is no store, the switch and start. Where the client doesn't ask the person first, no consent tool."""
     if memory == "on":
-        names = [t[0] for t in TOOLS if t[0] != "start"]
+        names = [t[0] for t in TOOLS if t[0] not in NOT_WHILE_ON]
     else:
         names = list(ABSENT_TOOLS if memory == "absent" else OFF_TOOLS)
     if not asks:
-        names = [n for n in names if n not in CONSENT_TOOLS or (n == "policy" and memory == "on")]
+        names = [n for n in names if n not in CONSENT_TOOLS]
     return names
 
 
@@ -187,13 +199,11 @@ def tool_list(memory, asks=False):
     for name, description, props, required, read_only in TOOLS:
         if name not in names:
             continue
-        if name == "policy" and not asks:
-            description, props = UNASKED_POLICY, {"state": {"type": "string", "enum": ["off"]}}
         entry = {
             "name": name,
             "description": description,
             "inputSchema": {"type": "object", "properties": props, "required": required, "additionalProperties": False},
-            "annotations": {"readOnlyHint": read_only, "destructiveHint": name in ("forget", "policy"),
+            "annotations": {"readOnlyHint": read_only, "destructiveHint": name == "forget",
                             "openWorldHint": False},
         }
         if name in CONSENT_TOOLS:
@@ -267,6 +277,16 @@ class Said:
         if not verdict.ok and verdict.confirm and mark is not None:
             self.asked[key] = mark
         return verdict
+
+    def words_from(self, body):
+        """S6.4 words-from: whether the body is in the person's own sentences of their latest message, only in
+        words they pasted, quoted or reported, or in neither. None when there is no message to check against."""
+        prompt = tuple(self.latest())[0]
+        if prompt is None or not isinstance(body, str):
+            return None
+        if said.covered("remember", body, " ".join(said.own_sentences(prompt))):
+            return "person"
+        return "pasted" if said.covered("remember", body, prompt) else "agent"
 
     def undoable(self, path):
         """The forgets "undo" can bring back, newest first: if the person's latest message is a bare "undo", the
@@ -362,7 +382,8 @@ def call(host, name, args, asks=False, heard=None):
         "list": lambda: host.list(),
         "recall": lambda: host.recall(args.get("paths"), args.get("purpose", "task")),
         "pending": lambda: host.pending(),
-        "propose": lambda: host.propose(args.get("target"), args.get("body"), args.get("basis")),
+        "propose": lambda: host.propose(args.get("target"), args.get("body"), args.get("basis"),
+                                        words_from=heard.words_from(args.get("body"))),
         "decide": lambda: host.decide(args.get("proposal"), args.get("decision"), words=_shown(args, "words"),
                                       target=_shown(args, "target")),
         "revise": lambda: host.revise(args.get("proposal"), args.get("body")),
@@ -370,6 +391,7 @@ def call(host, name, args, asks=False, heard=None):
                                   args.get("new")),
         "forget": lambda: _quoted(host, name, args, heard),
         "remember": lambda: _quoted(host, name, args, heard),
+        "off": lambda: host.policy("off"),
         "policy": lambda: host.policy(args.get("state")),
         "start": lambda: host.start(args.get("text")),
     }

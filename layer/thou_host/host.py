@@ -32,6 +32,10 @@ OFF_NOTICE = ("Memory is off. This host enforces that in its own code, for its o
 # never delete it, so with such an entry a missing policy.json was set once and has since gone.
 _POLICY_ENTRY = re.compile(rb"(?m)^- [^|\r\n]*\| policy\.json \|")
 MOST_PENDING = 50  # proposals waiting for the person, at most: past that, propose asks them to decide first
+# H3.9: what the person is told about a proposal whose words aren't their own
+WORDS_SHOWN = {"pasted": "These words come from text the person pasted, quoted or forwarded, not from their own "
+                         "sentences.",
+               "agent": "These are the agent's words, not the person's."}
 # One change holds at most this much, so that it fits in an approval prompt in an ordinary window. Claude Code
 # shows a change's words in full, so longer words run off the top of the window.
 MOST, MOST_LINES = 2000, 30
@@ -360,6 +364,8 @@ class Host:
                     invalid.append({"file": "proposals/" + p.name, "reason": "; ".join(p.problems)})
                 elif p.status == "pending":
                     item = p.summary()
+                    if p.fields.get("words-from") in WORDS_SHOWN:
+                        item["words_from"] = WORDS_SHOWN[p.fields["words-from"]]  # H3.9
                     found = formats.hidden(p.body)
                     if found:
                         item["hidden"] = ("These words hold characters a person can't see (%s). They can be refused "
@@ -370,8 +376,11 @@ class Host:
                     proposals.append(item)
         return self._answer(s, proposals=proposals, invalid=invalid, notices=notices)
 
-    def propose(self, target, body, basis, agent=None):
+    def propose(self, target, body, basis, agent=None, words_from=None):
+        """words_from: whose words the body is, "person", "pasted" or "agent", if the caller checked (S6.4)."""
         self._writable()
+        if words_from is not None and words_from not in formats.WORDS_FROM:
+            raise HostError("bad_request", "words-from is person, pasted or agent (S6.4).")
         if not isinstance(target, str) or not formats.TARGET_RE.fullmatch(target):
             raise HostError("bad_target", "A proposal targets me.md, topics/<name>.md or projects/<name>.md "
                                           "(S6.4). It never targets watches.md (S4.2).")
@@ -395,7 +404,7 @@ class Host:
             pid = time.strftime("%Y%m%dT%H%M%SZ", stamp) + "-" + "".join(
                 secrets.choice(_ID_CHARS) for _ in range(6))
             data = formats.new_proposal(target, body, basis, self.who(agent),
-                                        time.strftime("%Y-%m-%dT%H:%M:%SZ", stamp))
+                                        time.strftime("%Y-%m-%dT%H:%M:%SZ", stamp), words_from)
             try:
                 self.fs.create("proposals/%s.md" % pid, data)  # S6.2, S8.5: exclusive, no lock
             except FileExistsError:
@@ -403,6 +412,8 @@ class Host:
             except Missing as exc:
                 raise HostError("bad_request", "I could not create the proposal: %s." % exc.why)
             s = self.state()
+            if words_from in WORDS_SHOWN:
+                notices.append(WORDS_SHOWN[words_from] + " Say so when you ask them.")
             return self._answer(s, proposal=pid, file="proposals/%s.md" % pid, notices=notices)
         raise HostError("bad_request", "I could not find a free proposal name.")
 

@@ -5,7 +5,7 @@ store, one per client process, numbered within the session. The thou server read
 forget, and applies the change at once only when the person's own words ask for it:
 
 - the quote is in the person's latest message, in words they wrote themselves: not a line they pasted after
-  `>`, not a fenced block, not words in quotation marks that give an instruction, and not the rest of a
+  `>`, not a fenced block, not an HTML comment, not words in quotation marks that give an instruction, and not the rest of a
   sentence that reports what someone else said or wrote;
 - that sentence asks for the operation: "forget", "delete" or "remove" for forget, and "remember", "note" or
   "save" for remember. A question doesn't ask, unless it is a request ("Can you…?"); nor does a verb with a
@@ -330,6 +330,9 @@ def salted(who=None):
 
 _FENCE = re.compile(r"(?ms)^[ \t]*(```|~~~).*?(?:^[ \t]*\1[^\n]*$|\Z)")
 _PASTED = re.compile(r"(?m)^[ \t]*>.*$")
+# An HTML comment doesn't show where the message is read, so its words were not written to be read by the person.
+# Pasted mail and pages carry them; an unclosed one runs to the end.
+_COMMENT = re.compile(r"(?s)<!--.*?(?:-->|\Z)")
 # A line that starts with a speaker's name and a colon, as in a pasted chat: "Sam: forget that…".
 _SPEAKER = re.compile(r"(?m)^[ \t]*([A-Z][\w.'-]*(?:[ \t]+[\w.'-]+){0,2})[ \t]*:[ \t].*$")
 _OWN_LEAD = re.compile(r"(?i)^(?:also|ps|p\.s\.|update|btw|fyi|edit|important|reminder|ok|okay|so|and|but|oh|"
@@ -352,13 +355,14 @@ def _apostrophes(text):
 def own_sentences(prompt):
     """The sentences of the message that the person wrote themselves.
 
-    Left out: fenced blocks, lines pasted after >, lines that start with someone's name and a colon, words in
+    Left out: HTML comments, fenced blocks, lines pasted after >, lines that start with someone's name and a colon, words in
     quotation marks that themselves ask to remember or forget (an instruction someone else gave), the rest of
     a sentence after "said", "wrote", "sent" and the like, and a sentence that speaks of "your assistant".
     Quoted words that don't ask anything stay, without their marks: 'forget "I'm vegetarian"' names words."""
     if not isinstance(prompt, str):
         return []
     text = _apostrophes(prompt).replace("\r\n", "\n")
+    text = _COMMENT.sub(GAP, text)
     text = _FENCE.sub(GAP, text)
     text = _PASTED.sub(GAP, text)
     text = _SPEAKER.sub(lambda m: m.group(0) if _OWN_LEAD.match(m.group(1)) or _asks_any(m.group(1)) else GAP,
