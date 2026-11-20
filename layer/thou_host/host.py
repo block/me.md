@@ -649,10 +649,11 @@ class Host:
                 self.fs.replace(path, cut)
                 removed = counted[-1]
                 entries.append(formats.journal_entry(path, "removed text", who, "person direct"))
-            tombstone = self._tombstone(text if text is not None else gone.decode("utf-8", "replace"), notices)
+            words = text if text is not None else gone.decode("utf-8", "replace")
+            tombstone = self._tombstone(words, notices)
             wanted = normalize(text) if text is not None else None
             try:
-                self._forget_proposals(path, wanted, who, entries, notices)
+                self._forget_proposals(path, wanted, words, who, entries, notices)
             except (OSError, Missing) as exc:
                 # The words are gone already, so the answer says so, with what was left undone.
                 notices.append("I could not finish with the proposals for %s (%s), so some may still hold %s."
@@ -672,10 +673,25 @@ class Host:
         more = {"forgotten": tombstone} if tombstone else {}
         return self._answer(self.state(), removed=removed, journal=journal, notices=notices, **more)
 
-    def _forget_proposals(self, path, wanted, who, entries, notices):
+    def _forget_proposals(self, path, wanted, words, who, entries, notices):
         found, more = self._proposals()
         notices += more  # a proposal it ignores may hold the words too
+        salt = forgotten.new_salt()  # S10.8: the same match as S10.4, whether or not forgotten.json was written
+        these = {"salt": salt, "items": [{"id": "", "at": "", "method": forgotten.METHOD,
+                                          "lines": forgotten.sentence_hashes(salt, words)}]}
         for p in found:
+            if p.valid and p.status == "pending":
+                kept, left_out = forgotten.kept_lines(these, p.body)
+                if left_out:
+                    rel = "proposals/" + p.name
+                    if normalize(kept) == "":
+                        self.fs.remove(rel)  # S6.10, at the person's word
+                        entries.append(formats.journal_entry(rel, "deleted a pending proposal", who,
+                                                             "person direct"))
+                        continue
+                    self.fs.replace(rel, lambda old, p=p, kept=kept: Proposal(p.name, old).revised(kept))
+                    entries.append(formats.journal_entry(rel, "removed text", who, "person direct"))
+                    continue
             body = normalize(p.body or "")
             same_file = p.valid and p.fields["target"] == path
             if same_file and p.status == "accepted" and (wanted is None or body == wanted):

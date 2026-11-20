@@ -111,6 +111,7 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | S10.5 | An item goes on undo or when the person says the words again; 500 at most | S | review; lint warns past 500 |
 | S10.6 | Change it under the lock; leave an unreadable file alone and tell the person | S | review |
 | S10.7 | Hashes are not secrecy | R | review: documentation |
+| S10.8 | A forget takes forgotten lines out of pending proposals, and deletes one left empty (SHOULD) | S | review |
 
 ## BRIEFING.md
 

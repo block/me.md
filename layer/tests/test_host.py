@@ -772,7 +772,7 @@ class Forget(StoreTest):
         self.assertEqual(self.code(self.host.forget, "me.md", "nothing"), "no_match")
 
     def test_forget_part_of_a_line_does_what_forget_does(self):
-        """The words go, the line stays readable, applied proposals with them go, and the journal says removed."""
+        """The words go, the line stays readable, proposals with them go, and the journal says removed."""
         self.write("me.md", "- I'm learning to drive and my test is in March.\n- I like blue.\n")
         done = ACCEPTED.replace("topics/travel.md", "me.md").replace("Prefer aisle seats.", "my test is in March")
         self.write("proposals/20261112T170301Z-done.md", done)
@@ -782,10 +782,12 @@ class Forget(StoreTest):
         self.assertEqual(answer["removed"], 1)
         self.assertEqual(self.read("me.md"), b"- I'm learning to drive.\n- I like blue.\n")
         self.assertFalse(os.path.exists(self.path("proposals/20261112T170301Z-done.md")))
-        self.assertIn("20261112T170301Z-pend.md still holds these words. It is pending", " ".join(answer["notices"]))
+        self.assertFalse(os.path.exists(self.path("proposals/20261112T170301Z-pend.md")))  # S10.8
+        self.assertNotIn("still holds", " ".join(answer["notices"]))
         journal = self.read("journal.md").decode().splitlines()
         self.assertIn("| me.md | removed text |", journal[0])
         self.assertIn("deleted an applied proposal", journal[1])
+        self.assertIn("deleted a pending proposal", journal[2])
         self.lint()
 
     def test_forget_words_only_where_they_are_whole_words(self):
@@ -871,6 +873,28 @@ class Forgotten(StoreTest):
         self.host.edit("me.md", "append", text="I grow tomatoes on the balcony. The allotment is plot 14.")
         self.assertEqual(self.items(), [])
 
+    def test_a_forget_takes_the_words_out_of_waiting_proposals(self):
+        self.write("me.md", "- I run a bike shop.\n- I'm vegetarian.\n")
+        both = self.host.propose("me.md", "- Tomasz is vegetarian, so pick veggie places.\n- I close on Tuesdays.\n",
+                                 "x")["proposal"]
+        only = self.host.propose("me.md", "- Vegetarian dinners on Fridays.", "x")["proposal"]
+        other = self.host.propose("me.md", "- I ride to work.", "x")["proposal"]
+        self.host.forget("me.md", "- I'm vegetarian.")
+        self.assertEqual(Proposal(both + ".md", self.read("proposals/%s.md" % both)).body, "- I close on Tuesdays.\n")
+        self.assertFalse(os.path.exists(self.path("proposals/%s.md" % only)))  # nothing left: gone, not refused
+        self.assertEqual(Proposal(other + ".md", self.read("proposals/%s.md" % other)).body, "- I ride to work.\n")
+        journal = self.read("journal.md").decode("utf-8").splitlines()
+        self.assertTrue(any("proposals/%s.md" % both in e and "removed text" in e for e in journal), journal)
+        self.assertTrue(any("proposals/%s.md" % only in e and "deleted a pending proposal" in e for e in journal))
+        self.host.decide(both, "accept")
+        self.assertNotIn(b"egetarian", self.read("me.md"))
+        self.assertEqual(len(self.items()), 1)  # accepting what is left doesn't lift it
+        self.write("topics/garden.md", "The allotment is plot 14.\n")
+        plot = self.host.propose("me.md", "- My allotment is plot 14.", "x")["proposal"]
+        self.host.forget("topics/garden.md")  # a whole file too
+        self.assertFalse(os.path.exists(self.path("proposals/%s.md" % plot)))
+        self.lint()
+
     def test_part_of_a_line_and_a_whole_file(self):
         self.write("me.md", "- I'm learning to drive and my test is in March.\n")
         self.host.forget("me.md", " and my test is in March")
@@ -894,10 +918,12 @@ class Forgotten(StoreTest):
 
     def test_an_accepted_proposal_lifts_it(self):
         self.write("me.md", "- I'm vegetarian.\n")
-        waiting = self.host.propose("me.md", "- I'm vegetarian since 2019.", "x")["proposal"]
         self.host.forget("me.md", "- I'm vegetarian.")
         self.assertEqual(len(self.items()), 1)
-        self.host.decide(waiting, "accept")
+        waiting = "20261120T170000Z-abcd"  # by a host that doesn't read forgotten.json, after the forget
+        self.write("proposals/%s.md" % waiting, PROPOSAL.replace("topics/travel.md", "me.md").replace(
+            "Prefer aisle seats.", "I'm vegetarian since 2019."))
+        self.host.decide(waiting, "accept")  # the person saw the words and kept them
         self.assertEqual(self.items(), [])
 
     def test_bring_back_takes_only_the_same_words(self):
