@@ -14,7 +14,7 @@ A harness that can read and write files and keep a standing instruction can serv
   projects/      read a file only for work on that project
   proposals/     one file per proposal, with a status: pending, accepted, or refused
   journal.md     one line per durable change: when, what, which host, whose authority
-  policy.json    the off switch: on if missing, or if "state" is exactly "on"; otherwise off
+  policy.json    the off switch: on if "state" is exactly "on", or if missing and never set; otherwise off
 ```
 
 The store is at `$ME_HOME` if that is set, and at `~/.me/` otherwise. Memory starts when `me.md` exists. A store with only `me.md` is valid.
@@ -56,8 +56,9 @@ and ~/.me/ otherwise. Below, "the store" means that folder.
 
 MOUNT — At the start of each session, read only policy.json in the
 store, and decide before you open any other file there. Memory is on
-if the file is missing, or if it is a JSON object whose "state" is
-exactly "on". Otherwise memory is off, including when the file is not
+if it is a JSON object whose "state" is exactly "on", or if the file
+is missing and journal.md in the store has no line whose path is
+policy.json. Otherwise memory is off, including when the file is not
 valid JSON or is a symbolic link: behave as if the store does not
 exist, open no other file there, and write nothing there. If I ask,
 tell me that memory is off. If memory is on, read me.md in the store

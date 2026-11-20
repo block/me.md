@@ -7,6 +7,7 @@ so the rules live in one place.
 
 import json
 import os
+import re
 import secrets
 import time
 
@@ -26,6 +27,9 @@ PROVIDER_NOTICE = ("I removed it from the store and from this host's memory. I c
                    "read, and backups, sync folders or exported copies keep their own.")
 OFF_NOTICE = ("Memory is off. This host enforces that in its own code, for its own tools. Another agent on "
               "this machine follows it only if it honors policy.json.")
+# S5.1: a journal entry for policy.json, whatever its change says. Hosts journal every write of policy.json and
+# never delete it, so with such an entry a missing policy.json was set once and has since gone.
+_POLICY_ENTRY = re.compile(rb"(?m)^- [^|\r\n]*\| policy\.json \|")
 MOST_PENDING = 50  # proposals waiting for the person, at most: past that, propose asks them to decide first
 # One change holds at most this much, so that it fits in an approval prompt in an ordinary window. Claude Code
 # shows a change's words in full, so longer words run off the top of the window.
@@ -71,9 +75,13 @@ class Host:
     # --- on, off, absent (H1.5, S1.2, S5) ---
 
     def state(self):
-        """Read policy.json alone and decide, then check for me.md. Never opens another file."""
+        """Read policy.json alone and decide, then check for me.md. Opens no other file, except journal.md when
+        policy.json is missing (S5.1)."""
         kind = self.fs.kind("policy.json")
         obj = None
+        if kind == "missing" and self._switch_gone():
+            return self._off("policy.json is missing, but journal.md shows the switch was set before, so the "
+                             "person's last choice is unknown. Only the person can turn memory on again (S5.1)")
         if kind == "link":
             return self._off("policy.json is a symbolic link")
         if kind == "other":
@@ -98,6 +106,17 @@ class Host:
         if not writable:
             notices.append(self._spec_message(obj))
         return {"memory": "on", "writable": writable, "notices": notices, "obj": obj}
+
+    def _switch_gone(self):
+        """S5.1: whether journal.md records a change to policy.json. A journal that can't be read can't show that
+        the switch was never set, so it counts as yes; a link counts as no file (S2.4)."""
+        kind = self.fs.kind("journal.md")
+        if kind in ("missing", "link"):
+            return False
+        try:
+            return bool(_POLICY_ENTRY.search(self.fs.read("journal.md")))
+        except (Missing, OSError):
+            return True
 
     def _off(self, reason):
         return {"memory": "off", "notices": ["Memory is off: %s." % reason], "obj": None}
@@ -640,6 +659,7 @@ class Host:
                 obj = None
             if obj is not None and not formats.spec_supported(obj):
                 raise HostError("unsupported_spec", self._spec_message(obj))
+        gone = kind == "missing" and self._switch_gone()
         who = self.who(agent)
         notices = []
         token = self._lock(agent)
@@ -651,8 +671,8 @@ class Host:
 
             def flip(data):
                 if data is None:
-                    if state == "on" and kind == "missing":
-                        return None  # a missing policy.json already means on (S5.1)
+                    if state == "on" and kind == "missing" and not gone:
+                        return None  # a missing policy.json already means on, unless the switch was set (S5.1)
                     return formats.policy_bytes({"state": state, "spec": formats.SPEC})
                 _, _, obj = formats.parse_policy(data)
                 if obj is None:

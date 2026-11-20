@@ -57,8 +57,9 @@ folder.
    If you cannot fetch the block, record this rule instead. At the
    start of each session, find the store (ME_HOME if it is set,
    otherwise ~/.me/) and read only policy.json in it. Memory is on if
-   the file is missing, or if it is a JSON object whose "state" is
-   exactly "on". Otherwise, including when it is not valid JSON or is
+   it is a JSON object whose "state" is exactly "on", or if the file
+   is missing and journal.md in the store has no line whose path is
+   policy.json. Otherwise, including when it is not valid JSON or is
    a symbolic link, memory is off: open no other file in the store
    and write nothing there. If memory is on, read me.md in the store
    if it exists, and check policy.json again before you read or
@@ -95,7 +96,7 @@ This rule is critical to the design: **the start of the protocol must not use th
 Some agents cannot keep a standing instruction. For those agents, this one line is a temporary bridge:
 
 ```text
-Check ~/.me/policy.json. Memory is on only if the file is missing or its "state" is exactly "on". If it is on, read ~/.me/me.md before we start, and check the policy again before you read or write anything else there.
+Check ~/.me/policy.json. Memory is on only if its "state" is exactly "on", or if the file is missing and no line in ~/.me/journal.md has policy.json as its path. If it is on, read ~/.me/me.md before we start, and check the policy again before you read or write anything else there.
 ```
 
 If you set `ME_HOME`, use that folder instead of `~/.me/`.

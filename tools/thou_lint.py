@@ -128,19 +128,39 @@ def reject_constant(name):
     raise ValueError("%s is not JSON" % name)
 
 
+POLICY_ENTRY = re.compile(rb"(?m)^- [^|\r\n]*\| policy\.json \|")
+
+
+def switch_gone(root):
+    """S5.1: with policy.json missing, whether journal.md has an entry for it. A journal that can't be read counts
+    as yes; a symbolic link counts as no file (S2.4)."""
+    path = os.path.join(root, "journal.md")
+    if not os.path.lexists(path) or os.path.islink(path):
+        return False
+    try:
+        with open(path, "rb") as handle:
+            return bool(POLICY_ENTRY.search(handle.read()))
+    except OSError:
+        return True
+
+
 def check_policy(rep, root):
     """Fill rep.policy, following STORE.md §5."""
     rel = "policy.json"
     policy = {"state": "on", "reason": "no policy.json (default on)", "spec": None, "writable": True}
     rep.policy = policy
     path = os.path.join(root, rel)
-    if not os.path.lexists(path):
-        return
 
     def off(why):
         policy["state"] = "off"
         policy["reason"] = why
         rep.warn(rel, "%s; hosts treat memory as off" % why)
+
+    if not os.path.lexists(path):
+        if switch_gone(root):
+            off("policy.json is missing, but journal.md records a change to it, so the switch was set and has "
+                "since gone (S5.1)")
+        return
 
     if os.path.islink(path):
         return off("policy.json is a symbolic link")

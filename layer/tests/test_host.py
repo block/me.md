@@ -157,6 +157,46 @@ class Policy(StoreTest):
         self.host.policy("off")
         self.assertEqual(json.loads(self.read("policy.json")), {"state": "off", "spec": "0.1"})
 
+    POLICY_ENTRY = ("- 2026-11-01T09:00:00Z | policy.json | turned memory off | host: examplehost 1.0 | "
+                    "authority: person direct\n")
+
+    def test_a_switch_that_has_gone_stays_off(self):
+        """S5.1: the person turned memory off, then policy.json went, in a sync or a restore."""
+        self.write("journal.md", "# Journal\n\n" + self.POLICY_ENTRY)
+        self.write("topics/t.md", "CANARY-T\n")
+        answer = json.dumps([self.host.mount(), self.host.list(), self.host.recall(["topics/t.md"]),
+                             self.host.pending()])
+        self.assertNotIn("I like blue", answer)
+        self.assertNotIn("CANARY-T", answer)
+        self.assertEqual(self.host.mount()["memory"], "off")
+        self.assertIn("journal.md shows the switch was set", self.host.where()["notices"][0])
+        self.assertEqual(self.code(self.host.propose, "me.md", "x", "y"), "memory_off")
+        self.assertEqual(self.code(self.host.edit, "me.md", "append", text="x"), "memory_off")
+        answer = self.host.policy("on")
+        self.assertEqual(answer["memory"], "on")
+        self.assertEqual(json.loads(self.read("policy.json")), {"state": "on", "spec": "0.1"})
+        self.assertIn("turned memory on", answer["journal"][0])
+        self.lint()
+
+    def test_a_journal_that_never_set_the_switch_keeps_on(self):
+        self.write("journal.md", "- 2026-11-01T09:00:00Z | topics/policy.json.md | created the file | host: x | "
+                                 "authority: person direct\nA note | policy.json | not an entry\n")
+        self.assertEqual(self.host.mount()["memory"], "on")
+        self.assertIn("Memory was already on.", self.host.policy("on")["notices"])
+        self.assertFalse(os.path.lexists(self.path("policy.json")))
+        other = os.path.join(self.tmp, "j.md")  # a linked journal.md counts as no file (S2.4)
+        with open(other, "w") as handle:
+            handle.write(self.POLICY_ENTRY)
+        os.remove(self.path("journal.md"))
+        os.symlink(other, self.path("journal.md"))
+        self.assertEqual(self.host.mount()["memory"], "on")
+
+    def test_a_journal_that_cant_be_read_counts_as_set(self):
+        os.mkdir(self.path("journal.md"))
+        self.assertEqual(self.host.mount()["memory"], "off")
+        self.write("policy.json", '{"state": "on"}')
+        self.assertEqual(self.host.mount()["memory"], "on")
+
     def test_no_store_is_absent_and_untouched(self):
         shutil.rmtree(self.root)
         host = Host(self.root)

@@ -21,7 +21,7 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | H1.2 | Continuity never depends on session history | R | T5 |
 | H1.3 | No durable copy of store content; own state is host state | R | review: needs a search of the host's data directory for canaries (planned runner) |
 | H1.4 | Use the store location in STORE.md §1 | R | T2 (`ME_HOME` set, and unset) |
-| H1.5 | Read `policy.json` alone first; off means absent, except changing the switch | R | T3 |
+| H1.5 | Read `policy.json` alone first, and `journal.md` when it is missing; off means absent, except changing the switch | R | T3 |
 | H1.6 | Re-read `policy.json` before each recall and write | R | T3 (off between two recalls) |
 | H1.7 | Work fully with no store | R | T1 |
 | H1.8 | Offer to show where the store is (SHOULD) | R | review |
@@ -67,7 +67,7 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | S4.1 | One watch per top-level list item, outside code fences | R | lint (watch count test) |
 | S4.2 | No watch the person did not set; no proposal targets `watches.md` | P | lint (fixture `bad-proposal`) for proposals; review for direct additions |
 | S4.3 | Read `watches.md` only for a briefing or when asked | R | T7 |
-| S5.1 | Missing policy means on | R | T3; lint |
+| S5.1 | Missing policy means on, unless `journal.md` has an entry for it | R | T3; lint (fixture `policy-gone-off`) |
 | S5.2 | On only if `state` is exactly `"on"`; every other case is off | R | T3; lint (fixtures `policy-invalid-off`, `policy-uppercase-off`, `policy-duplicate-off`; symlink test) |
 | S5.3 | Unknown members ignored, never turn memory off | R | T3; lint (fixture `policy-extra-key-on`) |
 | S5.4 | Unsupported `spec` (MAJOR.MINOR before 1.0): no writes, tell the person | P | T11; lint (fixtures `policy-future-spec`, `policy-minor-spec`) |

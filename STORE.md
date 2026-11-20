@@ -57,7 +57,7 @@ The file exists only after the person adds a first watch.
 { "state": "on", "spec": "0.1" }
 ```
 
-- **S5.1** (Reader) A missing `policy.json` means on.
+- **S5.1** (Reader) A missing `policy.json` means on, unless `journal.md` has an entry whose path is `policy.json` ([S7.1](#7-journal)). Then memory is off. Hosts journal every change to `policy.json` ([S7.3](#7-journal)), so the switch was set and has since gone, for example in a sync or a restore, and the person's last choice is unknown. A `journal.md` that is missing or a symbolic link has no such entry. If `journal.md` cannot be read, memory is off. To decide this, a host reads `journal.md` before any other file except `policy.json`, and looks only for that entry.
 - **S5.2** (Reader) The file is a JSON object. Memory is on only if the object has a `state` member whose value is exactly the string `"on"`. Memory is off in every other case:
   - the file cannot be read, or is a symbolic link ([S2.4](#2-layout));
   - it is not valid JSON, or is not an object;
@@ -66,7 +66,7 @@ The file exists only after the person adds a first watch.
 - **S5.3** (Reader) A host MUST ignore members it does not know. An unknown member MUST NOT turn memory off.
 - **S5.4** (Proposer) `spec` is optional. It names the version of this format that the store follows, as a string `MAJOR.MINOR` made of digits, for example `"0.1"`. A missing `spec` means `0.1`. Any other value is a version no host supports. Before version 1.0, each minor version is a different format, so a v0.1 host supports only `"0.1"`. If `spec` names a version that the host does not support, the host MUST NOT write to the store, except to turn memory off ([S5.6](#5-policyjson)). It MUST tell the person why. It MAY still read.
 - **S5.5** (Steward) A host that creates `policy.json` SHOULD write `spec`.
-- **S5.6** (Steward) The person can change the switch at any time, including while memory is off. At the person's request, a host MUST write `policy.json` and append the journal entry for that change, even when memory is off. While memory is off, it reads and writes nothing else in the store, except the store lock ([S8.2](#8-writing-safely)) and `journal.md`, to append that entry. When it writes `policy.json`, it changes only `state` and keeps every other member and its value. It MAY change the file's spacing and member order. This is an exception to [S2.6](#2-layout). If the file is not a valid JSON object, the host replaces it.
+- **S5.6** (Steward) The person can change the switch at any time, including while memory is off. At the person's request, a host MUST write `policy.json` and append the journal entry for that change, even when memory is off. While memory is off, it reads and writes nothing else in the store, except the store lock ([S8.2](#8-writing-safely)) and `journal.md`, to decide S5.1 and to append that entry. When it writes `policy.json`, it changes only `state` and keeps every other member and its value. It MAY change the file's spacing and member order. This is an exception to [S2.6](#2-layout). If the file is not a valid JSON object, the host replaces it.
 
 `policy.json` is a request that cooperative hosts honor. It is not access control. See [HOST.md §6](./HOST.md#6-security-posture).
 
