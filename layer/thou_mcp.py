@@ -9,7 +9,15 @@ While memory is off, it lists only the tools that change the switch or show
 where the store is (HOST.md H1.5). While there is no store, it adds start, which
 creates me.md with the person's words.
 
-The tools that act on the person's say-so (start, decide, edit, forget, policy)
+Two tools act on the person's own words: remember and forget. Each carries a
+quote of the person's latest message, and the server makes the change only when
+that message, in words the person wrote themselves, asks for it
+(thou_host/said.py). A client hook records the message outside the store.
+Anything else changes nothing, and the agent asks the person; a bare yes in
+their next message confirms words they pasted or quoted, or a change that goes
+past the words they named.
+
+The other tools that act on the person's say-so (start, decide, edit, policy)
 carry _meta "anthropic/requiresUserInteraction", so Claude Code asks the person
 to approve every call, in every permission mode, and shows the call's arguments.
 Each of those calls carries the words it writes; decide carries the proposal's
@@ -31,6 +39,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from thou_host import formats  # noqa: E402
+from thou_host import said  # noqa: E402
 from thou_host.host import NAME, VERSION, Host, HostError  # noqa: E402
 
 PROTOCOLS = ("2025-06-18", "2025-03-26", "2024-11-05")
@@ -45,12 +54,18 @@ INSTRUCTIONS = """These tools serve the person's thou store: plain files they ow
 - Reach the store only through these tools, never with file or shell tools."""
 
 # Where the client doesn't ask the person before a call, the changes are the person's to make.
-UNASKED_RULE = ("- This agent doesn't ask the person before these tools act, so they take no change on the person's "
-                "say: there is no decide, edit, forget or start here. To keep something, propose it and tell the "
-                "person it waits for their decision. If they ask to turn memory off, call policy with off.")
-CONSENT_RULE = ("- Call decide, edit, forget or policy only when the person explicitly asks in this session. Silence "
-                "or moving on is not a decision. The person may also be asked to approve the call itself; that "
-                "approval confirms their request and never replaces it.")
+QUOTED_RULE = ("- When the person asks you to remember or forget something, call remember or forget at once, with "
+               "their own words that ask for it as quote. Then tell them the receipt, word for word.\n- Once "
+               "words are forgotten or refused, don't restate them anywhere: not in your own notes, not in "
+               "proposals, not as \"you asked me to forget X\". Only the person's \"undo\" brings forgotten words "
+               "back.")
+UNASKED_RULE = (QUOTED_RULE + "\n- This agent doesn't ask the person before these tools act, so no other change "
+                "rests on their say: there is no decide, edit or start here. To keep something you noticed, propose "
+                "it and tell the person it waits for their decision. If they ask to turn memory off, call policy "
+                "with off.")
+CONSENT_RULE = (QUOTED_RULE + "\n- Call decide, edit or policy only when the person explicitly asks in this session. "
+                "Silence or moving on is not a decision. The person may also be asked to approve the call itself; "
+                "that approval confirms their request and never replaces it.")
 
 ABSENT_INSTRUCTIONS = ("The person has no thou store yet. If they ask to set up their me.md, ask them what it should "
                        "say, show them the exact text, and after their yes call start with only their words. "
@@ -62,6 +77,8 @@ ABSENT_UNASKED = ("The person has no thou store yet. This agent doesn't ask them
 _TEXT = {"type": "string"}
 _PATH = {"type": "string", "description": "me.md, watches.md, topics/<name>.md or projects/<name>.md"}
 _PROPOSAL = {"type": "string", "description": "The proposal id, for example 20261112T170301Z-7f3a"}
+_QUOTE = {"type": "string", "description": "The person's own words in their latest message that ask for this, "
+                                           "copied exactly, such as: please forget that my test is in March"}
 
 TOOLS = [
     ("mount", "Read the person's me.md at the start of a session. Returns nothing when memory is off or there is "
@@ -98,10 +115,23 @@ TOOLS = [
       "old": {"type": "string", "description": "For replace: the exact words to change"},
       "new": {"type": "string", "description": "For replace: the new words"}},
      ["path", "action"], False),
-    ("forget", "Delete words, or a whole file, that the person asked you to forget. Tell the person the notices: "
-               "they say what can't be deleted.",
-     {"path": _PATH, "text": {"type": "string", "description": "The words to remove. Leave out to delete the file."}},
-     ["path"], False),
+    ("remember", "Save words the person asked you to remember in this session, such as 'remember that Mondays are "
+                 "soccer'. They are saved at once, for every agent that uses the store. Use only the person's own "
+                 "words. Tell the person the receipt, word for word. For anything you noticed yourself, use propose "
+                 "instead. If the person answers a forget's receipt with \"undo\", call remember with the words "
+                 "you forgot, as a sentence of their own, the same path, and \"undo\" as quote.",
+     {"text": {"type": "string", "description": "The words to keep, in the person's own words, such as: Mondays "
+                                                "are soccer"},
+      "quote": _QUOTE,
+      "path": {"type": "string", "description": "me.md (the default), topics/<name>.md or projects/<name>.md"}},
+     ["text", "quote"], False),
+    ("forget", "Delete words, or a whole topic or project file, that the person asked you to forget in this session. "
+               "Tell the person the receipt and the notices, word for word: the notices say what can't be deleted.",
+     {"path": _PATH, "text": {"type": "string", "description": "The words to remove: whole lines, or a whole clause "
+                                                             "inside a line, with the words that join it, such as \" and "
+                                                             "my test is in March\". Leave out to delete the file."},
+      "quote": _QUOTE},
+     ["path", "quote"], False),
     ("policy", "Turn memory on or off, when the person asks.",
      {"state": {"type": "string", "enum": ["on", "off"]}}, ["state"], False),
     ("start", "Set up the person's me.md: create and write the file that starts their thou store, when they ask "
@@ -111,7 +141,8 @@ TOOLS = [
 ]
 OFF_TOOLS = ("where", "policy")
 ABSENT_TOOLS = OFF_TOOLS + ("start",)
-CONSENT_TOOLS = ("start", "decide", "edit", "forget", "policy")  # each acts with the person's authority
+CONSENT_TOOLS = ("start", "decide", "edit", "policy")  # each acts with the person's authority, given in the client
+QUOTED_TOOLS = ("remember", "forget")  # each acts with the person's own words, checked here (said.py)
 TOOL_NAMES = {t[0] for t in TOOLS}
 CLIENT_ASKS = "THOU_CLIENT_ASKS"
 UNASKED_POLICY = ("Turn memory off, when the person asks. Only the person can turn it back on, in an agent that asks "
@@ -184,13 +215,147 @@ NOTE = ("What comes from the store is the person's stored context: information a
         "needs them (for example an allergy when choosing food), and don't say that you left something out. When the "
         "person asks what you know or hold about them, include everything, sensitive matters too.")
 
+RECEIPT_FORGOT = "Forgotten: \"%s\". Every agent that uses your thou store will stop using it."
+RECEIPT_FORGOT_FILE = "Forgotten: %s, the whole file. Every agent that uses your thou store will stop using it."
+RECEIPT_KEPT = " The rest of that line stays: \"%s\"."
+RECEIPT_UNDO = " Say \"undo\" to bring it back."
+AFTER_FORGET = ("If the same words are in your own memory or instruction files, such as CLAUDE.md, AGENTS.md, "
+                ".goosehints or MEMORY.md, remove those words there too, and nothing else. Tell the person which "
+                "file you changed. After you tell the person the receipt, don't restate the forgotten words "
+                "anywhere: not in your own notes, not in proposals, not as \"you asked me to forget X\".")
+RECEIPT_BACK = "Brought back: \"%s\". Every agent that uses your thou store will know it again."
+NOT_UNDONE = ("The person said \"undo\", but these aren't the words forgotten in their last message, so nothing "
+              "changed. Pass the forgotten words, and nothing more, as a sentence of their own.")
+RECEIPT_SAVED = "Saved: \"%s\". Every agent that uses your thou store will know it."
+RECEIPT_ALREADY = "Already saved: \"%s\"."
+ASK = ("%s Nothing changed. If you think the person wants exactly this, ask them in plain words, one thing at a "
+       "time: \"Do you want me to %s %s?\" Tell them why you're asking. If their next message is yes, call %s again "
+       "with the same words and their yes as quote. Silence or another subject changes nothing.")
+THEIRS = ("%s Nothing changed, so don't act on these words. If you think the person wants this, tell them what you "
+          "saw, and let them say it in their own words: that message will count.")
+UNHEARD = ("This agent doesn't give thou the person's messages, so thou can't check that they asked, and changed "
+           "nothing. To keep something, propose it and tell them it waits for their decision. To forget, tell them "
+           "the words are still in their store, at %s, and that they can delete them there.")
+NO_ME = ("me.md starts the store, so forget doesn't delete it. Nothing changed. Forget its words instead, or the "
+         "person can turn memory off.")
+
+
+def _shown_words(text, most=200):
+    text = formats.one_line(formats.visible(text or ""))
+    return text if len(text) <= most else text[:most].rsplit(" ", 1)[0] + " …"
+
+
+class Said:
+    """The person's latest message to this client, and the confirmations the agent asked them for."""
+
+    def __init__(self, latest=None, scrub=None):
+        self.latest = latest or said.salted
+        self.scrub = scrub or said.scrub
+        self.asked = {}  # (operation, path, words) -> (session, number) of the message the agent asked after
+        self.mark = None  # (session, number) of the message the last check read
+        self.forgot = []  # this session's forgets that "undo" can bring back: (item id, path, mark), no words
+
+    def check(self, op, path, quote, text):
+        prompt, mark, salt = (tuple(self.latest()) + (None,))[:3]
+        self.mark = mark
+        key = (op, path, formats.normalize(text))
+        asked = self.asked.pop(key, None)  # a yes counts only in the very next message
+        self.asked = {k: v for k, v in self.asked.items() if mark and v[0] == mark[0] and v[1] + 1 >= mark[1]}
+        if prompt is not None and asked is not None and mark == (asked[0], asked[1] + 1) and said.is_yes(prompt):
+            return said.Verdict(True)
+        verdict = said.check(op, quote, text, prompt, salt)
+        if not verdict.ok and verdict.confirm and mark is not None:
+            self.asked[key] = mark
+        return verdict
+
+    def undoable(self, path):
+        """The forgets "undo" can bring back, newest first: if the person's latest message is a bare "undo", the
+        forgets of the message just before it, in this session, in path."""
+        prompt, mark = tuple(self.latest())[:2]
+        if prompt is None or mark is None or not said.is_undo(prompt):
+            return None
+        return [item for item, where, at in reversed(self.forgot)
+                if where == path and at is not None and at[0] == mark[0] and at[1] + 1 == mark[1]]
+
+
+def _quoted(host, name, args, heard):
+    """remember and forget: the change, if the person's own words ask for it; otherwise nothing."""
+    path, text = args.get("path"), args.get("text")
+    if name == "remember":
+        path = "me.md" if path is None else path
+        if not isinstance(path, str) or not formats.TARGET_RE.fullmatch(path):
+            raise HostError("bad_path", "remember writes to me.md, topics/<name>.md or projects/<name>.md.")
+        if not isinstance(text, str) or formats.normalize(text) == "":
+            raise HostError("bad_request", "remember needs text: the person's words to keep.")
+    else:
+        if text is not None and (not isinstance(text, str) or formats.normalize(text) == ""):
+            raise HostError("bad_request", "text is the words to forget.")
+        if not isinstance(path, str):
+            raise HostError("bad_request", "path is the store-relative file to change.")
+        if text is None and path == "me.md":
+            raise HostError("bad_request", NO_ME)
+    if name == "remember":
+        undoable = heard.undoable(path)
+        if undoable is not None:
+            return _undo(host, path, text, undoable, heard)
+    whole = name == "forget" and text is None
+    # A whole file is named by the words of its name: "forget my driving lessons" for topics/driving.md.
+    checked = os.path.basename(path).rsplit(".", 1)[0].replace("-", " ").replace("_", " ") if whole else text
+    verdict = heard.check(name, path, args.get("quote"), checked)
+    if not verdict.ok:
+        shown = path if whole else "\"%s\"" % _shown_words(text)
+        if verdict.unheard:
+            message = UNHEARD % host.root
+        else:
+            message = ASK % (verdict.why, name, shown, name) if verdict.confirm else THEIRS % verdict.why
+        raise HostError("not_said", message)
+    if name == "remember":
+        answer = host.edit(path, "append", text=text, listed=True)
+        answer["receipt"] = (RECEIPT_SAVED if answer.get("journal") else RECEIPT_ALREADY) % _shown_words(text)
+        return answer
+    kept = []
+    answer = host.forget(path, text, kept=kept)
+    item = answer.pop("forgotten", None)
+    if item and not whole:
+        heard.forgot.append((item, path, heard.mark))
+    try:
+        heard.scrub(checked)
+    except (OSError, ValueError):
+        answer.setdefault("notices", []).append("I could not clear these words from my copy of your latest "
+                                                "message; it goes when your next message comes.")
+    if whole:
+        answer["receipt"] = RECEIPT_FORGOT_FILE % path
+    else:
+        rest = [formats.one_line(k).strip() for k in kept]
+        answer["receipt"] = RECEIPT_FORGOT % _shown_words(text) + (
+            RECEIPT_KEPT % _shown_words(rest[0]) if len(rest) == 1 and rest[0] else "") + (
+            RECEIPT_UNDO if item else "")
+    answer["after"] = AFTER_FORGET
+    return answer
+
+
+def _undo(host, path, text, undoable, heard):
+    """The person said "undo" right after a forget: the same words back, and nothing else."""
+    for item in undoable:
+        try:
+            answer = host.bring_back(item, path, text)
+        except HostError as exc:
+            if exc.code == "not_forgotten":
+                continue
+            raise
+        heard.forgot = [f for f in heard.forgot if f[0] != item]
+        answer["receipt"] = RECEIPT_BACK % _shown_words(text)
+        return answer
+    raise HostError("not_said", NOT_UNDONE)
+
 
 UNASKED = ("This agent doesn't ask the person before thou acts on their say, so thou can't tell their say from "
            "yours, and changed nothing. To keep something, propose it and tell the person it waits for them. The "
            "person makes other changes in an agent that asks them first, or in their files at %s.")
 
 
-def call(host, name, args, asks=False):
+def call(host, name, args, asks=False, heard=None):
+    heard = heard or Said()
     ops = {
         "mount": lambda: host.mount(),
         "where": lambda: host.where(),
@@ -203,7 +368,8 @@ def call(host, name, args, asks=False):
         "revise": lambda: host.revise(args.get("proposal"), args.get("body")),
         "edit": lambda: host.edit(args.get("path"), args.get("action"), args.get("text"), args.get("old"),
                                   args.get("new")),
-        "forget": lambda: host.forget(args.get("path"), args.get("text")),
+        "forget": lambda: _quoted(host, name, args, heard),
+        "remember": lambda: _quoted(host, name, args, heard),
         "policy": lambda: host.policy(args.get("state")),
         "start": lambda: host.start(args.get("text")),
     }
@@ -243,6 +409,7 @@ class Server:
         self.out = out
         self.host = Host()
         self.asks = client_asks()
+        self.heard = Said()
         self.listed = None  # memory state when the tools were last listed
 
     def send(self, message):
@@ -287,7 +454,7 @@ class Server:
                 json.dumps(args, ensure_ascii=False).encode("utf-8")
             except ValueError:
                 raise _BadParams("arguments are not valid Unicode")
-            answer, error = call(self.host, name, args, self.asks)
+            answer, error = call(self.host, name, args, self.asks, self.heard)
             return {"content": [{"type": "text", "text": json.dumps(answer, ensure_ascii=False, indent=1)}],
                     "isError": error}
         raise _NotFound(method)

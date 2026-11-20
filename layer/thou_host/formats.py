@@ -395,6 +395,36 @@ def appended(data, text):
     return data + whole
 
 
+_ITEM = re.compile(rb"\A[ \t]*([-*+])[ \t]+\S")
+_MARKED = re.compile(r"\A\s*(?:[-*+]|\d+[.)])\s|\A\s*#")
+
+
+_MARKER = re.compile(r"\A\s*(?:[-*+]|\d+[.)])\s+")
+
+
+def has_lines(data, text):
+    """Whether each line of text is already a whole line of data, list markers, spacing, case and a final full
+    stop aside: words a remember would only repeat."""
+    def plain(line):
+        return normalize(_MARKER.sub("", line)).rstrip(" .").casefold()
+    have = {plain(line) for line in (data or b"").decode("utf-8", "replace").splitlines()}
+    want = [plain(line) for line in body_lines(text) if plain(line)]
+    return bool(want) and all(line in have for line in want)
+
+
+def as_list_items(data, text):
+    """Text to add at the end of data, in data's list style: when the last line of data is a list item ("- ",
+    "* " or "+ "), each line of text becomes an item with the same marker, unless it is one already or a
+    heading."""
+    last = next((line for line in reversed((data or b"").splitlines()) if line.strip()), b"")
+    item = _ITEM.match(last)
+    if not item:
+        return text
+    marker = item.group(1).decode("ascii")
+    return "\n".join(line if not line.strip() or _MARKED.match(line) else "%s %s" % (marker, line.lstrip())
+                     for line in text.split("\n"))
+
+
 def without_lines(data, text):
     """Remove each place where text fills whole lines, with its line break. Returns (bytes, count)."""
     chunk, _ = as_target_text(text, data)
@@ -420,6 +450,97 @@ def without_lines(data, text):
             at = data.find(chunk, at + 1)
     out += data[start:]
     return bytes(out), count
+
+
+_DANGLING = re.compile(rb"(?:[ \t]*,|[ \t]+(?:and|or|but|with))[ \t]*\Z", re.I)
+_EMPTIED = re.compile(rb"\A[ \t]*(?:[-*+]|\d+[.)])?[ \t]*[.,;:!?]*[ \t]*\Z")
+
+
+def _wordy(byte):
+    """A byte that can be part of a word: an ASCII letter, digit or _, or any byte of a non-ASCII character."""
+    return byte >= 0x80 or byte == 0x5F or chr(byte).isalnum()
+
+
+_CONJ = rb"(?:and|or|but|so|because|since|while|although|though|which|who|with|plus|then)"
+_DASHES = (b"\xe2\x80\x93", b"\xe2\x80\x94")  # en and em dash, in UTF-8
+
+
+def _at_clause_edges(left, chunk, right):
+    """Whether chunk starts and ends where a clause does: at the line's start (after any list marker) or end, at
+    punctuation, or next to a conjunction. Words cut from inside a clause would leave a broken sentence: "old
+    address" from "My old address is 4 Elm St." leaves "My is 4 Elm St.", and the address stays."""
+    core, before, after = chunk.strip(b" \t"), left.rstrip(b" \t"), right.lstrip(b" \t")
+    starts = (_EMPTIED.match(left) is not None or before.endswith((b".", b",", b";", b":", b"!", b"?", b"(", b" -") +
+                                                                  _DASHES)
+              or re.match(rb"(?i)" + _CONJ + rb"\b", core) is not None
+              or re.search(rb"(?i)\b" + _CONJ + rb"\Z", before) is not None)
+    ends = (after.strip() == b"" or after[:1] in (b".", b",", b";", b":", b"!", b"?", b")")
+            or after.startswith((b"- ",) + _DASHES) or core[-1:] in (b".", b",", b";", b"!", b"?")
+            or re.match(rb"(?i)" + _CONJ + rb"\b", after) is not None)
+    return starts and ends
+
+
+def _cut(line, chunk, edges=True):
+    """Remove each place chunk appears in line as whole words, at clause edges (unless edges is False), and tidy
+    the space around each cut."""
+    out, count, start = b"", 0, 0
+    at = line.find(chunk)
+    while at != -1:
+        end = at + len(chunk)
+        before = _wordy(chunk[0]) and at > 0 and _wordy(line[at - 1])
+        after = _wordy(chunk[-1]) and end < len(line) and _wordy(line[end])
+        if before or after or edges and not _at_clause_edges(out + line[start:at], chunk, line[end:]):
+            at = line.find(chunk, at + 1)  # inside a longer word ("cat" in "category"), or inside a clause
+            continue
+        left, right = out + line[start:at], line[end:]
+        if right.strip(b" \t")[:1] in (b"",) or right.lstrip(b" \t")[:1] in b".;:!?)":
+            left = _DANGLING.sub(b"", left)  # "drive and my test is in March." without its end: "drive."
+        mark = chunk.rstrip(b" \t")[-1:]
+        if right.strip(b" \t") == b"" and mark in (b".", b"!", b"?") and not _EMPTIED.match(left) and \
+                left.rstrip(b" \t")[-1:] not in (b".", b"!", b"?", b",", b";", b":"):
+            left = left.rstrip(b" \t") + mark  # a cut that took the line's full stop leaves it there
+        if left.endswith((b" ", b"\t")) and (right[:1] in (b"", b" ", b"\t") or right[:1] in b".,;:!?)"):
+            left = left.rstrip(b" \t") + (b" " if right[:1] in (b" ", b"\t") and left.strip() else b"")
+            right = right.lstrip(b" \t") if right[:1] in (b" ", b"\t") else right
+        elif left == b"":
+            right = right.lstrip(b" \t")
+        if left.rstrip(b" \t")[-1:] in (b",", b";") and right.lstrip(b" \t")[:1] in (b",", b";", b".", b"!", b"?"):
+            left, right = left.rstrip(b" \t")[:-1], right.lstrip(b" \t")  # "Mochi, , and" is "Mochi, and"
+        out, line, start, count = left, right, 0, count + 1
+        at = line.find(chunk)
+    return out + line[start:], count
+
+
+def inside_a_clause(data, text):
+    """Whether text stands as whole words in a line of data, but only inside a clause (_at_clause_edges)."""
+    chunk, _ = as_target_text(text, data)
+    if not chunk or b"\n" in chunk:
+        return False
+    return any(_cut(line.rstrip(b"\r\n"), chunk, edges=False)[1] for line in data.splitlines(True))
+
+
+def without_text(data, text, kept=None):
+    """Forget words: remove each place text fills whole lines, with its line break (without_lines); then, for
+    words on one line, remove them from inside each line where they stand as whole words. A line left with
+    nothing but a list marker or punctuation goes too. Returns (bytes, count); kept, a list, gets what stays
+    of each line the words were cut from."""
+    data, count = without_lines(data, text)
+    chunk, _ = as_target_text(text, data)
+    if not chunk or b"\n" in chunk:
+        return data, count
+    out = []
+    for line in data.splitlines(True):
+        content = line.rstrip(b"\r\n")
+        cut, n = _cut(content, chunk)
+        if n:
+            count += n
+            if _EMPTIED.match(cut):
+                continue
+            if kept is not None:
+                kept.append(cut.decode("utf-8", "replace"))
+            line = cut + line[len(content):]
+        out.append(line)
+    return b"".join(out), count
 
 
 # --- journal (S7) -----------------------------------------------------------

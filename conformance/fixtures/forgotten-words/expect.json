@@ -1,0 +1,8 @@
+{
+  "exit": 1,
+  "policy_state": "on",
+  "error_count": 1,
+  "errors_contain": [
+    "lines must be lists of hashes"
+  ]
+}

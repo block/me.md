@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"@LAYER@/thou_hooks.py\" user-prompt || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"@LAYER@/thou_hooks.py\" session-end || true",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(?:Bash|apply_patch|view_image)$|^mcp__.+__(?:remember|forget)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"@LAYER@/thou_hooks.py\" pre-tool-use || printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"The thou layer could not run its check, so it stopped this call.\"}}'",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

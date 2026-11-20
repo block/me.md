@@ -12,6 +12,7 @@
     "proposals_accepted": 0,
     "watches": 2,
     "journal_entries": 4,
-    "proposals_invalid": 0
+    "proposals_invalid": 0,
+    "forgotten": 1
   }
 }

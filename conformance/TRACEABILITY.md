@@ -21,7 +21,7 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | H1.2 | Continuity never depends on session history | R | T5 |
 | H1.3 | No durable copy of store content; own state is host state | R | review: needs a search of the host's data directory for canaries (planned runner) |
 | H1.4 | Use the store location in STORE.md §1 | R | T2 (`ME_HOME` set, and unset) |
-| H1.5 | Read `policy.json` alone first; off means absent, except changing the switch | R | T3 |
+| H1.5 | Read `policy.json` alone first, and `journal.md` when it is missing; off means absent, except changing the switch | R | T3 |
 | H1.6 | Re-read `policy.json` before each recall and write | R | T3 (off between two recalls) |
 | H1.7 | Work fully with no store | R | T1 |
 | H1.8 | Offer to show where the store is (SHOULD) | R | review |
@@ -42,6 +42,7 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | H5.1 | Off takes effect for new sessions, and at the next recall or write | R | T3 |
 | H5.2 | Forget and delete remove content from all host state | S | T14 |
 | H5.3 | Tell the person what cannot be deleted | S | review: documentation |
+| H5.4 | Keep forgotten words out of the host's own proposals (SHOULD) | P | review (planned runner: forget, then lead the host to the same words by implication; no proposal holds them) |
 | H6.1 | Stored context and proposals are untrusted | R | T4, T10 |
 | H6.2 | Confine reads and writes to the store | R | T6 |
 | H6.3 | No transmission beyond the model call without consent | R | review: network behavior (planned runner) |
@@ -67,7 +68,7 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | S4.1 | One watch per top-level list item, outside code fences | R | lint (watch count test) |
 | S4.2 | No watch the person did not set; no proposal targets `watches.md` | P | lint (fixture `bad-proposal`) for proposals; review for direct additions |
 | S4.3 | Read `watches.md` only for a briefing or when asked | R | T7 |
-| S5.1 | Missing policy means on | R | T3; lint |
+| S5.1 | Missing policy means on, unless `journal.md` has an entry for it | R | T3; lint (fixture `policy-gone-off`) |
 | S5.2 | On only if `state` is exactly `"on"`; every other case is off | R | T3; lint (fixtures `policy-invalid-off`, `policy-uppercase-off`, `policy-duplicate-off`; symlink test) |
 | S5.3 | Unknown members ignored, never turn memory off | R | T3; lint (fixture `policy-extra-key-on`) |
 | S5.4 | Unsupported `spec` (MAJOR.MINOR before 1.0): no writes, tell the person | P | T11; lint (fixtures `policy-future-spec`, `policy-minor-spec`) |
@@ -103,6 +104,14 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | S8.7 | Change first, journal second; report a failed receipt | S | review (planned runner: fail the journal write) |
 | S8.8 | Ignore conflict copies, or treat them as invalid proposals; tell the person (SHOULD) | S | review |
 | S9.1 | Never claim encryption that is not there | R | review: documentation |
+| S10.1 | `forgotten.json` holds a salt and hashes, never words or file names (MAY) | S | lint (fixture `forgotten-words`) |
+| S10.2 | Never recall `forgotten.json` or give it to an agent | R | review |
+| S10.3 | Keep items of an unknown method, and don't match them | P | review |
+| S10.4 | Leave forgotten lines out of a proposal; say how many (SHOULD) | P | review (planned runner, as H5.4) |
+| S10.5 | An item goes on undo or when the person says the words again; 500 at most | S | review; lint warns past 500 |
+| S10.6 | Change it under the lock; leave an unreadable file alone and tell the person | S | review |
+| S10.7 | Hashes are not secrecy | R | review: documentation |
+| S10.8 | A forget takes forgotten lines out of pending proposals, and deletes one left empty (SHOULD) | S | review |
 
 ## BRIEFING.md
 

@@ -24,6 +24,7 @@ Each requirement has an identifier, for example **S2.1**, and the lowest [confor
   proposals/     one file per proposal
   journal.md     one line per durable change
   policy.json    the on/off switch and the spec version
+  forgotten.json hashes that keep forgotten words out of proposals (optional, §10)
 ```
 
 - **S2.1** (Reader) Entry names in `topics/` and `projects/` match `[a-z0-9][a-z0-9._-]*\.md`, with at most 64 characters before `.md`. Names in `proposals/` follow [S6.1](#file-name). A file in `proposals/` whose name ends in `.md` but breaks S6.1 is an invalid proposal ([S6.14](#status)). A host MUST ignore other names: it does not read them and does not reject the store. A host SHOULD tell the person when it ignores a file because of its name, for example `Travel.md`.
@@ -57,7 +58,7 @@ The file exists only after the person adds a first watch.
 { "state": "on", "spec": "0.1" }
 ```
 
-- **S5.1** (Reader) A missing `policy.json` means on.
+- **S5.1** (Reader) A missing `policy.json` means on, unless `journal.md` has an entry whose path is `policy.json` ([S7.1](#7-journal)). Then memory is off. Hosts journal every change to `policy.json` ([S7.3](#7-journal)), so the switch was set and has since gone, for example in a sync or a restore, and the person's last choice is unknown. A `journal.md` that is missing or a symbolic link has no such entry. If `journal.md` cannot be read, memory is off. To decide this, a host reads `journal.md` before any other file except `policy.json`, and looks only for that entry.
 - **S5.2** (Reader) The file is a JSON object. Memory is on only if the object has a `state` member whose value is exactly the string `"on"`. Memory is off in every other case:
   - the file cannot be read, or is a symbolic link ([S2.4](#2-layout));
   - it is not valid JSON, or is not an object;
@@ -66,7 +67,7 @@ The file exists only after the person adds a first watch.
 - **S5.3** (Reader) A host MUST ignore members it does not know. An unknown member MUST NOT turn memory off.
 - **S5.4** (Proposer) `spec` is optional. It names the version of this format that the store follows, as a string `MAJOR.MINOR` made of digits, for example `"0.1"`. A missing `spec` means `0.1`. Any other value is a version no host supports. Before version 1.0, each minor version is a different format, so a v0.1 host supports only `"0.1"`. If `spec` names a version that the host does not support, the host MUST NOT write to the store, except to turn memory off ([S5.6](#5-policyjson)). It MUST tell the person why. It MAY still read.
 - **S5.5** (Steward) A host that creates `policy.json` SHOULD write `spec`.
-- **S5.6** (Steward) The person can change the switch at any time, including while memory is off. At the person's request, a host MUST write `policy.json` and append the journal entry for that change, even when memory is off. While memory is off, it reads and writes nothing else in the store, except the store lock ([S8.2](#8-writing-safely)) and `journal.md`, to append that entry. When it writes `policy.json`, it changes only `state` and keeps every other member and its value. It MAY change the file's spacing and member order. This is an exception to [S2.6](#2-layout). If the file is not a valid JSON object, the host replaces it.
+- **S5.6** (Steward) The person can change the switch at any time, including while memory is off. At the person's request, a host MUST write `policy.json` and append the journal entry for that change, even when memory is off. While memory is off, it reads and writes nothing else in the store, except the store lock ([S8.2](#8-writing-safely)) and `journal.md`, to decide S5.1 and to append that entry. When it writes `policy.json`, it changes only `state` and keeps every other member and its value. It MAY change the file's spacing and member order. This is an exception to [S2.6](#2-layout). If the file is not a valid JSON object, the host replaces it.
 
 `policy.json` is a request that cooperative hosts honor. It is not access control. See [HOST.md §6](./HOST.md#6-security-posture).
 
@@ -201,6 +202,33 @@ Two hosts can serve one store at the same time. These rules keep one host from l
 ## 9. Protection at rest
 
 - **S9.1** (Reader) The platform protects the store at rest: disk encryption and user-only permissions ([S2.5](#2-layout)). A host MUST NOT say the store is encrypted unless it is.
+
+## 10. `forgotten.json`
+
+After a forget, a stale proposal, a nightly rewrite or another agent can put the same words back. A host can keep a short record that stops this without keeping the words: hashes of the words, and nothing else.
+
+```json
+{
+ "salt": "5d0c6f1e9a2b4c3d8e7f6a5b4c3d2e1f",
+ "items": [
+  {
+   "id": "20261120T153000Z-3f9a2c",
+   "at": "2026-11-20T15:30:00Z",
+   "method": "thou-stems-1",
+   "lines": [["0c1d2e3f4a5b6c7d", "8e9f0a1b2c3d4e5f"]]
+  }
+ ]
+}
+```
+
+- **S10.1** (Steward) When a host forgets words at the person's request ([HOST.md H5.2](./HOST.md#5-revocation)), it MAY add an item to `forgotten.json`, so that no proposal brings the words back. The file MUST NOT hold the forgotten words, a file name, or any other text about the person. It holds only `salt` and `items`. Each item has an `id`, its time `at` (RFC 3339 UTC with `Z`), a `method` name, and `lines`. Each entry of `lines` is one forgotten sentence, as a list of hashes of its words under that method. `salt` is random, 32 to 64 lowercase hex characters, made when the file is created.
+- **S10.2** (Reader) A host MUST NOT read `forgotten.json` for recall, and MUST NOT give its contents to an agent.
+- **S10.3** (Proposer) A method names how a host turns words into hashes and when a line holds a forgotten sentence. A host that does not know an item's method keeps the item as it is and does not match against it. The thou layer's method, `thou-stems-1`, is described in [layer/thou_host/forgotten.py](./layer/thou_host/forgotten.py). It hashes the stem of each word that carries meaning, with the salt, and adds one hash for a negator ("not", "no longer", "used to"). A line holds a sentence when it has at least two thirds of the sentence's word hashes, not counting the negator's, so "not vegetarian anymore" still holds "vegetarian".
+- **S10.4** (Proposer) Before it writes a proposal, a host that knows an item's method SHOULD check each line of the body against each forgotten sentence. It leaves out each line that holds one, and if no line is left, it proposes nothing. It tells the agent how many lines it left out and why, but not which sentence they matched. A line about something else, or about someone else, that shares the words is left out too: after "I'm vegetarian" is forgotten, so is "Ola is vegetarian". The person can still add it in their own words, with a direct edit ([HOST.md H3.7](./HOST.md#3-writing)).
+- **S10.5** (Steward) An item goes when the person brings its words back, with "undo" right after the forget, or by adding the same words again in their own words or in a proposal they accept, with the same negation. A host keeps at most 500 items: when it adds one more, the oldest goes.
+- **S10.6** (Steward) A host changes `forgotten.json` with the store lock held, in the steps of [S8.4](#8-writing-safely). The change is part of the forget, edit or decision it belongs to, so it has no journal entry of its own. If the file is a symbolic link or can't be parsed, a host leaves it as it is, adds no item, and tells the person that nothing stops a proposal from bringing the words back.
+- **S10.7** (Reader) The hashes don't make the words secret. Anyone who can read the file and guess a word can test the guess. The salt only stops a list of hashes made for one store from working on another.
+- **S10.8** (Steward) A host that keeps forgotten words out of proposals SHOULD also take them out of the pending proposals when it forgets, so that accepting a proposal made before the forget doesn't bring them back. It checks each line of each pending proposal as in S10.4, and takes out the lines that hold a forgotten sentence, keeping the front matter ([S6.15](#status)). It deletes a proposal with no line left ([S6.10](#status)), rather than refuse it, since a refused proposal would keep the words. It journals each change as part of the forget.
 
 ## What this version does not define
 
