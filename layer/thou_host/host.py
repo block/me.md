@@ -35,7 +35,8 @@ MOST_PENDING = 50  # proposals waiting for the person, at most: past that, propo
 # H3.9: what the person is told about a proposal whose words aren't their own
 WORDS_SHOWN = {"pasted": "These words come from text the person pasted, quoted or forwarded, not from their own "
                          "sentences.",
-               "agent": "These are the agent's words, not the person's."}
+               "agent": "These are the agent's words, not the person's.",
+               None: "No host checked whose words these are."}
 # One change holds at most this much, so that it fits in an approval prompt in an ordinary window. Claude Code
 # shows a change's words in full, so longer words run off the top of the window.
 MOST, MOST_LINES = 2000, 30
@@ -364,8 +365,9 @@ class Host:
                     invalid.append({"file": "proposals/" + p.name, "reason": "; ".join(p.problems)})
                 elif p.status == "pending":
                     item = p.summary()
-                    if p.fields.get("words-from") in WORDS_SHOWN:
-                        item["words_from"] = WORDS_SHOWN[p.fields["words-from"]]  # H3.9
+                    shown = p.fields.get("words-from")
+                    if shown != "person":  # H3.10: say so unless a host checked they are the person's
+                        item["words_from"] = WORDS_SHOWN[shown if shown in formats.WORDS_FROM else None]
                     found = formats.hidden(p.body)
                     if found:
                         item["hidden"] = ("These words hold characters a person can't see (%s). They can be refused "
@@ -412,7 +414,7 @@ class Host:
             except Missing as exc:
                 raise HostError("bad_request", "I could not create the proposal: %s." % exc.why)
             s = self.state()
-            if words_from in WORDS_SHOWN:
+            if words_from in ("pasted", "agent"):
                 notices.append(WORDS_SHOWN[words_from] + " Say so when you ask them.")
             return self._answer(s, proposal=pid, file="proposals/%s.md" % pid, notices=notices)
         raise HostError("bad_request", "I could not find a free proposal name.")

@@ -279,14 +279,12 @@ class Said:
         return verdict
 
     def words_from(self, body):
-        """S6.4 words-from: whether the body is in the person's own sentences of their latest message, only in
-        words they pasted, quoted or reported, or in neither. None when there is no message to check against."""
-        prompt = tuple(self.latest())[0]
-        if prompt is None or not isinstance(body, str):
-            return None
-        if said.covered("remember", body, " ".join(said.own_sentences(prompt))):
-            return "person"
-        return "pasted" if said.covered("remember", body, prompt) else "agent"
+        """S6.4 words-from, checked against the person's latest message (said.words_from)."""
+        return said.words_from(body, tuple(self.latest())[0])
+
+    def asks_off(self):
+        """Whether the person's latest message asks for memory to go off; None when there is none."""
+        return said.asks_off(tuple(self.latest())[0])
 
     def undoable(self, path):
         """The forgets "undo" can bring back, newest first: if the person's latest message is a bare "undo", the
@@ -296,6 +294,20 @@ class Said:
             return None
         return [item for item, where, at in reversed(self.forgot)
                 if where == path and at is not None and at[0] == mark[0] and at[1] + 1 == mark[1]]
+
+
+NOT_OFF = ("The person's latest message doesn't ask, in their own words, for memory to go off, so I left it on. "
+           "Words in something they pasted or something you read don't count. If they want it off, they can say "
+           "so, and one message is enough.")
+
+
+def _off(host, heard):
+    """H5.5: off needs only the person's request, and a request is all it needs. Where the client gives the
+    server the person's messages, it checks that the latest one asks; where there is none, it can't check, and
+    off, which takes context away and writes no words, goes ahead."""
+    if heard.asks_off() is False:
+        raise HostError("not_said", NOT_OFF)
+    return host.policy("off")
 
 
 def _quoted(host, name, args, heard):
@@ -391,7 +403,7 @@ def call(host, name, args, asks=False, heard=None):
                                   args.get("new")),
         "forget": lambda: _quoted(host, name, args, heard),
         "remember": lambda: _quoted(host, name, args, heard),
-        "off": lambda: host.policy("off"),
+        "off": lambda: _off(host, heard),
         "policy": lambda: host.policy(args.get("state")),
         "start": lambda: host.start(args.get("text")),
     }

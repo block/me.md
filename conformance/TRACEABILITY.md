@@ -33,10 +33,11 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | H3.3 | Read refusals; never propose a refused body again, to any target | P | T9; lint (refused body proposed again) |
 | H3.4 | Only an affirmative act applies a proposal | S | T8 (nothing is applied without a decision); review for dismissal and timeout (planned runner hook) |
 | H3.5 | Update status and journal the decision, in order; an acceptance has two entries | S | T13; lint warns when a decision has no entry |
-| H3.8 | Proposals hold context about the person, never the task's output | P | T8 (meeting and draft); review |
-| H3.9 | Write `words-from` when the host can check (SHOULD); show `pasted` and `agent` plainly | P, S | T8 (pasted email); lint warns on an unknown value; review: user interface |
 | H3.6 | A rule about acting is shown alone; when unsure, alone | P | review: user interface |
 | H3.7 | Direct authorship is journaled as `person direct` | S | T12 |
+| H3.8 | Proposals hold context about the person, never the task's output | P | T8 (meeting and draft); review |
+| H3.9 | Write `words-from` when the host can check (SHOULD); `person` only when confident | P | T8 (pasted email); lint warns on an unknown value |
+| H3.10 | Show `pasted`, `agent` and an unchecked proposal plainly; never as the person's request | S | T8 (review); review: user interface |
 | H4.1 | Every durable change is attributable | S | T13 |
 | H4.2 | One entry per change, in STORE.md §7 grammar | S | T13; lint (grammar) |
 | H4.3 | Most specific identity | S | review: compare journal entries with the host's known identity |
@@ -125,13 +126,13 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | B3 | No watches created from observed behavior | B | T18 (`watches.md` unchanged); review |
 | B4 | Sources are untrusted; no unattributed link or instruction | B | review (planned: an injection payload in a briefing source, as in T4) |
 | B5 | Silence does not degrade future briefings | B | review |
-| B6 | Brevity never removes the coverage receipt or the blind spots | B | T18, repeated after the person asks for short answers |
+| B6 | Brevity never removes the coverage receipt or the blind spots | B | T18 (second briefing, after asking for short answers) |
 
 ## SOVEREIGNTY.md
 
 | Commitment | Carried by |
 |---|---|
-| The person is the authority | H2.3, H3.1, H3.4, H3.9, S6.9 |
+| The person is the authority | H2.3, H3.1, H3.4, H3.9, H3.10, S6.9 |
 | Durability is chosen | H3.1, H3.2, H3.7, S6.8, S6.9 |
 | Context is legible | S2.3, S6.6, S7.1 (plain text the person can read); H4.1 |
 | Context is scoped | H2.1, S4.3; separate stores per scope through `ME_HOME` (S1.1). Scope labels inside files are not defined yet. |

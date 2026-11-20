@@ -379,6 +379,45 @@ def own_sentences(prompt):
     return out
 
 
+# A line that introduces something pasted: it ends with a colon, or names an email, a page or the like.
+_INTRO = re.compile(r"(?im)^[^\n]*(?::[ \t]*$|\b(?:this|the following|below|attached|forwarded|pasted)\s+"
+                    r"(?:e-?mail|mail|message|page|article|doc|document|note|notes|text|thread|chat|post)\b[^\n]*$)")
+# The person asking for memory to go off, in a sentence of their own.
+_OFF_VERB = re.compile(r"(?i)\b(?:off|stop|pause|disable|halt|no more|don'?t (?:keep|save|use|remember))\b")
+_OFF_WHAT = re.compile(r"(?i)\b(?:memory|memories|remember\w*|thou|store|context|me\.md)\b")
+
+
+def before_paste(prompt):
+    """The message up to the end of the first line that introduces something pasted, such as "Summarise this
+    email:" or "Can you answer this message from Jun?". What follows reads as pasted, even without > marks."""
+    found = _INTRO.search(prompt)
+    return prompt[:found.end()] if found and prompt[found.end():].strip() else prompt
+
+
+def words_from(body, prompt):
+    """Whose words a proposal's body is (STORE.md S6.4): "person" when they come, in order and with the same
+    "not", from one sentence the person wrote themselves before anything they pasted; "pasted" when they are
+    only elsewhere in the message; "agent" otherwise. None when there is no message to check."""
+    if not isinstance(prompt, str) or not isinstance(body, str):
+        return None
+    mine = before_paste(prompt)
+    for sentence in own_sentences(mine):
+        if covered("remember", body, sentence) and _in_order(body, sentence) and \
+                not _negation_differs(body, sentence):
+            return "person"
+    pasted = covered("remember", body, prompt[len(mine):]) or (
+        covered("remember", body, prompt) and not covered("remember", body, " ".join(own_sentences(prompt))))
+    return "pasted" if pasted else "agent"
+
+
+def asks_off(prompt):
+    """Whether a sentence the person wrote themselves asks for memory to go off ("turn my memory off",
+    "stop remembering things"). None when there is no message to check."""
+    if not isinstance(prompt, str):
+        return None
+    return any(_OFF_VERB.search(s) and _OFF_WHAT.search(s) for s in own_sentences(before_paste(prompt)))
+
+
 def _plain(text):
     text = _apostrophes(text).replace("\u2019", "'").lower()
     text = re.sub(r"[\"\u201c\u201d\u00ab\u00bb\u2018]", "", text)
