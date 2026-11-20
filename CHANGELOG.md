@@ -20,7 +20,7 @@ To publish a release:
 
 - The [thou layer for Claude Code](./layer/README.md). Install it once, and every Claude Code session starts from your `me.md`. What Claude notices about you waits for your yes, Claude Code asks you to approve every change with its words in front of you, and `policy.json` turns it off. It can also start your `me.md`, with only your words. It refuses words you couldn't see in full, and its README shows how to make its fence a wall with Claude Code's sandbox.
 - If `policy.json` disappears after the switch was set, for example in a sync or a restore, memory stays off until you turn it on again. A store that never had a `policy.json` stays on.
-- In the layer, "remember …" and "forget …" in your own words are done at once, and Claude tells you the receipt. Words you pasted, quoted or reported from someone else, and words from anything Claude read, change nothing; Claude asks you instead. Forget can remove words from inside a line.
+- In the layer, "remember …" and "forget …" in your own words are done at once, and Claude tells you the receipt. Words you pasted, quoted or reported from someone else, and words from anything Claude read, change nothing; Claude asks you to say it yourself. A question, a "don't" before the verb or a doubt ("I'm not sure I want you to forget…") asks for nothing, and a "not" counts as one of your words. Forget can remove a whole clause from inside a line.
 
 ### For hosts
 

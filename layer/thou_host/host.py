@@ -81,7 +81,9 @@ class Host:
         obj = None
         if kind == "missing" and self._switch_gone():
             return self._off("policy.json is missing, but journal.md shows the switch was set before, so the "
-                             "person's last choice is unknown. Only the person can turn memory on again (S5.1)")
+                             "person's last choice is unknown. Only the person can turn memory on again: in an agent "
+                             "that asks them first, or by writing {\"spec\": \"0.1\", \"state\": \"on\"} to %s "
+                             "(S5.1)" % os.path.join(self.root, "policy.json"))
         if kind == "link":
             return self._off("policy.json is a symbolic link")
         if kind == "other":
@@ -560,6 +562,10 @@ class Host:
                     if kept is not None:
                         del kept[:]
                     out, count = formats.without_text(data or b"", text, kept)
+                    if count == 0 and formats.inside_a_clause(data or b"", text):
+                        raise HostError("inside_a_clause", "Those words are inside a clause in %s, so taking them "
+                                                           "out would leave a broken sentence. Nothing changed. "
+                                                           "Forget the whole line, or a whole clause of it." % path)
                     if count == 0:
                         raise HostError("no_match", "Those words are not in %s as whole words." % path)
                     counted.append(count)

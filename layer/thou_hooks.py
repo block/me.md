@@ -80,6 +80,10 @@ def session_start(event):
     from thou_host.host import Host
     if event.get("source") != "compact":  # a new session has no message yet; a compacted one keeps its own
         said.clear()
+    try:
+        said.sweep()  # sessions that ended without SessionEnd leave their messages behind (H5.2)
+    except OSError:
+        pass
     answer = Host(agent="claude-code").mount()
     if answer["memory"] != "on":
         return None  # off or absent: as if there were no store (H1.5)

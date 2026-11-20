@@ -5,20 +5,27 @@ store, one per client process, numbered within the session. The thou server read
 forget, and applies the change at once only when the person's own words ask for it:
 
 - the quote is in the person's latest message, in words they wrote themselves: not a line they pasted after
-  `>`, not a fenced block, not words in quotation marks, and not the rest of a sentence that reports what
-  someone else said or wrote;
-- the sentence around the quote asks for that operation: "forget", "delete" or "remove" for forget, and
-  "remember", "note" or "save" for remember, without a "don't" or "never" in front;
-- the words match what the person said. To remember, every word that carries meaning must be the person's.
-  To forget, all but one at most, so "forget about Mochi" can take the line "I have a cat called Mochi."
-  but "forget that my test is in March" can't take "I'm learning to drive and my test is in March."
+  `>`, not a fenced block, not words in quotation marks that give an instruction, and not the rest of a
+  sentence that reports what someone else said or wrote;
+- that sentence asks for the operation: "forget", "delete" or "remove" for forget, and "remember", "note" or
+  "save" for remember. A question doesn't ask, unless it is a request ("Can you…?"); nor does a verb with a
+  negator up to four words before it ("please don't ever forget" asks to remember), nor one that describes
+  someone ("I always forget");
+- the words match what that sentence says. To remember, every word that carries meaning must be the
+  person's, in their order. To forget, all but one at most, so "forget about Mochi" can take the line "I have a
+  cat called Mochi." but "forget that my test is in March" can't take "I'm learning to drive and my test is in
+  March." A negator ("not", "no longer", "anymore", "used to") counts as a word that carries meaning, both
+  ways. Only an ask with no words of its own ("forget that") takes them from the sentence before it.
 
 Words from an email or a web page are not in what the person typed, so they can't pass. Everything that
-doesn't pass changes nothing. Where the person pasted or quoted the words, or named at least half of them,
-the agent may ask them, and a bare yes in their next message confirms (thou_mcp.Said).
+doesn't pass changes nothing. Where the person named some of the words to forget, the agent may ask them, and
+a bare yes in their next message confirms (thou_mcp.Said). Words the person only pasted or quoted have no yes:
+the person says them in their own words, or nothing changes.
 
 The file is the person's words, so only the client's hook writes it and only the server reads it. The
-pre-tool-use hook keeps Claude Code's own tools out of its folder, as it does for the store.
+pre-tool-use hook keeps Claude Code's own tools out of its folder, as it does for the store. A forget takes
+its words out of every kept message, and at session start the messages of clients that have gone, or that are
+more than a day old, are deleted (H5.2).
 """
 
 import json
@@ -101,21 +108,90 @@ def record(prompt, who=None):
                  "client": list(who)})
 
 
+def _files():
+    try:
+        names = os.listdir(folder())
+    except OSError:
+        return []
+    return [os.path.join(folder(), n) for n in sorted(names) if re.fullmatch(r"client-\d+\.json", n)]
+
+
+def _load(path):
+    try:
+        with open(path) as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def scrub(text, who=None):
-    """After a forget: take the sentences that hold its words out of the kept message, so the layer keeps no
-    copy of them (H5.2). The other sentences stay, for a remember in the same message."""
-    who = who or client()
-    data = _read(who)
-    if not data or not isinstance(data.get("prompt"), str):
+    """After a forget: take the sentences that hold its words out of every kept message, this client's and any
+    other's, so the layer keeps no copy of them (H5.2). The other sentences stay, for a remember in the same
+    message."""
+    gone = words(text) - {NOT}
+    if not gone:
         return
-    gone = words(text)
-    kept = [s for s in _SENTENCES.split(_apostrophes(data["prompt"]).replace("\r\n", "\n"))
-            if s.strip() and not (words(s) & gone)]
-    _write(who, dict(data, prompt="\n".join(kept)))
+    for path in _files():
+        for _ in range(3):
+            data = _load(path)
+            if not data or not isinstance(data.get("prompt"), str):
+                break
+            kept = [x for x in _SENTENCES.split(_apostrophes(data["prompt"]).replace("\r\n", "\n"))
+                    if x.strip() and not (words(x) & gone)]
+            prompt = "\n".join(kept)
+            if prompt == data["prompt"]:
+                break
+            if _replace(path, dict(data, prompt=prompt), data):
+                break
+
+
+MOST_AGE = 24 * 3600  # seconds a kept message may outlive a session that never ended
+
+
+def _alive(who):
+    try:
+        pid, started = int(who[0]), who[1]
+    except (TypeError, ValueError, IndexError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except OSError:
+        pass  # another user's process: it exists
+    if started is None:
+        return True
+    info = _proc(pid)
+    return info is None or info[2] == started  # a new process with the same number: the old one has gone
+
+
+def sweep(now=None):
+    """At session start: delete the kept messages of clients that have gone, and any more than a day old, so a
+    session that ended without SessionEnd leaves nothing behind for long (H5.2)."""
+    now = time.time() if now is None else now
+    for path in _files():
+        data = _load(path)
+        try:
+            old = now - os.stat(path).st_mtime > MOST_AGE
+        except OSError:
+            continue
+        if data is None or old or not _alive(data.get("client")):
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
 
 
 def _write(who, record):
-    place = folder()
+    _replace(_path(who), record)
+
+
+def _replace(path, record, before=None):
+    """Write the file whole, by rename. With before, only if the file still holds it; returns whether it wrote."""
+    place = os.path.dirname(path)
     os.makedirs(place, mode=0o700, exist_ok=True)
     data = json.dumps(record)
     handle, temp = tempfile.mkstemp(dir=place, prefix=".said-")
@@ -123,7 +199,11 @@ def _write(who, record):
         with os.fdopen(handle, "w") as out:
             out.write(data)
         os.chmod(temp, 0o600)
-        os.replace(temp, _path(who))
+        if before is not None and _load(path) != before:
+            os.unlink(temp)  # the hook wrote a newer message meanwhile
+            return False
+        os.replace(temp, path)
+        return True
     except BaseException:
         try:
             os.unlink(temp)
@@ -226,10 +306,19 @@ a an the and or but nor so yet of to in on at for with from by about as into ont
 i im ive id ill me my mine myself you youre your yours we our ours us they their them he his him she her
 it its itself is are was were be been being am do does did done have has had having will would can could
 shall should may might must that this these those there here what which who whom whose when where why how
-not no never longer anymore any more now just also very really still again too please thanks thank bit
+longer any more now just also very really still again too please thanks thank bit
 part parts thing things stuff one two three four five six seven eight nine ten called named
 forget forgets forgetting delete remove erase wipe scrub remember remembering note save keep mind write
 down add memory memories store file line
+""".split())
+
+# Every negator reads as one word, NOT, and it carries meaning: "not vegetarian" is not "vegetarian".
+NOT = "not"
+_NEGATOR_PHRASES = re.compile(r"(?i)\b(?:no longer|used to|gave up|give up|given up)\b")
+_NEGATORS = frozenset("""
+not no never none nothing nobody neither cannot anymore stopped quit formerly
+dont doesnt didnt isnt arent wasnt werent cant couldnt wont wouldnt shouldnt havent hasnt hadnt aint mustnt
+neednt
 """.split())
 
 _SUFFIXES = ("ingly", "edly", "ings", "ing", "ies", "ied", "ers", "es", "ed", "er", "ly", "ic", "s", "y", "e")
@@ -247,20 +336,53 @@ def stem(word):
     return word
 
 
+def _tokens(text):
+    """The words that carry meaning, as stems, in order: no small words, no operation words, every negator as
+    NOT."""
+    text = unicodedata.normalize("NFKC", text).replace("\u2019", "'").lower()
+    text = _NEGATOR_PHRASES.sub(" not ", text).replace("'", "")
+    out = []
+    for w in re.findall(r"[^\W_]+", text):
+        if w in _NEGATORS:
+            out.append(NOT)
+        elif w not in STOP:
+            out.append(stem(w))
+    return out
+
+
 def words(text):
-    """The words that carry meaning, as stems: no small words, no "not", no operation words."""
-    text = unicodedata.normalize("NFKC", text).replace("’", "'").replace("'", "").lower()
-    return {stem(w) for w in re.findall(r"[^\W_]+", text) if w not in STOP}
+    """The words that carry meaning, as a set of stems (_tokens)."""
+    return set(_tokens(text))
 
 
-_NEGATED = r"(?<!\bdon't )(?<!\bdont )(?<!\bdo not )(?<!\bnever )(?<!\bnot )(?<!\bwon't )(?<!\bcan't )"
-_FORGET = re.compile(r"(?i)" + _NEGATED + r"\b(?:forget|delete|remove|erase|wipe)\b|"
-                     r"\b(?:stop|don't|dont|do not|no longer) remember(?:ing)?\b")
-_REMEMBER = re.compile(r"(?i)\b(?:don't|dont|do not|never) forget\b|" + _NEGATED.replace("never", "stop") +
-                       r"(?<!\bno longer )\b(?:remember|memori[sz]e|make a note|note|keep in mind|save|"
-                       r"write (?:it |this |that )?down)\b|" + _NEGATED.replace("never", "stop") +
-                       r"\b(?:add|put)\b[^.!?\n]{0,60}?\b(?:to|in|into) (?:my |your |the )?"
-                       r"(?:me\.md|memory|memories|thou|profile)\b")
+# --- what the person asks ----------------------------------------------------------
+
+_FORGET_VERB = r"forget|delete|remove|erase|wipe"
+_REMEMBER_VERB = r"remember(?:ing)?|memori[sz]e|make a note|note|keep in mind|save|write (?:it |this |that )?down"
+_VERB = re.compile(r"(?i)\b(?:%s|%s)\b" % (_FORGET_VERB, _REMEMBER_VERB))
+_ADD = re.compile(r"(?i)\b(?:add|put)\b[^.!?\n]{0,60}?\b(?:to|in|into) (?:my |your |the )?"
+                  r"(?:me\.md|memory|memories|thou|profile)\b")
+# A negator up to four words before the verb, in the same clause: "please don't ever forget".
+_NEG_BEFORE = re.compile(r"(?i)\b(?:don't|dont|do not|never|not|won't|wont|can't|cant|cannot|no longer|stop|"
+                         r"didn't|didnt|doesn't|doesnt|shouldn't|shouldnt|mustn't|mustnt)(?:[ \t]+[\w']+){0,4}"
+                         r"[ \t]+$")
+# Words that make the verb describe someone, not ask: "I always forget", "people never remember".
+_DESCRIBES = re.compile(r"(?i)\b(?:i|we|he|she|they|you|people|everyone|everybody|nobody|someone)"
+                        r"(?:'ll|'d| will| would| can| could| might| may| should| must| did| do| does| tend to)?"
+                        r"(?:[ \t]+(?:\w+ly|always|often|sometimes|never|still|just|also|ever|even|keep|kept))*"
+                        r"[ \t]+$")
+# The same, after a negator, for anyone but "you": "don't think I'd forget", but "don't you ever forget" asks.
+_DESCRIBES_OTHER = re.compile(r"(?i)\b(?:i|we|he|she|they|people|everyone|everybody|nobody|someone)"
+                              r"(?:'ll|'d|'m| will| would| can| could| might| may| should| must| did| do| does|"
+                              r" tend to)?(?:[ \t]+(?:\w+ly|always|often|sometimes|never|still|just|also|ever|even|"
+                              r"keep|kept|want you to|want to))*[ \t]+$")
+_REQUEST_LEAD = re.compile(r"(?i)\b(?:can|could|would|will)[ \t]+you(?:[ \t]+(?:please|just|also|kindly))*[ \t]+$")
+_CONDITIONAL = re.compile(r"(?i)\b(?:if|in case|unless|before|whether|lest|whenever)\b(?:[ \t]+[\w']+){0,3}"
+                          r"[ \t]+$")
+# A question asks for something only in the form of a request: "Can you forget my old address?"
+_REQUEST = re.compile(r"(?i)^\W*(?:(?:and|also|so|oh|ok|okay|hey|then|now|please|actually)\W+)*"
+                      r"(?:can|could|would|will)[ \t]+you\b")
+_REMINISCES = re.compile(r"(?i)[ \t]+(?:when|how|the time|that time)\b")
 _YES = re.compile(r"(?i)^(?:yes|yeah|yep|yup|y|sure|ok|okay|correct|right|confirm(?:ed)?|please do|do it|"
                   r"go ahead)(?:[ ,]+(?:please|thanks|thank you|do it|go ahead|that's right|forget it|"
                   r"remember it|save it|delete it|remove it))*$")
@@ -270,9 +392,66 @@ def _asks_any(text):
     return asks(text, "forget") or asks(text, "remember")
 
 
+def _doubts(lead):
+    """Whether the clause the verb is in already holds a negator, as in "I'm not sure I want you to forget". A
+    bare "No" before the verb is an answer, not a doubt: "No forget it"."""
+    clause = _CLAUSE.split(lead)[-1]
+    return NOT in _tokens(clause) and not re.fullmatch(r"(?i)\W*(?:no|nope|nah)\W*", clause)
+
+
+def ask_spans(sentence, op):
+    """Where the sentence asks for op, as (start, end) spans of the words that ask, negator included: "don't
+    forget" asks to remember, "stop remembering" to forget, when the negator stands up to four words before the
+    verb in the same clause. Nothing asks in a question, unless it is a request ("Can you…?"), nor where the verb
+    describes someone ("I always forget", "don't think I'd remember") or a condition ("in case you forget", "not
+    sure whether to forget"), nor where a negator further back in the clause doubts it ("I'm not sure I want you
+    to forget"), nor in "remember when"."""
+    s = sentence.replace("\u2019", "'")
+    if s.rstrip().endswith("?") and not _REQUEST.match(s):
+        return []
+    spans = []
+    for m in _VERB.finditer(s):
+        verb = re.sub(r"ing$", "", m.group(0).lower())
+        kind = "forget" if re.fullmatch(_FORGET_VERB, verb) else "remember"
+        negated = _NEG_BEFORE.search(s[:m.start()])
+        if negated and _CLAUSE.search(negated.group(0)):  # "I'm not vegan anymore so forget that"
+            negated = None
+        if negated:  # only "forget" and "remember" turn into each other; "don't save" asks nothing
+            meant = {"forget": "remember", "remember": "forget"}.get(verb)
+            if meant is None or re.search(r"(?i)\bcan't|\bcant|\bcannot|\bdidn't|\bdidnt|\bdoesn't|\bdoesnt",
+                                          negated.group(0)):
+                continue
+        else:
+            meant = kind
+        start = negated.start() if negated else m.start()
+        lead = s[:start]
+        if _DESCRIBES.search(lead) and not _REQUEST_LEAD.search(lead) or _CONDITIONAL.search(lead):
+            continue
+        if negated and (_CONDITIONAL.search(s[:m.start()]) or _DESCRIBES_OTHER.search(s[:m.start()])):
+            continue  # "not sure whether to forget", "don't think I'd remember": the negator isn't on the verb
+        if _doubts(lead):
+            continue  # "I'm not sure I want you to forget": a negator earlier in the clause
+        if verb == "remember" and not negated and _REMINISCES.match(s[m.end():]):
+            continue
+        if meant == op:
+            spans.append((start, m.end()))
+    if op == "remember":
+        for m in _ADD.finditer(s):
+            if not _NEG_BEFORE.search(s[:m.start()]) and not _DESCRIBES.search(s[:m.start()]):
+                spans.append(m.span())
+    return spans
+
+
 def asks(sentence, op):
-    sentence = sentence.replace("’", "'")
-    return bool((_FORGET if op == "forget" else _REMEMBER).search(sentence))
+    return bool(ask_spans(sentence, op))
+
+
+def _blanked(sentence, op):
+    """The sentence without the words that ask, so "don't forget" leaves no negator behind."""
+    out = sentence.replace("\u2019", "'")
+    for start, end in sorted(ask_spans(sentence, op), reverse=True):
+        out = out[:start] + " " + out[end:]
+    return out
 
 
 def is_yes(prompt):
@@ -298,9 +477,33 @@ def missing(text, said):
     seen = []
     for w in re.findall(r"[^\W_]+(?:'[^\W_]+)*", text.replace("\u2019", "'")):
         key = w.replace("'", "").lower()
-        if key not in STOP and stem(key) not in have and w not in seen:
+        token = NOT if key in _NEGATORS else None if key in STOP else stem(key)
+        if token is not None and token not in have and w not in seen:
             seen.append(w)
     return seen
+
+
+_CLAUSE = re.compile(r"(?i)[,;:()\u2013\u2014]+|\s-\s|\b(?:and|but|because|since|although|though|while|whereas|"
+                     r"so|or)\b")
+
+
+def _negation_differs(text, said):
+    """Whether the person's clauses that hold these words say "not" ("no longer", "anymore", "used to"...)
+    and the words don't, or the other way round."""
+    want = words(text) - {NOT}
+    theirs = any(NOT in words(c) for c in _CLAUSE.split(said) if words(c) & want)
+    return theirs != (NOT in words(text))
+
+
+def _in_order(text, said):
+    """Whether the words of text come in the order the person said them."""
+    seq, at = _tokens(said), 0
+    for token in _tokens(text):
+        try:
+            at = seq.index(token, at) + 1
+        except ValueError:
+            return False
+    return True
 
 
 class Verdict:
@@ -310,18 +513,70 @@ class Verdict:
         self.ok, self.why, self.confirm, self.unheard = ok, why, confirm, unheard
 
 
+NOT_TYPED = "These words aren't in what the person typed in their latest message."
+PASTED_WHY = ("These words are only in text the person pasted or quoted, not in words they wrote themselves, so "
+              "they aren't the person's ask.")
+NEGATION_WHY = ("The person said this with a \"not\" (or \"no longer\", \"anymore\", \"used to\") that these "
+                "words leave out, or the other way round.")
+_BORROWS = re.compile(r"(?i)\b(?:that|this|those|these)\b")
+
+
+def _own_words(sentence, op):
+    return words(_blanked(sentence, op)) - {NOT}
+
+
+def _sources(own, at, op):
+    """The person's words a change may rest on: each sentence that holds the quote and asks for op. An ask with no
+    words of its own ("forget that") takes them from the sentence before it, and one that ends in a colon
+    ("Remember these:") from the line after it. (words, needs a yes)."""
+    for i in at:
+        if asks(own[i], op):
+            if _own_words(own[i], op):
+                yield _blanked(own[i], op), False
+            else:
+                if i > 0:
+                    yield own[i - 1] + " " + _blanked(own[i], op), not (op == "remember" or _BORROWS.search(own[i]))
+                if own[i].rstrip().endswith(":") and i + 1 < len(own):
+                    yield _blanked(own[i], op) + " " + own[i + 1], False
+        if i + 1 < len(own) and asks(own[i + 1], op) and not _own_words(own[i + 1], op):
+            yield own[i] + " " + _blanked(own[i + 1], op), not (op == "remember" or _BORROWS.search(own[i + 1]))
+        if i > 0 and own[i - 1].rstrip().endswith(":") and asks(own[i - 1], op) and not _own_words(own[i - 1], op):
+            yield _blanked(own[i - 1], op) + " " + own[i], False
+
+
+def _judge(op, text, said, needs_yes):
+    hits, total = _counts(text, said)
+    if hits == 0:
+        return Verdict(False, NOT_TYPED)
+    if _negation_differs(text, said):
+        return Verdict(False, NEGATION_WHY)
+    gone = ", ".join(missing(text, said))
+    if op == "remember":
+        if hits < total:
+            return Verdict(False, "To remember, use only the person's words. They didn't say: %s." % gone)
+        if not _in_order(text, said):
+            return Verdict(False, "To remember, use the person's words in the order they said them.")
+        return Verdict(True)
+    if total - hits > 1:
+        return Verdict(False, "Forget only what the person named. They didn't name: %s. Or pass only the words "
+                              "they named, where those make a whole clause of the line." % gone, hits * 3 >= total)
+    if needs_yes:
+        return Verdict(False, "The person said to forget \"it\", so thou can't tell which words they mean.", True)
+    return Verdict(True)
+
+
 def check(op, quote, text, prompt):
     """Whether the person's latest message, in their own words, asks for this change.
 
     op is "forget" or "remember"; quote is the agent's copy of the person's words; text is the words to
-    forget or keep."""
+    forget or keep. The words are checked against the sentence that asks, and only an ask with no words of its
+    own borrows them from the sentence next to it."""
     if prompt is None:
         return Verdict(False, "I don't have the person's latest message, so nothing they typed can stand for "
                               "their yes here.", unheard=True)
-    pasted = covered(op, text, prompt)
     if not isinstance(quote, str) or len(_plain(quote)) < 3:
         return Verdict(False, "quote is the person's own words that ask for this, copied from their latest "
-                              "message.", pasted)
+                              "message.")
     own = own_sentences(prompt)
     wanted = _plain(quote)
     plain = [_plain(x) for x in own]
@@ -332,20 +587,16 @@ def check(op, quote, text, prompt):
         place = len(joined)
     found = joined.find(wanted)
     at = [i for i, (a, b) in enumerate(spans) if found >= 0 and a < found + len(wanted) and found < b]
-    if not at:
-        return Verdict(False, "Those words are not in the person's latest message as their own words. Words "
-                              "they pasted, quoted or reported from someone else don't count.", pasted)
-    for i in at:
-        window = " ".join(own[max(0, i - 1):i + 2])
-        if not any(asks(s, op) for s in own[max(0, i - 1):i + 2]):
-            continue
-        if covered(op, text, window):
-            return Verdict(True)
-        hits, total = _counts(text, window)
-        near = pasted or hits * 2 >= total
-        gone = ", ".join(missing(text, window))
-        if op == "remember":
-            return Verdict(False, "To remember, use only the person's words. They didn't say: %s." % gone, near)
-        return Verdict(False, "Forget only what the person named. They didn't name: %s. Pass fewer words, such as "
-                              "the part of the line they named." % gone, near)
-    return Verdict(False, "The person's words there don't ask to %s anything." % op, pasted)
+    tried = []
+    for said, needs_yes in _sources(own, at, op):
+        verdict = _judge(op, text, said, needs_yes)
+        if verdict.ok:
+            return verdict
+        tried.append(verdict)
+    if tried:
+        return max(tried, key=lambda v: v.confirm)  # one the person can confirm, if there is one
+    if at:
+        return Verdict(False, "The person's words there don't ask to %s anything." % op)
+    if covered(op, text, prompt) and not covered(op, text, " ".join(own)):
+        return Verdict(False, PASTED_WHY)
+    return Verdict(False, NOT_TYPED + " Words they pasted, quoted or reported from someone else don't count.")
