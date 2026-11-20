@@ -449,7 +449,8 @@ def _hashed(stems, salt):
 
 def _hide(text, salt, wanted):
     """text with each word that carries meaning, whose stems wanted(stems) picks, put as its salted hash. Small
-    words, negators and the words of "no longer"-style phrases stay as they are, as _tokens reads them."""
+    words, negators and the words of "no longer"-style phrases stay as they are, as _tokens reads them.
+    wanted([]) must be False: a small word or a negator has no stems, and it stays as it is only then."""
     text = _apostrophes(text).replace("\u2019", "'")
     phrases = [m.span() for m in _NEGATOR_PHRASES.finditer(text)]
     def swap(m):

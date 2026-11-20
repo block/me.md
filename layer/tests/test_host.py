@@ -2467,6 +2467,11 @@ class Hooks(StoreTest):
         calls("writer", "mcp__thou__remember")
         self.assertEqual(self.kept(), "Consolidate the supplied rollout summaries into memory_summary.md.")
         calls("person")
+        out = self.run_hook("user-prompt", json.dumps({"session_id": "writer"}))  # a message the hook can't read
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertIsNone(self.kept())  # the writer's message is none now, and no older one stands in
+        calls("person")
+        self.assertEqual(self.kept(), "Please forget that I'm vegetarian.")  # and the person's is still kept
         self.run_hook("session-end", json.dumps({"session_id": "writer"}))
         self.assertEqual(self.kept(), "Please forget that I'm vegetarian.")  # the person's session keeps its own
         calls("stranger")  # a session with no message kept: none on top, so nothing rests on another's words
