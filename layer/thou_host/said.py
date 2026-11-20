@@ -640,15 +640,46 @@ def _own_words(sentence, op):
     return words(_blanked(sentence, op)) - {NOT}
 
 
+# A forget's object ends at these, or at the first comma, "and" or "or" that starts a clause of its own.
+_OBJECT_END = re.compile(r"(?i)[;:()\u2013\u2014]|\s-\s|\b(?:but|because|since|although|though|while|whereas|so|"
+                         r"then)\b")
+_OBJECT_JOIN = re.compile(r"(?i),|\b(?:and|or)\b")
+# What a piece after "and", "or" or a comma starts with when it is more of the same object: "my address and my old
+# job", "that I'm vegetarian and what my go-to dish is".
+_GOES_ON = re.compile(r"(?i)^\W*(?:that|what|where|when|who|whom|whose|which|how|whether|why)\b")
+_MORE_OF = re.compile(r"(?i)^\W*(?:my|our|your|his|her|their|the|a|an|this|these|those|all|any|every|each|both|"
+                      r"some|about|\d)")
+
+
+def _objects(sentence, op):
+    """The words each forget in the sentence asks for: the words after its verb, up to the edge of its clause
+    (_OBJECT_END, or a comma, "and" or "or" before a clause of its own). "My address is changing, but forget my
+    old job" asks to forget "my old job" only."""
+    s = sentence.replace("\u2019", "'")
+    out = []
+    for _, end in ask_spans(s, op):
+        pieces = _OBJECT_JOIN.split(_OBJECT_END.split(s[end:], 1)[0])
+        kept = pieces[:1]
+        for piece in pieces[1:]:
+            if not (_GOES_ON.match(piece) or _MORE_OF.match(piece) and not _SECOND_VERB.search(piece)):
+                break
+            kept.append(piece)
+        out.append(",".join(kept))
+    return ", ".join(out)
+
+
 def _sources(own, at, op):
     """The person's words a change may rest on: each sentence that holds the quote and asks for op. An ask with no
     words of its own ("forget that") takes them from the sentence before it, and one that ends in a colon
     ("Remember these:") from the line after it. A forget that borrows from the sentence next to it needs a yes:
-    "forget that" may only mean "never mind". (words, needs a yes)."""
+    "forget that" may only mean "never mind". A forget's words are its verb's own object (_objects); one whose
+    object has no words of its own ("so forget that") takes them from the rest of its sentence. (words, needs a
+    yes)."""
     for i in at:
         if asks(own[i], op):
             if _own_words(own[i], op):
-                yield _blanked(own[i], op), False
+                named = _objects(own[i], op) if op == "forget" else ""
+                yield (named if words(named) - {NOT} else _blanked(own[i], op)), False
             else:
                 if i > 0:
                     yield own[i - 1] + " " + _blanked(own[i], op), op == "forget"
