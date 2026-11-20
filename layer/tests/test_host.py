@@ -2098,12 +2098,16 @@ class Said(unittest.TestCase):
 
     def test_a_forget_counts_only_its_own_object(self):
         """A forget's words are the words after its verb, up to its clause's edge, so the rest of the sentence
-        can't stand for them: "My address is changing soon, but forget my old job" doesn't name the address."""
+        can't stand for them: "My address is changing soon, but forget my old job" doesn't name the address. A
+        piece after a comma, "and" or "or" that is a clause of its own ends the object, even when more follows. A
+        remember isn't narrowed this way: its whole sentence stands for it."""
         check = self.said.check
         for prompt in ("My address is changing soon, but forget my old job.",
                        "I moved my address and forget my old job.", "Forget my old job; my address is new.",
                        "Forget my old job and keep my address.", "Forget my old job and my address is new.",
-                       "Forget my old job, then tell me my address."):
+                       "Forget my old job, then tell me my address.", "Forget my old job then keep my address.",
+                       "Forget my old job but keep my address.", "Forget my old job, I left it, and my address stays.",
+                       "Forget my old job or whatever, my address stays."):
             for text in ("- My address is 4 Elm St.", "address"):
                 self.assertFalse(check("forget", "forget my old job", text, prompt).ok, (prompt, text))
             self.assertTrue(check("forget", "forget my old job", "- My old job was at Acme.", prompt).ok, prompt)
@@ -2114,6 +2118,8 @@ class Said(unittest.TestCase):
         self.assertTrue(check("forget", prompt, "My go-to dish is mushroom risotto-9fe8dc.", prompt).ok)
         prompt = "My old address is 4 Elm St, so forget that."  # no object of its own: the sentence stands for it
         self.assertTrue(check("forget", prompt, "- My old address is 4 Elm St.", prompt).ok)
+        prompt = "Please remember that I'm vegetarian, but I eat fish."
+        self.assertTrue(check("remember", prompt, "I'm vegetarian, but I eat fish.", prompt).ok)
 
     def test_each_message_has_its_own_salt(self):
         """Fix 4's hashes can be tested within one message only: each recorded message gets a new random salt,
