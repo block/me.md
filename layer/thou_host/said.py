@@ -454,10 +454,10 @@ def _hide(text, salt, wanted):
     phrases = [m.span() for m in _NEGATOR_PHRASES.finditer(text)]
     def swap(m):
         word = m.group(0)
-        if any(a <= m.start() < b for a, b in phrases) or _HIDDEN.fullmatch(word):
+        if any(a <= m.start() < b for a, b in phrases):
             return word
         stems = [x for x in _tokens(word) if x != NOT]  # one word can be two stems once lowercased: "İstanbul"
-        return _hashed(stems, salt) if stems and wanted(stems) else word
+        return _hashed(stems, salt) if wanted(stems) else word
     return re.sub(r"[^\W_]+(?:'[^\W_]+)*", swap, text)
 
 

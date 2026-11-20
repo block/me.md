@@ -1712,6 +1712,28 @@ class Quoted(Served):
         self.assertFalse(said.check("remember", both, "I'm vegetarian on weekdays.", prompt, salt).ok)
         self.assertTrue(said.check("forget", both, "I'm vegetarian.", prompt, salt).ok)
 
+    def test_a_scrub_keeps_the_words_of_a_negator_phrase(self):
+        """"used to" reads as "not": a forget of "used" hashes the word where it stands alone, not inside "used
+        to", so a remember of "I used to drive" from the same message still finds its "not"."""
+        self.write("me.md", "- My used car.\n")
+        self.say("Forget my used car. Remember that I used to drive.")
+        self.assertTrue(self.one("forget", path="me.md", text="My used car.", quote="Forget my used car.")["ok"])
+        answer = self.one("remember", text="I used to drive.", quote="Remember that I used to drive.")
+        self.assertTrue(answer["ok"], answer)
+        self.assertIn(b"I used to drive.", self.read("me.md"))
+
+    def test_a_refusal_names_no_hashed_word(self):
+        """A word an earlier forget hashed counts as not named, and the refusal doesn't list its hash."""
+        self.write("me.md", "- I'm vegetarian.\n")
+        self.say("Forget that I'm vegetarian. Also forget my go-to dish.")
+        self.assertTrue(self.one("forget", path="me.md", text="I'm vegetarian.",
+                                 quote="Forget that I'm vegetarian.")["ok"])
+        answer = self.one("forget", path="me.md", text="I'm vegetarian and my go-to dish is risotto on Sundays.",
+                          quote="Also forget my go-to dish.")
+        self.assertEqual(answer["error"], "not_said")
+        self.assertIn("risotto", answer["message"])
+        self.assertNotIn("thouh", answer["message"])
+
     def test_a_subject_names_one_clause_only(self):
         """The value after "is" must be one clause: "forget my test" can't take "and I'm learning to drive"
         with it, but it takes the clause that is the test. A subject the person didn't name in full ("my
@@ -1738,6 +1760,8 @@ class Quoted(Served):
                                     "Leeds is Omar Haddad.", "Please forget my sister's eldest son in Leeds.").ok)  # 7th
         self.assertFalse(said.check("forget", "forget my old address", "It is 4 Elm St.",
                                     "Please forget my old address.").ok)  # a subject with no word of its own
+        self.assertFalse(said.check("forget", "forget my old address", "It is my old address in Leeds near Kirkstall.",
+                                    "Please forget my old address.").ok)  # nor with the named words after "is"
         asked = "Please forget that I'm vegetarian and what my go-to dish is."
         self.assertTrue(said.check("forget", asked, "I'm vegetarian. I live here. My go-to dish is risotto.", asked).ok)
         self.assertFalse(said.check("forget", asked, "I'm vegetarian. I live in Porto. My go-to dish is risotto.",
@@ -1745,6 +1769,8 @@ class Quoted(Served):
         sister = said.check("forget", "forget my sister", "My sister Rania lives in Manchester with her two boys.",
                             "Please forget my sister.")
         self.assertEqual((sister.ok, sister.confirm), (False, False))  # as before: no copula in the first six words
+        self.assertFalse(said.check("forget", "forget my sister Rania", "My sister Rania lives in Manchester.",
+                                    "Please forget my sister Rania.").ok)  # "lives" is not "is"
         self.assertFalse(said.check("forget", "forget my old address", "My old address is not 4 Elm St.",
                                     "Please forget my old address.").ok)  # the "not" the person didn't say
         self.assertFalse(said.check("remember", "remember my old address", "My old address is 4 Elm St.",
