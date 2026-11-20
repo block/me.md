@@ -25,6 +25,12 @@ computer controller's tools get the shell check on every string they carry,
 since they run scripts and read paths. A call it stops exits 2 with the reason
 on stderr, which goose reads as a deny. Other extensions' tools pass.
 
+Codex sends Claude Code's hook JSON, so its hooks (codex/hooks.json) use the
+modes as they are. Its shell arrives as Bash. Its apply_patch arrives with the
+patch as text: a patch that adds, updates, deletes or moves a file in the store
+is stopped, and so is one the fence can't read. Its view_image is checked as a
+read of the path it names.
+
 The fence reads paths and command text. It stops a file tool that points into
 the store, a search that would walk into it, and a shell command that names it
 in the common ways: by path, by a path relative to the working folder or to a
@@ -46,9 +52,13 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 FILE_TOOLS = {"Read": ("file_path",), "Write": ("file_path",), "Edit": ("file_path",), "MultiEdit": ("file_path",),
-              "NotebookEdit": ("notebook_path",), "NotebookRead": ("notebook_path",), "LS": ("path",)}
+              "NotebookEdit": ("notebook_path",), "NotebookRead": ("notebook_path",), "LS": ("path",),
+              "view_image": ("path",)}
 SEARCH_TOOLS = ("Grep", "Glob")
 SHELL_TOOLS = ("Bash", "PowerShell", "Monitor")
+# Codex's apply_patch: the files a patch touches, from its own header lines.
+PATCH_TOOLS = ("apply_patch",)
+PATCH_PATHS = re.compile(r"^\*\*\* (?:Add File|Update File|Delete File|Move to):[ \t]*(.*?)[ \t]*$", re.M)
 # goose's developer tools, as the Claude Code tool the fence checks them as: (name, goose key, Claude key).
 GOOSE_TOOLS = {"write": ("Write", "path", "file_path"), "edit": ("Edit", "path", "file_path"),
                "tree": ("LS", "path", "path"), "read_image": ("Read", "source", "file_path"),
@@ -431,12 +441,18 @@ def pre_tool_use(event):
     roots = {_FOLD(os.path.normpath(os.path.abspath(p))) for p in (root, said.folder())}
     roots |= {_FOLD(os.path.realpath(p)) for p in (root, said.folder())}
     name, args = event.get("tool_name"), event.get("tool_input")
-    if name not in FILE_TOOLS and name not in SEARCH_TOOLS and name not in SHELL_TOOLS:
+    if name not in FILE_TOOLS and name not in SEARCH_TOOLS and name not in SHELL_TOOLS and name not in PATCH_TOOLS:
         return None
     args = args if isinstance(args, dict) else {}
     cwd = event.get("cwd") if isinstance(event.get("cwd"), str) and event.get("cwd") else os.getcwd()
     if _inside(cwd, cwd, roots):
         return _deny()  # working inside the store: relative paths and bare commands reach it
+    if name in PATCH_TOOLS:
+        patches = [s for s in _strings(args) if "*** Begin Patch" in s]
+        if not patches:
+            return _deny(UNCHECKED)  # no patch text to read
+        paths = [m.group(1) for p in patches for m in PATCH_PATHS.finditer(p)]
+        return _deny() if any(_inside(p, cwd, roots) for p in paths) else None
     if name in FILE_TOOLS:
         return _deny() if any(_inside(args.get(key), cwd, roots) for key in FILE_TOOLS[name]) else None
     if name in SEARCH_TOOLS:

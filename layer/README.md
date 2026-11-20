@@ -74,7 +74,7 @@ You can also open the files in any text editor. They are yours.
 
 ## What it can't do
 
-- **It covers Claude Code, and goose with its hooks, and nothing else.** Another agent follows your `policy.json` only if it honors the protocol. The switch is a request those agents honor, not a lock.
+- **It covers Claude Code, and goose and Codex with their hooks, and nothing else.** Another agent follows your `policy.json` only if it honors the protocol. The switch is a request those agents honor, not a lock.
 - **Claude Code's own memory is separate.** Claude Code can keep its own notes about you, called auto memory, outside your store. The layer asks Claude to propose what it learns about you instead, but only by instruction. To keep what Claude remembers about you in one place, turn auto memory off: open `/memory` and use the auto memory toggle, or set `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`.
 - **The model still decides some things.** It decides whether a topic or project is relevant, whether something is worth proposing, and whether it treats what it reads as information. The layer can't make those happen in code.
 - **What Claude reads leaves your computer.** While memory is on, `me.md`, and anything Claude recalls, goes to the model provider with the rest of the session. Claude Code also saves session transcripts on your computer. Forgetting a line doesn't change those copies. Keep out of `me.md` anything you would not tell every agent you use.
@@ -112,6 +112,15 @@ goose session --with-extension "python3 $PWD/layer/thou_mcp.py"
 ```
 
 Link the folder rather than copying it: its hooks run `thou_hooks.py` from the folder above it. If you set `ME_HOME`, set it for goose itself, so that the hooks and the server use the same store. goose then gives the server your messages, so remember and forget work there. The pre-tool hook stops goose's `shell`, `write`, `edit`, `tree` and `read_image` tools from reaching the store, as it stops Claude Code's, and a call it can't check doesn't run. It also checks every string the computer controller's tools carry, since they run scripts and read files. Tools from other goose extensions aren't checked. goose has no approval prompt that the server can require, so starting, deciding, editing and turning memory on stay off there.
+
+In Codex 0.166 or later, the hooks run too. Codex reads them from `~/.codex/hooks.json`. If you have no hooks there yet, write the layer's, with its folder in place of `@LAYER@`; if you have some, add these three to them:
+
+```bash
+sed "s|@LAYER@|$PWD/layer|g" layer/codex/hooks.json > ~/.codex/hooks.json
+codex mcp add thou -- python3 "$PWD/layer/thou_mcp.py"
+```
+
+Codex asks you to review new hooks before they run. If you set `ME_HOME`, set it for Codex itself, which runs the hooks, and for the server with `--env ME_HOME=…`, so that both use the same store. The pre-tool hook stops Codex's shell, `apply_patch` and `view_image` from reaching the store, and a call it can't check doesn't run. If the hook can't run on your message, the message still goes through, and remember and forget ask you instead. Codex asks you to approve `forget` before it runs, as it does for any tool that removes things.
 
 ## What it has passed
 

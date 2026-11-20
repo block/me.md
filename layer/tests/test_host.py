@@ -2173,6 +2173,46 @@ class Hooks(StoreTest):
             self.assertTrue(re.search(fence["matcher"], name), name)
         self.assertIsNone(re.search(fence["matcher"], "personal__send_message"))
 
+    def test_codex_hooks(self):
+        """Codex sends Claude Code's hook JSON: its shell as Bash, apply_patch with the patch as text, view_image."""
+        me = os.path.join(self.root, "me.md")
+
+        def patch(*lines):
+            return {"command": "\n".join(("*** Begin Patch",) + lines + ("*** End Patch",))}
+        for name, cwd, args in [("Bash", None, {"command": "cat %s" % me}),
+                                ("apply_patch", None, patch("*** Update File: %s" % me, "@@", "+- I like jazz.")),
+                                ("apply_patch", None, patch("*** Add File: ../store/notes.md", "+x")),
+                                ("apply_patch", None, patch("*** Delete File: %s" % me)),
+                                ("apply_patch", None, patch("*** Update File: %s/a.md" % self.work,
+                                                            "*** Move to: %s/me.md" % self.root, "@@", "-a", "+b")),
+                                ("apply_patch", None, patch("*** Add File: %s/a.md" % self.work, "+a",
+                                                            "*** Update File: %s" % me, "@@", "+b")),
+                                ("apply_patch", self.root, patch("*** Add File: notes.md", "+x")),
+                                ("apply_patch", None, {"input": 3}),
+                                ("view_image", None, {"path": me})]:
+            self.assertEqual(self.decision(name, cwd=cwd, **args), "deny", (name, args))
+        self.assertEqual(self.decision("apply_patch", **patch("*** Add File: %s/a.md" % self.work, "+a")), "allow")
+        self.assertEqual(self.decision("apply_patch", **patch("*** Add File: notes.md", "+*** Add File: %s" % me)),
+                         "allow")  # a line the patch adds, not a file it touches
+        self.assertEqual(self.decision("view_image", path=os.path.join(self.work, "a.png")), "allow")
+        self.assertEqual(self.decision("mcp__thou__forget", path="me.md"), "allow")
+        with open(os.path.join(os.path.dirname(HOOKS), "codex", "hooks.json")) as handle:
+            hooks = json.load(handle)["hooks"]
+        commands = {event: entry["hooks"][0]["command"] for event, (entry,) in hooks.items()}
+        self.assertEqual({e: c.split("thou_hooks.py\" ", 1)[1].split()[0] for e, c in commands.items()},
+                         {"UserPromptSubmit": "user-prompt", "SessionEnd": "session-end", "PreToolUse": "pre-tool-use"})
+        self.assertTrue(all(c.startswith('python3 "@LAYER@/thou_hooks.py" ') for c in commands.values()))
+        for event in ("UserPromptSubmit", "SessionEnd"):  # a broken install never stops the person's message
+            self.assertTrue(commands[event].endswith(" || true"), event)
+        fallback = commands["PreToolUse"].split(" || ", 1)[1]  # a check that can't run stops the call
+        out = subprocess.run(["sh", "-c", fallback], capture_output=True, text=True, timeout=10)
+        self.assertEqual(json.loads(out.stdout)["hookSpecificOutput"]["permissionDecision"], "deny")
+        fence = hooks["PreToolUse"][0]["matcher"]
+        for name in ("Bash", "apply_patch", "view_image"):
+            self.assertTrue(re.search(fence, name), name)
+        for name in ("mcp__thou__forget", "mcp__personal__send", "Bashful"):
+            self.assertIsNone(re.search(fence, name), name)
+
     def test_the_fence_covers_the_kept_message(self):
         folder = os.path.join(self.tmp, ".local", "state", "thou", "said")
         self.assertEqual(self.decision("Read", file_path=os.path.join(folder, "client-1.json")), "deny")
