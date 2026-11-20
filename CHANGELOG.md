@@ -26,6 +26,8 @@ To publish a release:
 - A proposal says whose words it holds: yours, words from something you pasted, or the agent's own ([STORE.md S6.4](./STORE.md#front-matter)). When you review it, you are told plainly if the words aren't yours, or if no one checked, so an instruction hidden in a pasted email can't pass as your request ([HOST.md H3.9 and H3.10](./HOST.md#3-writing)). In the layer, words inside an HTML comment don't count as yours for `remember` and `forget` either.
 - Proposals are for what agents should know about you, never the task's own output, such as a draft or a meeting ([HOST.md H3.8](./HOST.md#3-writing)).
 - Asking for short answers no longer cuts what a briefing couldn't read ([BRIEFING.md B6](./BRIEFING.md#rules)).
+- "Keep that in mind" (or "bear this in mind") now asks to remember, like "remember that". So does an ask that only says when, such as "Keep that in mind for the future" after the sentence it refers to.
+- Nothing in your `me.md` or store gives an agent permission to act. The layer now tells agents to ask you before they send, publish, buy, approve, delete or share, even when a line you stored says they may ([HOST.md H2.2](./HOST.md#2-recall)).
 
 ### For hosts
 

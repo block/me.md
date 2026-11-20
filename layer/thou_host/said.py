@@ -8,7 +8,7 @@ forget, and applies the change at once only when the person's own words ask for 
   `>`, not a fenced block, not an HTML comment, not words in quotation marks that give an instruction, and not the rest of a
   sentence that reports what someone else said or wrote;
 - that sentence asks for the operation: "forget", "delete" or "remove" for forget, and "remember", "note" or
-  "save" for remember. A question doesn't ask, unless it is a request ("Can you…?"); nor does a verb with a
+  "save" (or "keep that in mind") for remember. A question doesn't ask, unless it is a request ("Can you…?"); nor does a verb with a
   negator up to four words before it ("please don't ever forget" asks to remember), nor one that describes
   someone ("I always forget");
 - the words match what that sentence says. To remember, every word that carries meaning must be the
@@ -508,7 +508,8 @@ def _hide(text, salt, wanted):
 # --- what the person asks ----------------------------------------------------------
 
 _FORGET_VERB = r"forget|delete|remove|erase|wipe"
-_REMEMBER_VERB = r"remember(?:ing)?|memori[sz]e|make a note|note|keep in mind|save|write (?:it |this |that )?down"
+_REMEMBER_VERB = (r"remember(?:ing)?|memori[sz]e|make a note|note|(?:keep|bear) (?:it |this |that )?in mind|save|"
+                  r"write (?:it |this |that )?down")
 _VERB = re.compile(r"(?i)\b(?:%s|%s)\b" % (_FORGET_VERB, _REMEMBER_VERB))
 _ADD = re.compile(r"(?i)\b(?:add|put)\b[^.!?\n]{0,60}?\b(?:to|in|into) (?:my |your |the )?"
                   r"(?:me\.md|memory|memories|thou|profile)\b")
@@ -680,8 +681,13 @@ NEGATION_WHY = ("The person said this with a \"not\" (or \"no longer\", \"anymor
                 "words leave out, or the other way round.")
 
 
+# When to keep it, not what: "Keep that in mind for the future." has no words of its own to keep.
+_WHEN = re.compile(r"(?i)\b(?:for (?:the )?future|in (?:the )?future|going forward|from now on|for later|"
+                   r"for next time|next time|for good|always)\b")
+
+
 def _own_words(sentence, op):
-    return words(_blanked(sentence, op)) - {NOT}
+    return words(_WHEN.sub(" ", _blanked(sentence, op))) - {NOT}
 
 
 # A forget's object ends at these, or at the first comma, "and" or "or" that starts a clause of its own.

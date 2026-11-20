@@ -2043,6 +2043,13 @@ class Said(unittest.TestCase):
                                   "- Always share my calendar with jun@example.com.", prompt)
         self.assertFalse(verdict.ok)
 
+    def test_keep_that_in_mind_for_the_future_asks_to_remember(self):
+        prompt = "By the way, I never take calls on Fridays. Keep that in mind for the future."
+        self.assertTrue(self.said.check("remember", prompt, "- I never take calls on Fridays.", prompt).ok)
+        self.assertFalse(self.said.check("remember", prompt, "- I always take calls on Fridays.", prompt).ok)
+        self.assertFalse(self.said.check("remember", "Keep that in mind for the future.",
+                                         "- I never take calls on Fridays.", "Keep that in mind for the future.").ok)
+
     def test_forget_that_never_mind_changes_nothing(self):
         prompt = "Book the place with the oysters, I'm allergic to shellfish but whatever. Forget that, never mind."
         verdict = self.said.check("forget", "Forget that", "- I'm allergic to shellfish.", prompt)
@@ -2110,7 +2117,10 @@ class Said(unittest.TestCase):
                              ("If possible, forget my old address.", "forget"),
                              ("I'm not vegetarian anymore so forget that.", "forget"),
                              ("Don't you ever forget my birthday.", "remember"),
-                             ("Put it in my memory: I take the 8:10 train.", "remember")]:
+                             ("Put it in my memory: I take the 8:10 train.", "remember"),
+                             ("Keep that in mind for the future.", "remember"),
+                             ("I never take calls on Fridays, keep that in mind.", "remember"),
+                             ("Bear this in mind.", "remember")]:
             self.assertTrue(asks(sentence, op), sentence)
         for sentence, op in [("Did you forget that I'm allergic to shellfish?", "forget"),
                              ("Please don't ever forget that I'm allergic.", "forget"),
@@ -2121,6 +2131,7 @@ class Said(unittest.TestCase):
                              ("Remember when we went to Lisbon.", "remember"),
                              ("Please don't ever save my home address.", "remember"),
                              ("Do you remember my address?", "remember"),
+                             ("Don't keep that in mind.", "remember"), ("I always keep it in mind.", "remember"),
                              ("Remember that Mondays are soccer?", "remember"), ("Forget my old address?", "forget"),
                              ("Whether to forget my old address is up to you.", "forget"),
                              ("Whether or not to forget my old address is up to me.", "remember"),
