@@ -263,7 +263,7 @@ class Host:
         if not forgotten.same_words(obj, item_id, text):
             raise HostError("not_forgotten", "These aren't the words that were forgotten. Nothing changed. Pass the "
                                              "same words you forgot, and nothing more.")
-        return self.edit(path, "append", text=text, agent=agent)
+        return self.edit(path, "append", text=text, agent=agent, listed=True)
 
     # --- Reader ---
 
@@ -552,8 +552,9 @@ class Host:
             raise HostError("bad_path", "I change only me.md, watches.md, topics/<name>.md and projects/<name>.md.")
         return path
 
-    def edit(self, path, action, text=None, old=None, new=None, agent=None):
-        """H3.7: an edit the person asked for, journaled as person direct."""
+    def edit(self, path, action, text=None, old=None, new=None, agent=None, listed=False):
+        """H3.7: an edit the person asked for, journaled as person direct. With listed, an append takes the
+        file's list style (formats.as_list_items)."""
         self._writable()
         path = self._editable(path)
         who = self.who(agent)
@@ -564,7 +565,8 @@ class Host:
             self._visible(text, "The text")
             token = self._lock(agent)
             try:
-                before, after = self.fs.replace(path, lambda data: formats.appended(data, text))
+                before, after = self.fs.replace(path, lambda data: formats.appended(
+                    data, formats.as_list_items(data, text) if listed else text))
                 self._lift(text)
             except Missing as exc:
                 raise HostError("bad_path", "I will not write %s: %s." % (path, exc.why))

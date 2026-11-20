@@ -395,6 +395,23 @@ def appended(data, text):
     return data + whole
 
 
+_ITEM = re.compile(rb"\A[ \t]*([-*+])[ \t]+\S")
+_MARKED = re.compile(r"\A\s*(?:[-*+]|\d+[.)])\s|\A\s*#")
+
+
+def as_list_items(data, text):
+    """Text to add at the end of data, in data's list style: when the last line of data is a list item ("- ",
+    "* " or "+ "), each line of text becomes an item with the same marker, unless it is one already or a
+    heading."""
+    last = next((line for line in reversed((data or b"").splitlines()) if line.strip()), b"")
+    item = _ITEM.match(last)
+    if not item:
+        return text
+    marker = item.group(1).decode("ascii")
+    return "\n".join(line if not line.strip() or _MARKED.match(line) else "%s %s" % (marker, line.lstrip())
+                     for line in text.split("\n"))
+
+
 def without_lines(data, text):
     """Remove each place where text fills whole lines, with its line break. Returns (bytes, count)."""
     chunk, _ = as_target_text(text, data)
@@ -465,6 +482,10 @@ def _cut(line, chunk, edges=True):
         left, right = out + line[start:at], line[end:]
         if right.strip(b" \t")[:1] in (b"",) or right.lstrip(b" \t")[:1] in b".;:!?)":
             left = _DANGLING.sub(b"", left)  # "drive and my test is in March." without its end: "drive."
+        mark = chunk.rstrip(b" \t")[-1:]
+        if right.strip(b" \t") == b"" and mark in (b".", b"!", b"?") and not _EMPTIED.match(left) and \
+                left.rstrip(b" \t")[-1:] not in (b".", b"!", b"?", b",", b";", b":"):
+            left = left.rstrip(b" \t") + mark  # a cut that took the line's full stop leaves it there
         if left.endswith((b" ", b"\t")) and (right[:1] in (b"", b" ", b"\t") or right[:1] in b".,;:!?)"):
             left = left.rstrip(b" \t") + (b" " if right[:1] in (b" ", b"\t") and left.strip() else b"")
             right = right.lstrip(b" \t") if right[:1] in (b" ", b"\t") else right

@@ -24,7 +24,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "^(?:developer__)?(?:shell|write|edit|tree|read_image)$",
+        "matcher": "^(?:developer__)?(?:shell|write|edit|tree|read_image)$|^computercontroller__",
         "hooks": [
           {
             "type": "command",

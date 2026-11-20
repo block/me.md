@@ -299,7 +299,7 @@ def _quoted(host, name, args, heard):
             message = ASK % (verdict.why, name, shown, name) if verdict.confirm else THEIRS % verdict.why
         raise HostError("not_said", message)
     if name == "remember":
-        answer = host.edit(path, "append", text=text)
+        answer = host.edit(path, "append", text=text, listed=True)
         answer["receipt"] = (RECEIPT_SAVED if answer.get("journal") else RECEIPT_ALREADY) % _shown_words(text)
         return answer
     kept = []

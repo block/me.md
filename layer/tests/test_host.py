@@ -816,6 +816,10 @@ class Forget(StoreTest):
         self.write("me.md", "- I run a shop with a part-timer.\n")
         self.host.forget("me.md", "a part-timer")  # after "with": no "with" left hanging
         self.assertEqual(self.read("me.md"), b"- I run a shop.\n")
+        self.write("me.md", "- I swim, and I run!\n- Mochi likes fish. I have a cat.\n")
+        self.host.forget("me.md", "and I run!")  # the line keeps its end
+        self.host.forget("me.md", "I have a cat.")  # a line that already ends a sentence keeps only one
+        self.assertEqual(self.read("me.md"), b"- I swim!\n- Mochi likes fish.\n")
 
 
 class Forgotten(StoreTest):
@@ -936,7 +940,7 @@ class Forgotten(StoreTest):
         self.assertEqual(self.code(self.host.bring_back, "20261120T000000Z-000000", "me.md", "My test is in March."),
                          "not_forgotten")
         self.host.bring_back(item, "me.md", "My test is in March.")
-        self.assertEqual(self.read("me.md"), b"- I'm learning to drive.\nMy test is in March.\n")
+        self.assertEqual(self.read("me.md"), b"- I'm learning to drive.\n- My test is in March.\n")
         self.assertEqual(self.items(), [])
         self.assertIn("added text", self.read("journal.md").decode("utf-8").splitlines()[-1])
 
@@ -1432,6 +1436,12 @@ class Quoted(Served):
         self.assertTrue(answer["ok"], answer)
         self.assertEqual(self.read("me.md"), b"- I'm learning to drive.\n")
         self.assertIn('The rest of that line stays: "- I\'m learning to drive."', answer["receipt"])
+        self.write("me.md", "- I'm learning to drive and my test is in March.\n")
+        self.say("Forget that my test is in March, please.")
+        answer = self.one("forget", path="me.md", text=" and my test is in March.",  # the full stop too
+                          quote="Forget that my test is in March")
+        self.assertTrue(answer["ok"], answer)
+        self.assertEqual(self.read("me.md"), b"- I'm learning to drive.\n")
 
     def test_undo_right_after_a_forget(self):
         self.write("me.md", "- I build bikes.\n- I like blue.\n")
@@ -1443,10 +1453,10 @@ class Quoted(Served):
         self.assertTrue(answer["ok"], answer)
         self.assertEqual(answer["receipt"], 'Brought back: "I like blue.". Every agent that uses your thou store '
                                             'will know it again.')
-        self.assertEqual(self.read("me.md"), b"- I build bikes.\nI like blue.\n")
+        self.assertEqual(self.read("me.md"), b"- I build bikes.\n- I like blue.\n")
         self.assertEqual(json.loads(self.read("forgotten.json"))["items"], [])
         self.assertEqual(self.one("remember", text="I like blue.", quote="Undo")["error"], "not_said")  # done once
-        self.assertEqual(self.read("me.md"), b"- I build bikes.\nI like blue.\n")
+        self.assertEqual(self.read("me.md"), b"- I build bikes.\n- I like blue.\n")
 
     def test_undo_only_next_only_the_same_words_only_this_session(self):
         from thou_host import said
@@ -1484,6 +1494,15 @@ class Quoted(Served):
         self.assertTrue(self.one("remember", path="topics/travel.md", text="I take the 8:10 train.",
                                  quote="Put it in my memory: I take the 8:10 train")["ok"])
         self.assertEqual(self.read("topics/travel.md"), b"I take the 8:10 train.\n")
+        self.write("me.md", "- I build bikes.\n* I like blue.\n")  # a list: the words join it as an item
+        self.say("Remember that Mondays are soccer.")
+        self.assertTrue(self.one("remember", text="Mondays are soccer.", quote="Remember that Mondays are soccer")["ok"])
+        self.assertEqual(self.read("me.md"), b"- I build bikes.\n* I like blue.\n* Mondays are soccer.\n")
+        again = self.one("remember", text="Mondays are soccer.", quote="Remember that Mondays are soccer")
+        self.assertEqual(again["receipt"], 'Already saved: "Mondays are soccer.".')
+        self.say("Remember these:\n- I close on Tuesdays too.")
+        self.assertTrue(self.one("remember", text="- I close on Tuesdays too.", quote="Remember these:")["ok"])
+        self.assertTrue(self.read("me.md").endswith(b"* Mondays are soccer.\n- I close on Tuesdays too.\n"))
         self.lint()
 
     def test_words_the_person_didnt_type_change_nothing(self):
@@ -1637,7 +1656,7 @@ class Quoted(Served):
         self.say("Remember that I'm not vegetarian anymore.")
         self.assertTrue(self.one("remember", text="I'm not vegetarian anymore.",
                                  quote="Remember that I'm not vegetarian anymore")["ok"])
-        self.assertEqual(self.read("me.md"), b"- I'm allergic to shellfish.\nI'm not vegetarian anymore.\n")
+        self.assertEqual(self.read("me.md"), b"- I'm allergic to shellfish.\n- I'm not vegetarian anymore.\n")
 
     def test_a_whole_file_by_its_name(self):
         self.write("topics/driving.md", "Lessons on Tuesdays.\n")
@@ -2113,6 +2132,14 @@ class Hooks(StoreTest):
         self.assertEqual(decide("shell", command="ls /tmp"), "allow")
         self.assertEqual(decide("write", path=os.path.join(self.work, "note.md"), content="x"), "allow")
         self.assertEqual(decide("personal__inbox_read", id="1"), "allow")
+        for name, args in [("computercontroller__pdf_tool", {"path": me, "operation": "extract_text"}),
+                           ("computercontroller__docx_tool", {"path": "../store/me.md", "operation": "extract_text"}),
+                           ("computercontroller__computer_control", {"command": "app launch TextEdit --open %s" % me}),
+                           ("computercontroller__xlsx_tool", {"path": "x.xlsx", "operation": "get_cell",
+                                                              "range": ["a", {"deep": "cat %s" % me}]})]:
+            self.assertEqual(decide(name, **args), "deny", name)
+        self.assertEqual(decide("computercontroller__pdf_tool", path=os.path.join(self.work, "a.pdf"),
+                                operation="extract_text"), "allow")
         out = self.run_hook("pre-tool-use", "not json", client=goose)
         self.assertEqual(out.returncode, 2)  # fails closed
         self.assertEqual(self.run_hook("session-start", "{}", client=goose).returncode, 2)  # not a goose hook
@@ -2124,7 +2151,7 @@ class Hooks(StoreTest):
                                  "PreToolUse": ["pre-tool-use", "goose"]})
         fence = hooks["PreToolUse"][0]
         self.assertEqual(fence["hooks"][0]["on_failure"], "block")
-        for name in ("shell", "write", "edit", "tree", "read_image", "developer__shell"):
+        for name in ("shell", "write", "edit", "tree", "read_image", "developer__shell", "computercontroller__pdf_tool"):
             self.assertTrue(re.search(fence["matcher"], name), name)
         self.assertIsNone(re.search(fence["matcher"], "personal__send_message"))
 

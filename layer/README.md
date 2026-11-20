@@ -111,7 +111,7 @@ ln -s "$PWD/layer/goose" ~/.agents/plugins/thou
 goose session --with-extension "python3 $PWD/layer/thou_mcp.py"
 ```
 
-Link the folder rather than copying it: its hooks run `thou_hooks.py` from the folder above it. If you set `ME_HOME`, set it for goose itself, so that the hooks and the server use the same store. goose then gives the server your messages, so remember and forget work there. The pre-tool hook stops goose's `shell`, `write`, `edit`, `tree` and `read_image` tools from reaching the store, as it stops Claude Code's, and a call it can't check doesn't run. goose has no approval prompt that the server can require, so starting, deciding, editing and turning memory on stay off there.
+Link the folder rather than copying it: its hooks run `thou_hooks.py` from the folder above it. If you set `ME_HOME`, set it for goose itself, so that the hooks and the server use the same store. goose then gives the server your messages, so remember and forget work there. The pre-tool hook stops goose's `shell`, `write`, `edit`, `tree` and `read_image` tools from reaching the store, as it stops Claude Code's, and a call it can't check doesn't run. It also checks every string the computer controller's tools carry, since they run scripts and read files. Tools from other goose extensions aren't checked. goose has no approval prompt that the server can require, so starting, deciding, editing and turning memory on stay off there.
 
 ## What it has passed
 
