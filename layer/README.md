@@ -74,7 +74,7 @@ You can also open the files in any text editor. They are yours.
 
 ## What it can't do
 
-- **It covers Claude Code, and nothing else.** Another agent follows your `policy.json` only if it honors the protocol. The switch is a request those agents honor, not a lock.
+- **It covers Claude Code, and goose with its hooks, and nothing else.** Another agent follows your `policy.json` only if it honors the protocol. The switch is a request those agents honor, not a lock.
 - **Claude Code's own memory is separate.** Claude Code can keep its own notes about you, called auto memory, outside your store. The layer asks Claude to propose what it learns about you instead, but only by instruction. To keep what Claude remembers about you in one place, turn auto memory off: open `/memory` and use the auto memory toggle, or set `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`.
 - **The model still decides some things.** It decides whether a topic or project is relevant, whether something is worth proposing, and whether it treats what it reads as information. The layer can't make those happen in code.
 - **What Claude reads leaves your computer.** While memory is on, `me.md`, and anything Claude recalls, goes to the model provider with the rest of the session. Claude Code also saves session transcripts on your computer. Forgetting a line doesn't change those copies. Keep out of `me.md` anything you would not tell every agent you use.
@@ -102,6 +102,16 @@ The layer is this folder: a Claude Code plugin in Python, with only the standard
 - **A pre-tool hook** (`thou_hooks.py pre-tool-use`). It stops Claude Code's file tools, searches that start above the store, and shell commands that point into it, from reaching the store or the copy of your latest message. If the hook fails, can't run or runs out of time, it stops the call.
 
 The MCP server also works on its own, in any agent that speaks MCP: `python3 layer/thou_mcp.py`. There, it mounts only if the agent's model follows the server's instructions. And the server can't tell whether that agent asks you before a call, so it takes nothing on your say: it reads, proposes, and turns memory off when asked. It doesn't start, decide, edit or turn memory on. It remembers and forgets only if something runs `thou_hooks.py user-prompt` with each of your messages, as Claude Code's hook does; without that, it has no message to check, so it changes nothing and asks you. Turning memory off is journaled as your change, because the protocol records it that way, but there the journal can't tell whether you or the agent asked for it. If the agent asks you before every call to those tools and shows you the call, set `THOU_CLIENT_ASKS=1` in its settings for the server, and they're offered there too. The journal then says each of those changes was yours, so set it only for an agent that asks.
+
+In goose 1.60.1 or later, the hooks run too. Link the `goose` folder as a goose plugin, and add the server as an extension:
+
+```bash
+mkdir -p ~/.agents/plugins
+ln -s "$PWD/layer/goose" ~/.agents/plugins/thou
+goose session --with-extension "python3 $PWD/layer/thou_mcp.py"
+```
+
+Link the folder rather than copying it: its hooks run `thou_hooks.py` from the folder above it. If you set `ME_HOME`, set it for goose itself, so that the hooks and the server use the same store. goose then gives the server your messages, so remember and forget work there. The pre-tool hook stops goose's `shell`, `write`, `edit`, `tree` and `read_image` tools from reaching the store, as it stops Claude Code's, and a call it can't check doesn't run. goose has no approval prompt that the server can require, so starting, deciding, editing and turning memory on stay off there.
 
 ## What it has passed
 

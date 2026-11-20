@@ -1903,11 +1903,11 @@ class Hooks(StoreTest):
         self.work = os.path.join(self.tmp, "work")
         os.mkdir(self.work)
 
-    def run_hook(self, mode, stdin, home=None, me_home=True, script=HOOKS):
+    def run_hook(self, mode, stdin, home=None, me_home=True, script=HOOKS, client=()):
         env = {"PATH": os.environ.get("PATH", ""), "HOME": home or self.tmp}
         if me_home:
             env["ME_HOME"] = self.root
-        return subprocess.run([sys.executable, script, mode], input=stdin, env=env, text=True,
+        return subprocess.run([sys.executable, script, mode] + list(client), input=stdin, env=env, text=True,
                               capture_output=True, timeout=30, cwd=self.work)
 
     def decision(self, name, cwd=None, **tool_input):
@@ -2082,6 +2082,51 @@ class Hooks(StoreTest):
         for stdin in ("not json", "[1]"):
             out = self.run_hook("user-prompt", stdin)
             self.assertEqual((out.returncode, out.stdout), (0, ""), stdin)  # never stops the message
+
+    def test_goose_hooks(self):
+        """goose's plugin hooks: its prompt event, and its developer tools behind the same fence (exit 2: deny)."""
+        goose = ("goose",)
+        event = {"event": "UserPromptSubmit", "session_id": "s", "message": "Forget my test date.",
+                 "working_dir": self.work}
+        out = self.run_hook("user-prompt", json.dumps(event), client=goose)
+        self.assertEqual((out.returncode, out.stdout), (0, ""), out.stderr)
+        self.assertEqual(self.kept(), "Forget my test date.")
+        self.assertEqual(self.run_hook("session-end", json.dumps({"event": "SessionEnd"}), client=goose).returncode, 0)
+        self.assertIsNone(self.kept())
+        me = os.path.join(self.root, "me.md")
+
+        def decide(name, cwd=None, **tool_input):
+            out = self.run_hook("pre-tool-use", json.dumps({"event": "PreToolUse", "session_id": "s",
+                                                            "tool_name": name, "tool_input": tool_input,
+                                                            "working_dir": cwd or self.work}), client=goose)
+            self.assertEqual(out.stdout, "")
+            self.assertIn(out.returncode, (0, 2), out.stderr)
+            if out.returncode == 2:
+                self.assertIn("thou", out.stderr)
+            return "deny" if out.returncode == 2 else "allow"
+        for name, cwd, args in [("shell", None, {"command": "cat %s" % me}),
+                                ("developer__shell", self.root, {"command": "cat me.md"}),
+                                ("write", None, {"path": me, "content": "x"}),
+                                ("edit", None, {"path": me, "before": "a", "after": "b"}),
+                                ("tree", None, {"path": self.root, "depth": 2}), ("read_image", None, {"source": me})]:
+            self.assertEqual(decide(name, cwd=cwd, **args), "deny", name)
+        self.assertEqual(decide("shell", command="ls /tmp"), "allow")
+        self.assertEqual(decide("write", path=os.path.join(self.work, "note.md"), content="x"), "allow")
+        self.assertEqual(decide("personal__inbox_read", id="1"), "allow")
+        out = self.run_hook("pre-tool-use", "not json", client=goose)
+        self.assertEqual(out.returncode, 2)  # fails closed
+        self.assertEqual(self.run_hook("session-start", "{}", client=goose).returncode, 2)  # not a goose hook
+        with open(os.path.join(os.path.dirname(HOOKS), "goose", "hooks", "hooks.json")) as handle:
+            hooks = json.load(handle)["hooks"]
+        modes = {event: entry["hooks"][0]["command"].split("thou_hooks.py\" ", 1)[1].split()
+                 for event, (entry,) in hooks.items()}
+        self.assertEqual(modes, {"UserPromptSubmit": ["user-prompt", "goose"], "SessionEnd": ["session-end", "goose"],
+                                 "PreToolUse": ["pre-tool-use", "goose"]})
+        fence = hooks["PreToolUse"][0]
+        self.assertEqual(fence["hooks"][0]["on_failure"], "block")
+        for name in ("shell", "write", "edit", "tree", "read_image", "developer__shell"):
+            self.assertTrue(re.search(fence["matcher"], name), name)
+        self.assertIsNone(re.search(fence["matcher"], "personal__send_message"))
 
     def test_the_fence_covers_the_kept_message(self):
         folder = os.path.join(self.tmp, ".local", "state", "thou", "said")
