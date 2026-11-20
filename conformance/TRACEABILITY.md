@@ -42,6 +42,7 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | H5.1 | Off takes effect for new sessions, and at the next recall or write | R | T3 |
 | H5.2 | Forget and delete remove content from all host state | S | T14 |
 | H5.3 | Tell the person what cannot be deleted | S | review: documentation |
+| H5.4 | Keep forgotten words out of the host's own proposals (SHOULD) | P | review (planned runner: forget, then lead the host to the same words by implication; no proposal holds them) |
 | H6.1 | Stored context and proposals are untrusted | R | T4, T10 |
 | H6.2 | Confine reads and writes to the store | R | T6 |
 | H6.3 | No transmission beyond the model call without consent | R | review: network behavior (planned runner) |
@@ -103,6 +104,13 @@ Levels: R = Reader, P = Proposer, S = Steward, B = Briefer.
 | S8.7 | Change first, journal second; report a failed receipt | S | review (planned runner: fail the journal write) |
 | S8.8 | Ignore conflict copies, or treat them as invalid proposals; tell the person (SHOULD) | S | review |
 | S9.1 | Never claim encryption that is not there | R | review: documentation |
+| S10.1 | `forgotten.json` holds a salt and hashes, never words or file names (MAY) | S | lint (fixture `forgotten-words`) |
+| S10.2 | Never recall `forgotten.json` or give it to an agent | R | review |
+| S10.3 | Keep items of an unknown method, and don't match them | P | review |
+| S10.4 | Leave forgotten lines out of a proposal; say how many (SHOULD) | P | review (planned runner, as H5.4) |
+| S10.5 | An item goes on undo or when the person says the words again; 500 at most | S | review; lint warns past 500 |
+| S10.6 | Change it under the lock; leave an unreadable file alone and tell the person | S | review |
+| S10.7 | Hashes are not secrecy | R | review: documentation |
 
 ## BRIEFING.md
 

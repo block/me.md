@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(HERE)), "tools"))
 
 from thou_host import formats  # noqa: E402
+from thou_host.formats import Proposal  # noqa: E402
 from thou_host.host import Host, HostError  # noqa: E402
 from thou_host.storefs import Missing, location  # noqa: E402
 
@@ -815,6 +816,152 @@ class Forget(StoreTest):
         self.assertEqual(self.read("me.md"), b"- I run a shop.\n")
 
 
+class Forgotten(StoreTest):
+    """forgotten.json: forgotten words don't come back in a proposal, and the file holds no words (STORE S10)."""
+
+    def items(self):
+        from thou_host import forgotten
+        return forgotten.parse(self.read(forgotten.FILE))["items"]
+
+    def body(self, answer):
+        return Proposal(answer["proposal"] + ".md", self.read(answer["file"])).body
+
+    def test_a_forget_keeps_hashes_not_words(self):
+        self.write("me.md", "- I'm vegetarian.\n- I build bikes in Leeds.\n")
+        answer = self.host.forget("me.md", "- I'm vegetarian.")
+        self.assertRegex(answer["forgotten"], r"^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{6}$")
+        data = self.read("forgotten.json")
+        for word in (b"vegetarian", b"vegetar", b"me.md", b"Leeds"):
+            self.assertNotIn(word, data)
+        items = self.items()
+        self.assertEqual([i["id"] for i in items], [answer["forgotten"]])
+        self.assertEqual(items[0]["method"], "thou-stems-1")
+        self.assertNotIn(b"forgotten.json", self.read("journal.md"))  # part of the forget: no entry of its own
+        self.assertEqual(self.host.recall(["forgotten.json"])["files"], [])  # never recalled (S10.2)
+        self.assertEqual(self.code(self.host.edit, "forgotten.json", "append", text="x"), "bad_path")
+        self.lint()
+
+    def test_a_proposal_leaves_out_forgotten_lines(self):
+        self.write("me.md", "- I'm vegetarian.\n- I build bikes.\n")
+        self.host.forget("me.md", "- I'm vegetarian.")
+        for again in ("- I'm vegetarian.", "Vegetarian", "- Not vegetarian anymore, don't re-add it."):
+            self.assertEqual(self.code(self.host.propose, "me.md", again, "You said so."), "forgotten", again)
+        answer = self.host.propose("me.md", "- I'm vegetarian.\n- I take the 8:10 train.\n", "You said so.")
+        self.assertEqual(self.body(answer), "- I take the 8:10 train.\n")
+        self.assertTrue(any("I left out 1 line" in n for n in answer["notices"]), answer["notices"])
+        self.assertFalse(any("vegetarian" in n for n in answer["notices"]))  # nor which words it matched
+        self.lint()
+
+    def test_a_not_counts_only_for_lifting(self):
+        self.write("me.md", "- I'm not vegetarian.\n- I build bikes.\n")
+        self.host.forget("me.md", "- I'm not vegetarian.")
+        self.assertEqual(self.code(self.host.propose, "me.md", "- I'm vegetarian.", "x"), "forgotten")
+        self.host.edit("me.md", "append", text="I'm vegetarian.")
+        self.assertEqual(len(self.items()), 1)  # without the "not", another fact: still kept out
+        self.host.edit("me.md", "append", text="I'm not vegetarian.")
+        self.assertEqual(self.items(), [])  # said again in their own words, with the same "not"
+
+    def test_every_sentence_is_said_again(self):
+        self.write("me.md", "- I build bikes.\n")
+        self.write("topics/garden.md", "I grow tomatoes on the balcony.\nThe allotment is plot 14.\n")
+        self.host.forget("topics/garden.md")
+        self.host.edit("me.md", "append", text="I grow tomatoes on the balcony.")
+        self.assertEqual(len(self.items()), 1)  # one of its two sentences
+        self.assertEqual(self.code(self.host.propose, "me.md", "- The allotment is plot 14.", "x"), "forgotten")
+        self.host.edit("me.md", "append", text="I grow tomatoes on the balcony. The allotment is plot 14.")
+        self.assertEqual(self.items(), [])
+
+    def test_part_of_a_line_and_a_whole_file(self):
+        self.write("me.md", "- I'm learning to drive and my test is in March.\n")
+        self.host.forget("me.md", " and my test is in March")
+        self.assertEqual(self.code(self.host.propose, "me.md", "- My driving test is in March.", "x"), "forgotten")
+        self.assertTrue(self.host.propose("me.md", "- I'm learning to drive.", "x")["proposal"])
+        self.assertTrue(self.host.propose("me.md", "- My test is on Monday.", "x")["proposal"])  # 1 of 2 words
+        self.write("topics/garden.md", "I grow tomatoes on the balcony.\nThe allotment is plot 14.\n")
+        self.host.forget("topics/garden.md")
+        self.assertEqual(self.code(self.host.propose, "me.md", "- My allotment is plot 14.", "x"), "forgotten")
+        self.assertEqual(len(self.items()), 2)
+
+    def test_saying_it_again_lifts_it_with_the_same_not(self):
+        self.write("me.md", "- I'm vegetarian.\n")
+        self.host.forget("me.md", "- I'm vegetarian.")
+        self.host.edit("me.md", "append", text="I'm not vegetarian anymore.")
+        self.assertEqual(len(self.items()), 1)  # a "not" is another fact: still kept out
+        self.assertEqual(self.code(self.host.propose, "me.md", "- I'm vegetarian.", "x"), "forgotten")
+        self.host.edit("me.md", "replace", old="I'm not vegetarian anymore.", new="I'm vegetarian again.")
+        self.assertEqual(self.items(), [])
+        self.assertTrue(self.host.propose("me.md", "- Vegetarian.", "x")["proposal"])
+
+    def test_an_accepted_proposal_lifts_it(self):
+        self.write("me.md", "- I'm vegetarian.\n")
+        waiting = self.host.propose("me.md", "- I'm vegetarian since 2019.", "x")["proposal"]
+        self.host.forget("me.md", "- I'm vegetarian.")
+        self.assertEqual(len(self.items()), 1)
+        self.host.decide(waiting, "accept")
+        self.assertEqual(self.items(), [])
+
+    def test_bring_back_takes_only_the_same_words(self):
+        self.write("me.md", "- I'm learning to drive and my test is in March.\n")
+        item = self.host.forget("me.md", " and my test is in March")["forgotten"]
+        before = self.read("me.md")
+        for other in ("My test is in May.", "My test is in March and I'm nervous.", "Test"):
+            self.assertEqual(self.code(self.host.bring_back, item, "me.md", other), "not_forgotten", other)
+        self.assertEqual(self.read("me.md"), before)
+        self.assertEqual(self.code(self.host.bring_back, "20261120T000000Z-000000", "me.md", "My test is in March."),
+                         "not_forgotten")
+        self.host.bring_back(item, "me.md", "My test is in March.")
+        self.assertEqual(self.read("me.md"), b"- I'm learning to drive.\nMy test is in March.\n")
+        self.assertEqual(self.items(), [])
+        self.assertIn("added text", self.read("journal.md").decode("utf-8").splitlines()[-1])
+
+    def test_a_file_that_cant_be_read_is_left_alone(self):
+        self.write("me.md", "- I'm vegetarian.\n- I build bikes.\n")
+        self.write("forgotten.json", "not json\n")
+        answer = self.host.forget("me.md", "- I'm vegetarian.")
+        self.assertNotIn("forgotten", answer)
+        self.assertTrue(any("forgotten.json can't be written" in n for n in answer["notices"]))
+        self.assertEqual(self.read("forgotten.json"), b"not json\n")
+        answer = self.host.propose("me.md", "- I'm vegetarian.", "x")  # fails open, and says so
+        self.assertTrue(any("forgotten.json can't be read" in n for n in answer["notices"]))
+        os.remove(self.path("forgotten.json"))
+        elsewhere = json.dumps({"salt": "ab" * 16, "items": []})
+        self.write("elsewhere.json", elsewhere)
+        os.symlink(self.path("elsewhere.json"), self.path("forgotten.json"))
+        answer = self.host.forget("me.md", "- I build bikes.")
+        self.assertTrue(any("forgotten.json can't be written" in n for n in answer["notices"]))
+        self.assertTrue(os.path.islink(self.path("forgotten.json")))
+        self.assertEqual(self.read("elsewhere.json"), elsewhere.encode("utf-8"))
+        os.remove(self.path("forgotten.json"))
+        extra = json.dumps({"salt": "ab" * 16, "items": [], "words": ["bikes"]})
+        self.write("forgotten.json", extra)  # only salt and items (S10.1)
+        self.write("me.md", "- I swim on Fridays.\n")
+        answer = self.host.forget("me.md", "- I swim on Fridays.")
+        self.assertTrue(any("forgotten.json can't be written" in n for n in answer["notices"]))
+        self.assertEqual(self.read("forgotten.json"), extra.encode("utf-8"))
+
+    def test_unknown_methods_stay_and_the_oldest_go(self):
+        from thou_host import forgotten, said
+        salt = "ab" * 16
+        other = {"id": "x", "at": "2026-11-20T00:00:00Z", "method": "other-1",
+                 "lines": forgotten.sentence_hashes(salt, "I take the 8:10 train.")}
+        bare = {"id": "y", "at": "2026-11-20T00:00:00Z", "method": "thou-stems-1",
+                "lines": [[forgotten._hash(salt, said.NOT)]]}  # a line with only a negator holds nothing
+        self.write("forgotten.json", json.dumps({"salt": salt, "items": [other, bare]}))
+        self.write("me.md", "- I'm vegetarian.\n")
+        self.host.forget("me.md", "- I'm vegetarian.")
+        self.assertEqual(self.items()[:2], [other, bare])
+        self.assertTrue(self.host.propose("me.md", "- I take the 8:10 train.", "x")["proposal"])  # not matched
+        self.host.edit("me.md", "append", text="I take the 8:10 train.")
+        self.assertEqual(self.items()[0], other)  # nor lifted
+        data = None
+        for n in range(forgotten.MOST_ITEMS + 1):
+            data = forgotten.added(data, "id-%d" % n, "2026-11-20T00:00:00Z", "Fact number %d." % n)
+        items = forgotten.parse(data)["items"]
+        self.assertEqual(len(items), forgotten.MOST_ITEMS)
+        self.assertEqual(items[0]["id"], "id-1")
+        self.assertIsNone(forgotten.added(None, "y", "2026-11-20T00:00:00Z", "I am not."))  # no words to keep out
+
+
 class Formats(unittest.TestCase):
     def test_append_rules(self):
         self.assertEqual(formats.appended(None, "a\r\nb\n\n"), b"a\nb\n")
@@ -1244,7 +1391,8 @@ class Quoted(Served):
         self.assertTrue(answer["ok"], answer)
         self.assertEqual(self.read("me.md"), b"- I build bikes.\n")
         self.assertEqual(answer["receipt"], 'Forgotten: "- I like blue.". Every agent that uses your thou store '
-                                            'will stop using it.')
+                                            'will stop using it. Say "undo" to bring it back.')
+        self.assertNotIn("forgotten", answer)  # the item's id stays with the server
         self.assertRegex(self.journal(), r"\| me\.md \| removed text \| .* \| authority: person direct")
         from thou_host import said
         self.assertNotIn("blue", said.latest()[0])  # the layer keeps no copy of what was forgotten (H5.2)
@@ -1258,6 +1406,43 @@ class Quoted(Served):
         self.assertTrue(answer["ok"], answer)
         self.assertEqual(self.read("me.md"), b"- I'm learning to drive.\n")
         self.assertIn('The rest of that line stays: "- I\'m learning to drive."', answer["receipt"])
+
+    def test_undo_right_after_a_forget(self):
+        self.write("me.md", "- I build bikes.\n- I like blue.\n")
+        self.say("Please forget that I like blue.")
+        self.assertTrue(self.one("forget", path="me.md", text="- I like blue.",
+                                 quote="Please forget that I like blue")["ok"])
+        self.say('> Forgotten: "- I like blue.". Say "undo" to bring it back.\n\nUndo, please.')  # quoting the receipt
+        answer = self.one("remember", text="I like blue.", quote="Undo")
+        self.assertTrue(answer["ok"], answer)
+        self.assertEqual(answer["receipt"], 'Brought back: "I like blue.". Every agent that uses your thou store '
+                                            'will know it again.')
+        self.assertEqual(self.read("me.md"), b"- I build bikes.\nI like blue.\n")
+        self.assertEqual(json.loads(self.read("forgotten.json"))["items"], [])
+        self.assertEqual(self.one("remember", text="I like blue.", quote="Undo")["error"], "not_said")  # done once
+        self.assertEqual(self.read("me.md"), b"- I build bikes.\nI like blue.\n")
+
+    def test_undo_only_next_only_the_same_words_only_this_session(self):
+        from thou_host import said
+        lines = "- I build bikes.\n- I like blue.\n"
+        for between, words, then in [("What's the weather like?", "I like blue.", "undo"),  # not the next message
+                                     (None, "I like red.", "undo"),  # other words
+                                     (None, "I like blue and red.", "undo"),  # more words
+                                     (None, "I like blue.", "> undo"),  # pasted
+                                     ("session", "I like blue.", "undo")]:  # another session
+            self.write("me.md", lines)
+            self.say("Please forget that I like blue.")
+            self.assertTrue(self.one("forget", path="me.md", text="- I like blue.",
+                                     quote="Please forget that I like blue")["ok"])
+            if between == "session":
+                said.clear()
+                del self.server
+            elif between:
+                self.say(between)
+            self.say(then)
+            answer = self.one("remember", text=words, quote="undo")
+            self.assertEqual(answer.get("error"), "not_said", (between, words, then, answer))
+            self.assertEqual(self.read("me.md"), b"- I build bikes.\n", (between, words, then))
 
     def test_remember_in_the_persons_words(self):
         self.say("Remember that Mondays are soccer.")

@@ -12,6 +12,7 @@ import secrets
 import time
 
 from . import formats
+from . import forgotten
 from .formats import Proposal, as_shown, normalize
 from .storefs import Changing, Locked, Missing, StoreFS, location
 
@@ -195,6 +196,75 @@ class Host:
                 raise HostError("refused", "You refused these words before (proposals/%s is %s), so I will not "
                                            "propose them again (S6.11)." % (formats.shown_name(p.name), why))
 
+    def _forgotten(self):
+        """forgotten.json's object, or None when there is none (S10). Raises forgotten.Unreadable."""
+        kind = self.fs.kind(forgotten.FILE)
+        if kind == "missing":
+            return None
+        if kind != "file":
+            raise forgotten.Unreadable("it is a symbolic link or not a regular file")
+        try:
+            return forgotten.parse(self.fs.read_or_none(forgotten.FILE))
+        except Missing as exc:
+            raise forgotten.Unreadable(exc.why)
+
+    def _not_forgotten(self, body, notices):
+        """S10.4: the body without the lines that hold words the person asked to forget."""
+        try:
+            obj = self._forgotten()
+        except forgotten.Unreadable as exc:
+            notices.append("forgotten.json can't be read (%s), so I couldn't check this proposal against what the "
+                           "person asked to forget." % exc)
+            return body
+        kept, left_out = forgotten.kept_lines(obj, body)
+        if left_out and normalize(kept) == "":
+            raise HostError("forgotten", "The person asked to forget words like these, so I proposed nothing "
+                                         "(S10.4). Don't propose them again.")
+        if left_out:
+            notices.append("I left out %d line%s of the proposal: the person asked to forget words like %s, so "
+                           "they aren't proposed again (S10.4)." % (left_out, "" if left_out == 1 else "s",
+                                                                   "it" if left_out == 1 else "them"))
+        return kept
+
+    def _tombstone(self, text, notices):
+        """S10.1: an item in forgotten.json for the forgotten words, written with the lock held. Its id, or None."""
+        item_id = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + secrets.token_hex(3)
+        made = []
+
+        def add(old):
+            new = forgotten.added(old, item_id, formats.now(), text)
+            if new is not None:
+                made.append(item_id)
+            return new
+        try:
+            self.fs.replace(forgotten.FILE, add)  # refuses a symbolic link
+        except (forgotten.Unreadable, Missing, OSError) as exc:
+            notices.append("forgotten.json can't be written (%s), so nothing stops a proposal from bringing these "
+                           "words back. Refuse any proposal that holds them." % (getattr(exc, "why", None) or exc))
+            return None
+        return made[-1] if made else None
+
+    def _lift(self, text):
+        """S10.5: words the person adds again in their own words are no longer kept out. With the lock held."""
+        try:
+            ids = {i["id"] for i in forgotten.covered_items(self._forgotten(), text)}
+            if ids:
+                self.fs.replace(forgotten.FILE, lambda old: forgotten.without(old, ids))
+        except (forgotten.Unreadable, Missing, OSError):
+            pass  # nothing to lift that this host can read
+
+    def bring_back(self, item_id, path, text, agent=None):
+        """Undo a forget: the same words back in path, at the person's word. Adding them lifts their item (S10.5)."""
+        try:
+            obj = self._forgotten()
+        except forgotten.Unreadable as exc:
+            raise HostError("bad_request", "forgotten.json can't be read (%s), so I can't tell these are the "
+                                           "words that were forgotten." % exc)
+        if not forgotten.same_words(obj, item_id, text):
+            raise HostError("not_forgotten", "These aren't the words that were forgotten. Nothing changed. Pass the "
+                                             "same words you forgot, and nothing more.")
+        return self.edit(path, "append", text=text, agent=agent)
+
     # --- Reader ---
 
     def mount(self):
@@ -313,6 +383,8 @@ class Host:
             raise HostError("bad_request", "A proposal needs a basis: why, in words the person will recognize.")
         self._visible(body, "The proposal")
         self._visible(basis, "The basis")
+        notices = []
+        body = self._not_forgotten(body, notices)  # S10.4
         self._not_refused(body)  # H3.3: read the refusals first
         waiting = sum(1 for p in self._proposals()[0] if p.valid and p.status == "pending")
         if waiting >= MOST_PENDING:
@@ -331,7 +403,7 @@ class Host:
             except Missing as exc:
                 raise HostError("bad_request", "I could not create the proposal: %s." % exc.why)
             s = self.state()
-            return self._answer(s, proposal=pid, file="proposals/%s.md" % pid)
+            return self._answer(s, proposal=pid, file="proposals/%s.md" % pid, notices=notices)
         raise HostError("bad_request", "I could not find a free proposal name.")
 
     # --- Steward ---
@@ -413,6 +485,7 @@ class Host:
                 except Missing as exc:
                     raise HostError("bad_target", "I will not write %s: %s." % (target, exc.why))
                 applied = "added" if new is not None else "already"
+                self._lift(p.body)
                 break
             else:
                 raise Changing("%s kept changing while I tried to accept it, so I made no change" % rel)
@@ -492,6 +565,7 @@ class Host:
             token = self._lock(agent)
             try:
                 before, after = self.fs.replace(path, lambda data: formats.appended(data, text))
+                self._lift(text)
             except Missing as exc:
                 raise HostError("bad_path", "I will not write %s: %s." % (path, exc.why))
             finally:
@@ -523,6 +597,7 @@ class Host:
                         raise HostError("ambiguous", "Those words appear more than once in %s." % path)
                     return data[:at] + b + data[at + len(a):]
                 _, after = self.fs.replace(path, swap)
+                self._lift(new)
             except Missing as exc:
                 raise HostError("bad_path", "I will not write %s: %s." % (path, exc.why))
             finally:
@@ -552,6 +627,7 @@ class Host:
             if kind != "file":
                 raise HostError("bad_path", "%s is a symbolic link or not a regular file." % path)
             if text is None:
+                gone = self.fs.read_or_none(path) or b""
                 self.fs.remove(path)
                 removed = 1
                 entries.append(formats.journal_entry(path, "deleted the file", who, "person direct"))
@@ -573,6 +649,7 @@ class Host:
                 self.fs.replace(path, cut)
                 removed = counted[-1]
                 entries.append(formats.journal_entry(path, "removed text", who, "person direct"))
+            tombstone = self._tombstone(text if text is not None else gone.decode("utf-8", "replace"), notices)
             wanted = normalize(text) if text is not None else None
             try:
                 self._forget_proposals(path, wanted, who, entries, notices)
@@ -592,7 +669,8 @@ class Host:
             notices.append("The store is a git repository, so its history still holds the words until you "
                            "rewrite it.")
         journal = self._journal(entries, notices)
-        return self._answer(self.state(), removed=removed, journal=journal, notices=notices)
+        more = {"forgotten": tombstone} if tombstone else {}
+        return self._answer(self.state(), removed=removed, journal=journal, notices=notices, **more)
 
     def _forget_proposals(self, path, wanted, who, entries, notices):
         found, more = self._proposals()

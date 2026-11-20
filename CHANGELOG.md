@@ -21,12 +21,14 @@ To publish a release:
 - The [thou layer for Claude Code](./layer/README.md). Install it once, and every Claude Code session starts from your `me.md`. What Claude notices about you waits for your yes, Claude Code asks you to approve every change with its words in front of you, and `policy.json` turns it off. It can also start your `me.md`, with only your words. It refuses words you couldn't see in full, and its README shows how to make its fence a wall with Claude Code's sandbox.
 - If `policy.json` disappears after the switch was set, for example in a sync or a restore, memory stays off until you turn it on again. A store that never had a `policy.json` stays on.
 - In the layer, "remember …" and "forget …" in your own words are done at once, and Claude tells you the receipt. Words you pasted, quoted or reported from someone else, and words from anything Claude read, change nothing; Claude asks you to say it yourself. A question, a "don't" before the verb or a doubt ("I'm not sure I want you to forget…") asks for nothing, and a "not" counts as one of your words. Forget can remove a whole clause from inside a line.
+- After a forget, a proposal can't bring the same words back, even with a "not" in front. Say "undo" in your next message to bring them back.
 
 ### For hosts
 
 - `layer/` is a host at the Steward level that keeps the rules in code: the off switch, the store's edges, proposals, refusals, the lock and the journal. Its MCP server marks the tools that act on the person's say-so as needing the person's approval on every call, and `decide` names the proposal's target and words so the approval shows them. It makes no conformance claim.
 - `layer/`: `remember` and `forget` rest on the person's own words, as a direct edit ([HOST.md H3.7](./HOST.md#3-writing)). A `UserPromptSubmit` hook keeps the person's latest message outside the store, and the server checks each call's `quote` against the words the person wrote themselves (`layer/thou_host/said.py`). `start`, `decide`, `edit` and `policy` keep the approval prompt.
 - [STORE.md S5.1](./STORE.md#5-policyjson): a missing `policy.json` means off when `journal.md` has an entry for `policy.json`. A host reads `journal.md` for this before any other file ([HOST.md H1.5](./HOST.md#1-mounting)). `thou_lint.py` follows, with the fixture `policy-gone-off`.
+- [STORE.md §10](./STORE.md#10-forgottenjson): an optional `forgotten.json` keeps forgotten words out of proposals, as salted hashes with no words ([REVOCATION.md](./REVOCATION.md) bounded tombstone). [HOST.md H5.2](./HOST.md#5-revocation) allows it as the one thing derived from forgotten content that a host keeps, and H5.4 asks a host to keep forgotten words out of its own proposals. `thou_lint.py` checks the file, with the fixture `forgotten-words`. The layer writes it at forget time, and `undo` in the person's next message lifts only that session's item.
 
 ## 0.1.0 — 2026-11-17
 

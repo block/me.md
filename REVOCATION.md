@@ -306,7 +306,7 @@ When semantics are unclear:
 - filesystem deletion methods;
 - secure erasure guarantees;
 - backup retention periods;
-- tombstone schemas;
+- tombstone schemas, beyond the optional `forgotten.json` in [STORE.md §10](./STORE.md#10-forgottenjson);
 - synchronization protocols;
 - projection APIs;
 - provider log policies;

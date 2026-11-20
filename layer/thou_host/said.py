@@ -454,6 +454,16 @@ def _blanked(sentence, op):
     return out
 
 
+_UNDO = re.compile(r"(?i)^(?:please )?(?:undo(?: that| it| this)?|bring (?:it|that) back|put (?:it|that) back)"
+                   r"(?:,? please)?$")
+
+
+def is_undo(prompt):
+    """A bare "undo", in the person's own words."""
+    own = own_sentences(prompt)
+    return len(own) == 1 and bool(_UNDO.match(_plain(own[0])))
+
+
 def is_yes(prompt):
     """A bare yes, in the person's own words."""
     own = own_sentences(prompt)

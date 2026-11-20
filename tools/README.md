@@ -10,6 +10,7 @@
 - `watches.md`: counts the top-level list items outside fenced code blocks.
 - Proposals: file name and id, front matter grammar, duplicate keys, required keys and empty values, `status` values, `target`, times, and a non-empty body. The status comes only from the front matter. A `status:` line in the body is reported as a note and otherwise ignored.
 - Refusals: a pending proposal whose normalized body equals a refused proposal's body, for any target, is an error if it was proposed after the refusal. A pending proposal with the same body as an invalid proposal is a warning, because hosts treat an invalid proposal as refused.
+- `forgotten.json`, when there is one: an object with only `salt` and `items`, each item with only `id`, `at`, `method` and `lines`, and every line a list of hashes, never words. A symlink is a warning, and so are more than 500 items.
 - `journal.md`: every line that starts with `- ` is an entry and must match the entry grammar. Other lines are ignored. Every accepted or refused proposal should have a decision entry, and every accepted one a content entry. A missing entry is a warning, because the person may have decided by editing the file by hand.
 
 Times and digits are ASCII only. Names that hosts ignore are warnings. Anything that breaks the format is an error.

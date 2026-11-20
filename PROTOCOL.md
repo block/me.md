@@ -15,6 +15,7 @@ A harness that can read and write files and keep a standing instruction can serv
   proposals/     one file per proposal, with a status: pending, accepted, or refused
   journal.md     one line per durable change: when, what, which host, whose authority
   policy.json    the off switch: on if "state" is exactly "on", or if missing and never set; otherwise off
+  forgotten.json optional: salted hashes that keep forgotten words out of proposals, never the words
 ```
 
 The store is at `$ME_HOME` if that is set, and at `~/.me/` otherwise. Memory starts when `me.md` exists. A store with only `me.md` is valid.

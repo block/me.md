@@ -199,6 +199,56 @@ def check_policy(rep, root):
                       "this store, except to turn memory off" % shown)
 
 
+HASH_RE = re.compile(r"[0-9a-f]{16,64}")
+SALT_RE = re.compile(r"[0-9a-f]{32,64}")
+MOST_FORGOTTEN = 500
+
+
+def check_forgotten(rep, root):
+    """S10: forgotten.json holds a salt and hashes, and no words."""
+    rel = "forgotten.json"
+    if not os.path.lexists(os.path.join(root, rel)):
+        return
+    if os.path.islink(os.path.join(root, rel)):
+        rep.warn(rel, "forgotten.json is a symbolic link, so hosts leave it alone and nothing keeps forgotten "
+                      "words out of proposals (S10.6)")
+        return
+    text = read_text(rep, root, rel)
+    if text is None:
+        return
+    try:
+        data = json.loads(text, object_pairs_hook=strict_object, parse_constant=reject_constant)
+    except (ValueError, RecursionError):
+        rep.error(rel, "forgotten.json is not valid JSON, so hosts leave it alone (S10.6)")
+        return
+    if not isinstance(data, dict) or set(data) != {"salt", "items"}:
+        rep.error(rel, "forgotten.json must be an object with only salt and items, and no other text (S10.1)")
+        return
+    if not isinstance(data["salt"], str) or not SALT_RE.fullmatch(data["salt"]):
+        rep.error(rel, "salt must be 32 to 64 lowercase hex characters (S10.1)")
+    items = data["items"] if isinstance(data["items"], list) else None
+    if items is None:
+        rep.error(rel, "items must be a list (S10.1)")
+        return
+    rep.counts["forgotten"] = len(items)
+    if len(items) > MOST_FORGOTTEN:
+        rep.warn(rel, "%d items: a host keeps at most %d, and drops the oldest (S10.5)" % (len(items), MOST_FORGOTTEN))
+    for number, item in enumerate(items, 1):
+        if not isinstance(item, dict) or set(item) != {"id", "at", "method", "lines"}:
+            rep.error(rel, "item %d must have only id, at, method and lines (S10.1)" % number)
+            continue
+        if not all(isinstance(item[k], str) and item[k] for k in ("id", "method")):
+            rep.error(rel, "item %d: id and method must be strings (S10.1)" % number)
+        if not isinstance(item["at"], str) or not rfc3339(item["at"]):
+            rep.error(rel, "item %d: at must be RFC 3339 UTC with Z, such as 2026-11-20T15:30:00Z (S10.1)" % number)
+        lines = item["lines"]
+        if not isinstance(lines, list) or not lines or not all(
+                isinstance(line, list) and line and all(isinstance(h, str) and HASH_RE.fullmatch(h) for h in line)
+                for line in lines):
+            rep.error(rel, "item %d: lines must be lists of hashes (16 to 64 lowercase hex characters), never "
+                           "words (S10.1)" % number)
+
+
 def list_entries(rep, root, folder, name_re, name_rule):
     """Return the valid-named regular entries of a folder. Reports the rest."""
     path = os.path.join(root, folder)
@@ -452,6 +502,7 @@ def lint(root):
     entries = []
     if os.path.lexists(os.path.join(root, "journal.md")):
         entries = check_journal(rep, root)
+    check_forgotten(rep, root)
     check_refusals(rep, records)
     check_decisions(rep, records, entries)
     return rep

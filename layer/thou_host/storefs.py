@@ -20,7 +20,7 @@ O_BINARY = getattr(os, "O_BINARY", 0)
 
 # The only paths a host touches (S2, S8.2, S8.4).
 _NAME = r"[a-z0-9][a-z0-9._-]{0,63}\.md"
-_PATH_RE = re.compile(r"(?:me\.md|watches\.md|journal\.md|policy\.json|\.me\.lock"
+_PATH_RE = re.compile(r"(?:me\.md|watches\.md|journal\.md|policy\.json|forgotten\.json|\.me\.lock"
                       r"|(?:topics|projects)/" + _NAME + r"|proposals/[^/\\\x00]+)")
 LOCK = ".me.lock"
 

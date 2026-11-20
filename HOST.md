@@ -79,8 +79,9 @@ The requirement is that another conforming host, or the person, can answer "why 
 ### 5. Revocation
 
 - **H5.1** (Reader) Turning memory off MUST take effect for new sessions immediately, and at the next recall or write in an active session (H1.6).
-- **H5.2** (Steward) Forget and delete MUST remove the content from all state the host controls, including its caches and anything it derived from that content. A host MUST NOT bring back deleted content from its own copies.
+- **H5.2** (Steward) Forget and delete MUST remove the content from all state the host controls, including its caches and anything it derived from that content. The one exception is an item in `forgotten.json`, which holds hashes and no words ([STORE.md §10](./STORE.md#10-forgottenjson)). A host MUST NOT bring back deleted content from its own copies.
 - **H5.3** (Steward) A host MUST tell the person what it cannot delete, such as a model provider's logs or a copy that was already exported. It MUST NOT say that such content is deleted.
+- **H5.4** (Proposer) A host SHOULD keep words the person asked to forget from coming back in its own proposals, for example with `forgotten.json` ([STORE.md S10.4](./STORE.md#10-forgottenjson)).
 
 ### 6. Security posture
 

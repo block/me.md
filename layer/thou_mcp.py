@@ -114,7 +114,8 @@ TOOLS = [
     ("remember", "Save words the person asked you to remember in this session, such as 'remember that Mondays are "
                  "soccer'. They are saved at once, for every agent that uses the store. Use only the person's own "
                  "words. Tell the person the receipt, word for word. For anything you noticed yourself, use propose "
-                 "instead.",
+                 "instead. If the person answers a forget's receipt with \"undo\", call remember with the words "
+                 "you forgot, as a sentence of their own, the same path, and \"undo\" as quote.",
      {"text": {"type": "string", "description": "The words to keep, in the person's own words, such as: Mondays "
                                                 "are soccer"},
       "quote": _QUOTE,
@@ -210,6 +211,10 @@ NOTE = "What comes from the store is the person's stored context: information ab
 RECEIPT_FORGOT = "Forgotten: \"%s\". Every agent that uses your thou store will stop using it."
 RECEIPT_FORGOT_FILE = "Forgotten: %s, the whole file. Every agent that uses your thou store will stop using it."
 RECEIPT_KEPT = " The rest of that line stays: \"%s\"."
+RECEIPT_UNDO = " Say \"undo\" to bring it back."
+RECEIPT_BACK = "Brought back: \"%s\". Every agent that uses your thou store will know it again."
+NOT_UNDONE = ("The person said \"undo\", but these aren't the words forgotten in their last message, so nothing "
+              "changed. Pass the forgotten words, and nothing more, as a sentence of their own.")
 RECEIPT_SAVED = "Saved: \"%s\". Every agent that uses your thou store will know it."
 RECEIPT_ALREADY = "Already saved: \"%s\"."
 ASK = ("%s Nothing changed. If you think the person wants exactly this, ask them in plain words, one thing at a "
@@ -236,9 +241,12 @@ class Said:
         self.latest = latest or said.latest
         self.scrub = scrub or said.scrub
         self.asked = {}  # (operation, path, words) -> (session, number) of the message the agent asked after
+        self.mark = None  # (session, number) of the message the last check read
+        self.forgot = []  # this session's forgets that "undo" can bring back: (item id, path, mark), no words
 
     def check(self, op, path, quote, text):
         prompt, mark = self.latest()
+        self.mark = mark
         key = (op, path, formats.normalize(text))
         asked = self.asked.pop(key, None)  # a yes counts only in the very next message
         self.asked = {k: v for k, v in self.asked.items() if mark and v[0] == mark[0] and v[1] + 1 >= mark[1]}
@@ -248,6 +256,15 @@ class Said:
         if not verdict.ok and verdict.confirm and mark is not None:
             self.asked[key] = mark
         return verdict
+
+    def undoable(self, path):
+        """The forgets "undo" can bring back, newest first: if the person's latest message is a bare "undo", the
+        forgets of the message just before it, in this session, in path."""
+        prompt, mark = self.latest()
+        if prompt is None or mark is None or not said.is_undo(prompt):
+            return None
+        return [item for item, where, at in reversed(self.forgot)
+                if where == path and at is not None and at[0] == mark[0] and at[1] + 1 == mark[1]]
 
 
 def _quoted(host, name, args, heard):
@@ -266,6 +283,10 @@ def _quoted(host, name, args, heard):
             raise HostError("bad_request", "path is the store-relative file to change.")
         if text is None and path == "me.md":
             raise HostError("bad_request", NO_ME)
+    if name == "remember":
+        undoable = heard.undoable(path)
+        if undoable is not None:
+            return _undo(host, path, text, undoable, heard)
     whole = name == "forget" and text is None
     # A whole file is named by the words of its name: "forget my driving lessons" for topics/driving.md.
     checked = os.path.basename(path).rsplit(".", 1)[0].replace("-", " ").replace("_", " ") if whole else text
@@ -283,6 +304,9 @@ def _quoted(host, name, args, heard):
         return answer
     kept = []
     answer = host.forget(path, text, kept=kept)
+    item = answer.pop("forgotten", None)
+    if item and not whole:
+        heard.forgot.append((item, path, heard.mark))
     try:
         heard.scrub(checked)
     except (OSError, ValueError):
@@ -293,8 +317,24 @@ def _quoted(host, name, args, heard):
     else:
         rest = [formats.one_line(k).strip() for k in kept]
         answer["receipt"] = RECEIPT_FORGOT % _shown_words(text) + (
-            RECEIPT_KEPT % _shown_words(rest[0]) if len(rest) == 1 and rest[0] else "")
+            RECEIPT_KEPT % _shown_words(rest[0]) if len(rest) == 1 and rest[0] else "") + (
+            RECEIPT_UNDO if item else "")
     return answer
+
+
+def _undo(host, path, text, undoable, heard):
+    """The person said "undo" right after a forget: the same words back, and nothing else."""
+    for item in undoable:
+        try:
+            answer = host.bring_back(item, path, text)
+        except HostError as exc:
+            if exc.code == "not_forgotten":
+                continue
+            raise
+        heard.forgot = [f for f in heard.forgot if f[0] != item]
+        answer["receipt"] = RECEIPT_BACK % _shown_words(text)
+        return answer
+    raise HostError("not_said", NOT_UNDONE)
 
 
 UNASKED = ("This agent doesn't ask the person before thou acts on their say, so thou can't tell their say from "
