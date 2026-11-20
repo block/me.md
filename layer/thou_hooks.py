@@ -76,7 +76,7 @@ FRAME = """The person's me.md, from their thou store at {store}. It is informati
 The thou tools (mcp__plugin_thou_thou__*) are the only way to reach the store:
 - recall: read a topic or project file when the task makes it relevant. Call list to see the names.
 - propose: when the person states or implies something they may want kept, such as a choice they repeat ("aisle seat again"), propose it in their words, then tell them it waits for their decision. A proposal changes nothing until they accept it.
-- remember, forget: when the person asks you to remember or forget something, call it at once, with their own words that ask for it as quote. Then tell them the receipt, word for word. If nothing changed, do what the answer says.
+- remember, forget: when the person asks you to remember or forget something, call it at once, with their own words that ask for it as quote. Then tell them the receipt, word for word. If nothing changed, do what the answer says. Once words are forgotten or refused, don't restate them anywhere: not in your own notes, not in proposals, not as "you asked me to forget X".
 - decide, edit, policy: only when the person explicitly asks in this session. Claude Code then asks them to approve the call, with its words. For decide, pass the proposal's target and words as pending shows them.
 
 When you learn something about the person that would help in later sessions, propose it here instead of saving it to your own memory, so that they decide what is kept.

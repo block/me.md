@@ -54,7 +54,10 @@ INSTRUCTIONS = """These tools serve the person's thou store: plain files they ow
 
 # Where the client doesn't ask the person before a call, the changes are the person's to make.
 QUOTED_RULE = ("- When the person asks you to remember or forget something, call remember or forget at once, with "
-               "their own words that ask for it as quote. Then tell them the receipt, word for word.")
+               "their own words that ask for it as quote. Then tell them the receipt, word for word.\n- Once "
+               "words are forgotten or refused, don't restate them anywhere: not in your own notes, not in "
+               "proposals, not as \"you asked me to forget X\". Only the person's \"undo\" brings forgotten words "
+               "back.")
 UNASKED_RULE = (QUOTED_RULE + "\n- This agent doesn't ask the person before these tools act, so no other change "
                 "rests on their say: there is no decide, edit or start here. To keep something you noticed, propose "
                 "it and tell the person it waits for their decision. If they ask to turn memory off, call policy "
@@ -212,6 +215,8 @@ RECEIPT_FORGOT = "Forgotten: \"%s\". Every agent that uses your thou store will 
 RECEIPT_FORGOT_FILE = "Forgotten: %s, the whole file. Every agent that uses your thou store will stop using it."
 RECEIPT_KEPT = " The rest of that line stays: \"%s\"."
 RECEIPT_UNDO = " Say \"undo\" to bring it back."
+AFTER_FORGET = ("After you tell the person the receipt, don't restate the forgotten words anywhere: not in your own "
+                "notes, not in proposals, not as \"you asked me to forget X\".")
 RECEIPT_BACK = "Brought back: \"%s\". Every agent that uses your thou store will know it again."
 NOT_UNDONE = ("The person said \"undo\", but these aren't the words forgotten in their last message, so nothing "
               "changed. Pass the forgotten words, and nothing more, as a sentence of their own.")
@@ -319,6 +324,7 @@ def _quoted(host, name, args, heard):
         answer["receipt"] = RECEIPT_FORGOT % _shown_words(text) + (
             RECEIPT_KEPT % _shown_words(rest[0]) if len(rest) == 1 and rest[0] else "") + (
             RECEIPT_UNDO if item else "")
+    answer["after"] = AFTER_FORGET
     return answer
 
 
