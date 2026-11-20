@@ -238,21 +238,21 @@ class Said:
     """The person's latest message to this client, and the confirmations the agent asked them for."""
 
     def __init__(self, latest=None, scrub=None):
-        self.latest = latest or said.latest
+        self.latest = latest or said.salted
         self.scrub = scrub or said.scrub
         self.asked = {}  # (operation, path, words) -> (session, number) of the message the agent asked after
         self.mark = None  # (session, number) of the message the last check read
         self.forgot = []  # this session's forgets that "undo" can bring back: (item id, path, mark), no words
 
     def check(self, op, path, quote, text):
-        prompt, mark = self.latest()
+        prompt, mark, salt = (tuple(self.latest()) + (None,))[:3]
         self.mark = mark
         key = (op, path, formats.normalize(text))
         asked = self.asked.pop(key, None)  # a yes counts only in the very next message
         self.asked = {k: v for k, v in self.asked.items() if mark and v[0] == mark[0] and v[1] + 1 >= mark[1]}
         if prompt is not None and asked is not None and mark == (asked[0], asked[1] + 1) and said.is_yes(prompt):
             return said.Verdict(True)
-        verdict = said.check(op, quote, text, prompt)
+        verdict = said.check(op, quote, text, prompt, salt)
         if not verdict.ok and verdict.confirm and mark is not None:
             self.asked[key] = mark
         return verdict
@@ -260,7 +260,7 @@ class Said:
     def undoable(self, path):
         """The forgets "undo" can bring back, newest first: if the person's latest message is a bare "undo", the
         forgets of the message just before it, in this session, in path."""
-        prompt, mark = self.latest()
+        prompt, mark = tuple(self.latest())[:2]
         if prompt is None or mark is None or not said.is_undo(prompt):
             return None
         return [item for item, where, at in reversed(self.forgot)

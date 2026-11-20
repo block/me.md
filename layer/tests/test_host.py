@@ -1622,6 +1622,57 @@ class Quoted(Served):
         self.assertIn("undo", answer["receipt"])
         self.assertEqual(self.read("me.md"), b"- I'm allergic to shellfish.\n")
 
+    STEP1 = "Please forget that I'm vegetarian and what my go-to dish is. I don't want them kept anywhere."
+    STEP1_QUOTE = "Please forget that I'm vegetarian and what my go-to dish is."
+    STEP1_ME = "I live in Lisbon.\nI'm vegetarian. My go-to dish is mushroom risotto-9fe8dc.\nI prefer one-line answers.\n"
+
+    def forget_both(self, first, second):
+        from thou_host import said
+        self.write("me.md", self.STEP1_ME)
+        self.say(self.STEP1)
+        for text in (first, second):
+            answer = self.one("forget", path="me.md", text=text, quote=self.STEP1_QUOTE)
+            self.assertTrue(answer.get("ok"), answer)
+        me = self.read("me.md")
+        for word in (b"vegetarian", b"risotto", b"dish"):
+            self.assertNotIn(word, me)
+        self.assertIn(b"Lisbon", me)
+        with open(os.path.join(said.folder(), "client-%d.json" % said.client()[0])) as handle:
+            kept = handle.read()
+        for word in ("vegetarian", "dish"):
+            self.assertNotIn(word, kept)  # neither forget left its words in plain text
+        self.assertIn("I don't want them kept anywhere.", kept)
+
+    def test_two_forgets_from_one_sentence(self):
+        """The person's one sentence asks for two forgets. The first one's scrub hashes its words in the kept
+        message, and the second still matches the agent's quote, hashed the same way."""
+        self.forget_both("I'm vegetarian.", "My go-to dish is mushroom risotto-9fe8dc.")
+
+    def test_two_forgets_from_one_sentence_the_other_way_round(self):
+        self.forget_both("My go-to dish is mushroom risotto-9fe8dc.", "I'm vegetarian.")
+
+    def test_a_forgotten_word_counts_as_not_typed_for_a_remember(self):
+        """A hashed word counts towards a forget only: a remember of the words just forgotten finds them not
+        typed, even with the quote that matches. A quote with another word where a hash stands doesn't match."""
+        from thou_host import said
+        self.write("me.md", self.STEP1_ME)
+        self.say(self.STEP1)
+        self.assertTrue(self.one("forget", path="me.md", text="I'm vegetarian.", quote=self.STEP1_QUOTE)["ok"])
+        answer = self.one("remember", text="I'm vegetarian.", quote=self.STEP1_QUOTE)
+        self.assertEqual(answer["error"], "not_said")
+        self.assertNotIn(b"vegetarian", self.read("me.md"))
+        answer = self.one("forget", path="me.md", text="My go-to dish is mushroom risotto-9fe8dc.",
+                          quote="Please forget that I'm vegan and what my go-to dish is.")
+        self.assertEqual(answer["error"], "not_said")  # the match isn't loosened
+        both = "Please forget that I'm vegetarian, and remember that I'm vegetarian on weekdays."
+        self.say(both)
+        prompt, _, salt = said.salted()
+        self.assertTrue(said.check("remember", both, "I'm vegetarian on weekdays.", prompt, salt).ok)
+        said.scrub("I'm vegetarian.")
+        prompt, _, salt = said.salted()
+        self.assertFalse(said.check("remember", both, "I'm vegetarian on weekdays.", prompt, salt).ok)
+        self.assertTrue(said.check("forget", both, "I'm vegetarian.", prompt, salt).ok)
+
     def test_a_subject_names_one_clause_only(self):
         """The value after "is" must be one clause: "forget my test" can't take "and I'm learning to drive"
         with it, but it takes the clause that is the test. A subject the person didn't name in full ("my
@@ -1910,7 +1961,9 @@ class Said(unittest.TestCase):
         self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
         self.assertEqual(os.stat(said.folder()).st_mode & 0o777, 0o700)
         said.scrub("my test date")
-        self.assertEqual(said.latest()[0], "Then book a lesson.")
+        kept = said.latest()[0]
+        self.assertTrue(kept.startswith("And forget my thouh") and kept.endswith("q. Then book a lesson."), kept)
+        self.assertEqual(said.words(kept) & said.words("test date"), set())
         self.assertEqual(said.latest()[1], (session, 2))
         said.record("x" * (said.MOST_PROMPT + 10))
         self.assertEqual(len(said.latest()[0]), said.MOST_PROMPT)
@@ -1937,10 +1990,12 @@ class Said(unittest.TestCase):
         said.record("My test is in March, the writer saw.", sid="writer")  # another session of this client
         said.mark(None)
         said.scrub("my test is in March")
-        self.assertEqual(said.latest()[0], "Book a lesson.")
+        self.assertTrue(said.latest()[0].endswith(". Book a lesson."), said.latest()[0])
         self.assertNotIn("March", json.dumps(said._read(said.client())))
+        self.assertNotIn("test", json.dumps(said._read(said.client())))
         said.mark("writer")
-        self.assertEqual(said.latest()[0], "")
+        self.assertTrue(said.latest()[0].endswith(", the writer saw."), said.latest()[0])
+        self.assertNotIn("March", said.latest()[0])
         said.mark(None)
         with open(other) as handle:
             self.assertNotIn("March", json.load(handle)["prompt"])
@@ -1950,14 +2005,63 @@ class Said(unittest.TestCase):
         said.sweep()
         self.assertFalse(os.path.exists(other))  # its client has gone
         self.assertFalse(os.path.exists(renumbered))  # its number belongs to a newer process now
-        self.assertEqual(said.latest()[0], "Book a lesson.")  # this one's client is alive
+        self.assertTrue(said.latest()[0].endswith(". Book a lesson."))  # this one's client is alive
         said.sweep(now=time.time() + said.MOST_AGE + 60)
         self.assertEqual(said.latest(), (None, None))  # more than a day old
 
     def test_a_scrub_keeps_the_other_sentences_with_a_not(self):
         self.said.record("Forget that I don't drive on Sundays. I'm not free on Friday.")
         self.said.scrub("I don't drive on Sundays")
-        self.assertEqual(self.said.latest()[0], "I'm not free on Friday.")
+        kept = self.said.latest()[0]
+        self.assertTrue(kept.startswith("Forget that I don't thouh"), kept)  # small words and the "not" stay
+        self.assertTrue(kept.endswith("q. I'm not free on Friday."), kept)
+        self.assertNotIn("drive", kept)
+        self.assertNotIn("Sunday", kept)
+
+    def test_each_message_has_its_own_salt(self):
+        """Fix 4's hashes can be tested within one message only: each recorded message gets a new random salt,
+        and it goes when the next message replaces the one before."""
+        said = self.said
+        said.record("Forget that I'm vegetarian.")
+        first = said.salted()[2]
+        said.scrub("I'm vegetarian")
+        hashed = said.latest()[0]
+        said.record("Forget that I'm vegetarian.")
+        second = said.salted()[2]
+        self.assertTrue(first and second and first != second)
+        said.scrub("I'm vegetarian")
+        self.assertNotEqual(said.latest()[0], hashed)  # the same word, another hash
+        self.assertNotIn(first, json.dumps(said._read(said.client())))
+
+    def test_a_scrub_reads_each_word_as_the_matching_does(self):
+        """Lowercased, "İstanbul" is two stems for the matching, so the hashing reads it the same way. And if a
+        word is still read after the hashing, its sentence goes, as without a salt."""
+        from unittest import mock
+        said = self.said
+        said.record("Forget that I lived in İstanbul. I'm free on Friday.")
+        said.scrub("I lived in İstanbul")
+        kept = said.latest()[0]
+        self.assertEqual(said.words(kept) & said.words("lived in İstanbul"), set())
+        self.assertNotIn("stanbul", kept)
+        self.assertTrue(kept.endswith("q. I'm free on Friday."), kept)
+        said.record("Forget that I drive on Sundays. I'm free on Friday.")
+        with mock.patch.object(said, "_hide", lambda text, salt, wanted: text):
+            said.scrub("I drive on Sundays")
+        self.assertEqual(said.latest()[0], "I'm free on Friday.")
+
+    def test_a_message_kept_without_a_salt_loses_the_sentence(self):
+        """A message kept before salts were: the sentences that hold the words go, as they did."""
+        said = self.said
+        said.record("Forget that I don't drive on Sundays. I'm not free on Friday.")
+        path = os.path.join(said.folder(), "client-%d.json" % said.client()[0])
+        with open(path) as handle:
+            data = json.load(handle)
+        del data["salt"]
+        with open(path, "w") as handle:
+            json.dump(data, handle)
+        self.assertIsNone(said.salted()[2])
+        said.scrub("I don't drive on Sundays")
+        self.assertEqual(said.latest()[0], "I'm not free on Friday.")
 
     def test_a_hook_and_a_server_find_the_same_client(self):
         code = "import sys; sys.path.insert(0, %r); from thou_host import said; print(said.client())" % \

@@ -29,6 +29,7 @@ its words out of every kept message, and at session start the messages of client
 more than a day old, are deleted (H5.2).
 """
 
+import hashlib
 import json
 import os
 import re
@@ -99,7 +100,7 @@ def _path(who):
     return os.path.join(folder(), "client-%d.json" % who[0])
 
 
-_RECORD = ("prompt", "at", "n", "session")
+_RECORD = ("prompt", "at", "n", "session", "salt")
 
 
 def _parked(data):
@@ -130,7 +131,7 @@ def record(prompt, who=None, sid=None):
     before = _switch(_read(who), who, sid)
     number = before["n"] + 1 if isinstance(before.get("n"), int) else 1
     session = before.get("session") if isinstance(before.get("session"), str) else os.urandom(8).hex()
-    before.update(prompt=prompt[:MOST_PROMPT], at=time.time(), n=number, session=session)
+    before.update(prompt=prompt[:MOST_PROMPT], at=time.time(), n=number, session=session, salt=os.urandom(16).hex())
     _write(who, before)
 
 
@@ -172,27 +173,33 @@ def _load(path):
 
 
 def scrub(text, who=None):
-    """After a forget: take the sentences that hold its words out of every kept message, this client's and any
-    other's, so the layer keeps no copy of them (H5.2). The other sentences stay, for a remember in the same
-    message."""
+    """After a forget: take its words out of every kept message, this client's and any other's, so the layer
+    keeps no copy of them (H5.2). Each word goes to a hash salted for that one message (_hide), so a second
+    forget from the same sentence still finds the person's words, and the salt goes with the message. A message
+    kept without a salt loses the sentences that hold the words instead, and so does a sentence where a word
+    is still read after the hashing."""
     gone = words(text) - {NOT}
     if not gone:
         return
-    def cut(prompt):
+    def cut(record):
+        prompt, salt = record.get("prompt"), record.get("salt")
+        if not isinstance(prompt, str):
+            return record
+        if isinstance(salt, str) and salt:
+            prompt = _hide(prompt, salt, lambda stems: not gone.isdisjoint(stems))
+            if not (words(prompt) & gone):
+                return dict(record, prompt=prompt)
         kept = [x for x in _SENTENCES.split(_apostrophes(prompt).replace("\r\n", "\n"))
                 if x.strip() and not (words(x) & gone)]
-        return "\n".join(kept)
+        return dict(record, prompt="\n".join(kept))
     for path in _files():
         for _ in range(3):
             data = _load(path)
             if not data:
                 break
-            after = dict(data)
-            if isinstance(data.get("prompt"), str):
-                after["prompt"] = cut(data["prompt"])
+            after = cut(data)
             if _parked(data):
-                after["others"] = {k: dict(v, prompt=cut(v["prompt"])) if isinstance(v.get("prompt"), str) else v
-                                   for k, v in _parked(data).items()}
+                after["others"] = {k: cut(v) for k, v in _parked(data).items()}
             if after == data:
                 break
             if _replace(path, after, data):
@@ -303,14 +310,20 @@ def _read(who):
 def latest(who=None):
     """The person's latest message to this client, and where it stands: (session, number), the number counting
     1, 2, ... from the session's start. Or (None, None)."""
+    return salted(who)[:2]
+
+
+def salted(who=None):
+    """latest, and the salt of the message's hashed words (_hide), or None: (prompt, place, salt)."""
     data = _read(who or client())
     prompt = data and data.get("prompt")
     number = data and data.get("n")
     session = data and data.get("session")
     if not isinstance(prompt, str) or not isinstance(number, int) or isinstance(number, bool) or \
             not isinstance(session, str):
-        return None, None
-    return prompt, (session, number)
+        return None, None, None
+    salt = data.get("salt")
+    return prompt, (session, number), salt if isinstance(salt, str) and salt else None
 
 
 # --- the person's own words ------------------------------------------------------
@@ -422,6 +435,30 @@ def _tokens(text):
 def words(text):
     """The words that carry meaning, as a set of stems (_tokens)."""
     return set(_tokens(text))
+
+
+_HIDDEN = re.compile(r"\bthouh[0-9a-f]{20}q\b")
+
+
+def _hashed(stems, salt):
+    """A forgotten word's stand-in in a kept message: one word, salted for that message only, and read by
+    _tokens and stem as itself. stems are the word's own, as _tokens reads it."""
+    key = "%s:%s" % (salt, " ".join(stems))
+    return "thouh%sq" % hashlib.sha256(key.encode("utf-8")).hexdigest()[:20]
+
+
+def _hide(text, salt, wanted):
+    """text with each word that carries meaning, whose stems wanted(stems) picks, put as its salted hash. Small
+    words, negators and the words of "no longer"-style phrases stay as they are, as _tokens reads them."""
+    text = _apostrophes(text).replace("\u2019", "'")
+    phrases = [m.span() for m in _NEGATOR_PHRASES.finditer(text)]
+    def swap(m):
+        word = m.group(0)
+        if any(a <= m.start() < b for a, b in phrases) or _HIDDEN.fullmatch(word):
+            return word
+        stems = [x for x in _tokens(word) if x != NOT]  # one word can be two stems once lowercased: "İstanbul"
+        return _hashed(stems, salt) if stems and wanted(stems) else word
+    return re.sub(r"[^\W_]+(?:'[^\W_]+)*", swap, text)
 
 
 # --- what the person asks ----------------------------------------------------------
@@ -556,7 +593,7 @@ def missing(text, said):
     seen = []
     for w in re.findall(r"[^\W_]+(?:'[^\W_]+)*", text.replace("\u2019", "'")):
         key = w.replace("'", "").lower()
-        token = NOT if key in _NEGATORS else None if key in STOP else stem(key)
+        token = NOT if key in _NEGATORS else None if key in STOP or _HIDDEN.fullmatch(key) else stem(key)
         if token is not None and token not in have and w not in seen:
             seen.append(w)
     return seen
@@ -676,18 +713,25 @@ def _judge(op, text, said, needs_yes):
     return Verdict(True)
 
 
-def check(op, quote, text, prompt):
+def check(op, quote, text, prompt, salt=None):
     """Whether the person's latest message, in their own words, asks for this change.
 
     op is "forget" or "remember"; quote is the agent's copy of the person's words; text is the words to
     forget or keep. The words are checked against the sentence that asks, and only an ask with no words of its
-    own borrows them from the sentence next to it."""
+    own borrows them from the sentence next to it. salt is the message's (salted): words of the quote that an
+    earlier forget hashed in the message are hashed the same way to match, and so are the words to forget. The
+    words to remember are not, so a forgotten word counts as not typed for a remember."""
     if prompt is None:
         return Verdict(False, "I don't have the person's latest message, so nothing they typed can stand for "
                               "their yes here.", unheard=True)
     if not isinstance(quote, str) or len(_plain(quote)) < 3:
         return Verdict(False, "quote is the person's own words that ask for this, copied from their latest "
                               "message.")
+    hidden = set(_HIDDEN.findall(prompt)) if salt else set()
+    if hidden:
+        quote = _hide(quote, salt, lambda stems: _hashed(stems, salt) in hidden)
+        if op == "forget":
+            text = _hide(text, salt, lambda stems: _hashed(stems, salt) in hidden)
     own = own_sentences(prompt)
     # sentence by sentence, as the message is: a quote of two sentences keeps the full stop between them
     wanted = " ".join(p for p in (_plain(x) for x in _SENTENCES.split(_apostrophes(quote))) if p)
