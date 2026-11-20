@@ -5,10 +5,10 @@ store, one per client process, numbered within the session. The thou server read
 forget, and applies the change at once only when the person's own words ask for it:
 
 - the quote is in the person's latest message, in words they wrote themselves: not a line they pasted after
-  `>`, not a fenced block, not words in quotation marks that give an instruction, and not the rest of a
+  `>`, not a fenced block, not an HTML comment, not words in quotation marks that give an instruction, and not the rest of a
   sentence that reports what someone else said or wrote;
 - that sentence asks for the operation: "forget", "delete" or "remove" for forget, and "remember", "note" or
-  "save" for remember. A question doesn't ask, unless it is a request ("Can you…?"); nor does a verb with a
+  "save" (or "keep that in mind") for remember. A question doesn't ask, unless it is a request ("Can you…?"); nor does a verb with a
   negator up to four words before it ("please don't ever forget" asks to remember), nor one that describes
   someone ("I always forget");
 - the words match what that sentence says. To remember, every word that carries meaning must be the
@@ -330,6 +330,9 @@ def salted(who=None):
 
 _FENCE = re.compile(r"(?ms)^[ \t]*(```|~~~).*?(?:^[ \t]*\1[^\n]*$|\Z)")
 _PASTED = re.compile(r"(?m)^[ \t]*>.*$")
+# An HTML comment doesn't show where the message is read, so its words were not written to be read by the person.
+# Pasted mail and pages carry them; an unclosed one runs to the end.
+_COMMENT = re.compile(r"(?s)<!--.*?(?:-->|\Z)")
 # A line that starts with a speaker's name and a colon, as in a pasted chat: "Sam: forget that…".
 _SPEAKER = re.compile(r"(?m)^[ \t]*([A-Z][\w.'-]*(?:[ \t]+[\w.'-]+){0,2})[ \t]*:[ \t].*$")
 _OWN_LEAD = re.compile(r"(?i)^(?:also|ps|p\.s\.|update|btw|fyi|edit|important|reminder|ok|okay|so|and|but|oh|"
@@ -352,13 +355,14 @@ def _apostrophes(text):
 def own_sentences(prompt):
     """The sentences of the message that the person wrote themselves.
 
-    Left out: fenced blocks, lines pasted after >, lines that start with someone's name and a colon, words in
+    Left out: HTML comments, fenced blocks, lines pasted after >, lines that start with someone's name and a colon, words in
     quotation marks that themselves ask to remember or forget (an instruction someone else gave), the rest of
     a sentence after "said", "wrote", "sent" and the like, and a sentence that speaks of "your assistant".
     Quoted words that don't ask anything stay, without their marks: 'forget "I'm vegetarian"' names words."""
     if not isinstance(prompt, str):
         return []
     text = _apostrophes(prompt).replace("\r\n", "\n")
+    text = _COMMENT.sub(GAP, text)
     text = _FENCE.sub(GAP, text)
     text = _PASTED.sub(GAP, text)
     text = _SPEAKER.sub(lambda m: m.group(0) if _OWN_LEAD.match(m.group(1)) or _asks_any(m.group(1)) else GAP,
@@ -373,6 +377,45 @@ def own_sentences(prompt):
         if sentence and not _THEIRS.search(sentence):
             out.append(sentence)
     return out
+
+
+# A line that introduces something pasted: it ends with a colon, or names an email, a page or the like.
+_INTRO = re.compile(r"(?im)^[^\n]*(?::[ \t]*$|\b(?:this|the following|below|attached|forwarded|pasted)\s+"
+                    r"(?:e-?mail|mail|message|page|article|doc|document|note|notes|text|thread|chat|post)\b[^\n]*$)")
+# The person asking for memory to go off, in a sentence of their own.
+_OFF_VERB = re.compile(r"(?i)\b(?:off|stop|pause|disable|halt|no more|don'?t (?:keep|save|use|remember))\b")
+_OFF_WHAT = re.compile(r"(?i)\b(?:memory|memories|remember\w*|thou|store|context|me\.md)\b")
+
+
+def before_paste(prompt):
+    """The message up to the end of the first line that introduces something pasted, such as "Summarise this
+    email:" or "Can you answer this message from Jun?". What follows reads as pasted, even without > marks."""
+    found = _INTRO.search(prompt)
+    return prompt[:found.end()] if found and prompt[found.end():].strip() else prompt
+
+
+def words_from(body, prompt):
+    """Whose words a proposal's body is (STORE.md S6.4): "person" when they come, in order and with the same
+    "not", from one sentence the person wrote themselves before anything they pasted; "pasted" when they are
+    only elsewhere in the message; "agent" otherwise. None when there is no message to check."""
+    if not isinstance(prompt, str) or not isinstance(body, str):
+        return None
+    mine = before_paste(prompt)
+    for sentence in own_sentences(mine):
+        if covered("remember", body, sentence) and _in_order(body, sentence) and \
+                not _negation_differs(body, sentence):
+            return "person"
+    pasted = covered("remember", body, prompt[len(mine):]) or (
+        covered("remember", body, prompt) and not covered("remember", body, " ".join(own_sentences(prompt))))
+    return "pasted" if pasted else "agent"
+
+
+def asks_off(prompt):
+    """Whether a sentence the person wrote themselves asks for memory to go off ("turn my memory off",
+    "stop remembering things"). None when there is no message to check."""
+    if not isinstance(prompt, str):
+        return None
+    return any(_OFF_VERB.search(s) and _OFF_WHAT.search(s) for s in own_sentences(before_paste(prompt)))
 
 
 def _plain(text):
@@ -465,7 +508,8 @@ def _hide(text, salt, wanted):
 # --- what the person asks ----------------------------------------------------------
 
 _FORGET_VERB = r"forget|delete|remove|erase|wipe"
-_REMEMBER_VERB = r"remember(?:ing)?|memori[sz]e|make a note|note|keep in mind|save|write (?:it |this |that )?down"
+_REMEMBER_VERB = (r"remember(?:ing)?|memori[sz]e|make a note|note|(?:keep|bear) (?:it |this |that )?in mind|save|"
+                  r"write (?:it |this |that )?down")
 _VERB = re.compile(r"(?i)\b(?:%s|%s)\b" % (_FORGET_VERB, _REMEMBER_VERB))
 _ADD = re.compile(r"(?i)\b(?:add|put)\b[^.!?\n]{0,60}?\b(?:to|in|into) (?:my |your |the )?"
                   r"(?:me\.md|memory|memories|thou|profile)\b")
@@ -637,8 +681,13 @@ NEGATION_WHY = ("The person said this with a \"not\" (or \"no longer\", \"anymor
                 "words leave out, or the other way round.")
 
 
+# When to keep it, not what: "Keep that in mind for the future." has no words of its own to keep.
+_WHEN = re.compile(r"(?i)\b(?:for (?:the )?future|in (?:the )?future|going forward|from now on|for later|"
+                   r"for next time|next time|for good|always)\b")
+
+
 def _own_words(sentence, op):
-    return words(_blanked(sentence, op)) - {NOT}
+    return words(_WHEN.sub(" ", _blanked(sentence, op))) - {NOT}
 
 
 # A forget's object ends at these, or at the first comma, "and" or "or" that starts a clause of its own.

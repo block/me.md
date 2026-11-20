@@ -366,6 +366,8 @@ def check_fields(rep, rel, fields):
         rep.error(rel, "target must not be watches.md (hosts never add watches)")
     elif target and not TARGET_RE.fullmatch(target):
         rep.error(rel, "target must be me.md, topics/<name>.md or projects/<name>.md")
+    if "words-from" in fields and fields["words-from"] not in ("person", "pasted", "agent"):
+        rep.warn(rel, "words-from must be person, pasted or agent; hosts read any other value as absent")
     for key in ("proposed-at", "decided-at"):
         if fields.get(key) and not rfc3339(fields[key]):
             rep.error(rel, "%s must be RFC 3339 UTC like 2026-11-12T17:03:01Z" % key)

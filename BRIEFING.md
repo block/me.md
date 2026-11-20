@@ -62,6 +62,7 @@ Every briefing ends with what was read, what was unavailable, and a confidence s
 - **The briefing states its own limits.** Shallow scans, skipped sources, and low-confidence readings are named in the read itself, not hidden in a log.
 - **Honest tone, no theater.** The briefing does not celebrate, guilt, or nag. It reports, suggests one move, and stops. The [system's voice principles](./EXPRESSION.md#the-systems-voice) apply in full.
 - **B5** (Briefer) **The person's response is theirs to give.** A host may let the person record what they did with a briefing, so future reads improve. Recording is optional, person-initiated, and inspectable like everything else. This version defines no place in the store for it, so a host keeps it as host state and shows it to the person on request. Silence is a valid response and MUST NOT degrade future briefings.
+- **B6** (Briefer) **Brevity never cuts the receipt.** A request for a shorter briefing, or a standing preference for short answers, shortens the other parts. It MUST NOT remove the coverage receipt or the read's blind spots under "what is missing". A host that draws a briefing in its own interface SHOULD draw the coverage receipt itself, from what it actually read, rather than rely on the model to write it.
 
 ## What this contract does not specify
 

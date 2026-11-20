@@ -44,6 +44,16 @@
             "onFailure": "block"
           }
         ]
+      },
+      {
+        "matcher": "mcp__plugin_thou_thou__off",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/thou_hooks.py\" pre-tool-use",
+            "timeout": 10
+          }
+        ]
       }
     ]
   }

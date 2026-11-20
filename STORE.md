@@ -114,7 +114,7 @@ Required keys. A required key MUST NOT have an empty value.
 | `proposed-at` | the time, as RFC 3339 UTC with `Z` and whole seconds, for example `2026-11-12T17:03:01Z` |
 | `basis` | why, in words the person can recognize |
 
-Optional keys: `decided-at` (the time the status left `pending`, in the same form) and `decided-via` (the host where the person decided).
+Optional keys: `decided-at` (the time the status left `pending`, in the same form), `decided-via` (the host where the person decided), and `words-from`. `words-from` says whose words the body is, as the proposing host checked them against the person's latest message: `person` (in sentences the person wrote themselves), `pasted` (only in text the message carried that the person did not write, such as a pasted email, a quote, or a forwarded page), or `agent` (in neither). A host writes `words-from` only when it checked. A host reads any other value as absent, and an absent key as unknown. `words-from` is the proposing host's claim, like `proposed-by`. It is never approval: every proposal still needs the person's decision (S6.9).
 
 ### Body
 
