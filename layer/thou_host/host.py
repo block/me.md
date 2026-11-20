@@ -557,9 +557,9 @@ class Host:
                 counted = []
 
                 def cut(data):
-                    out, count = formats.without_lines(data or b"", text)
+                    out, count = formats.without_text(data or b"", text)
                     if count == 0:
-                        raise HostError("no_match", "Those words do not fill whole lines in %s." % path)
+                        raise HostError("no_match", "Those words are not in %s as whole words." % path)
                     counted.append(count)
                     return out
                 self.fs.replace(path, cut)

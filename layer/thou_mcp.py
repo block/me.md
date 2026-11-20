@@ -99,7 +99,9 @@ TOOLS = [
      ["path", "action"], False),
     ("forget", "Delete words, or a whole file, that the person asked you to forget. Tell the person the notices: "
                "they say what can't be deleted.",
-     {"path": _PATH, "text": {"type": "string", "description": "The words to remove. Leave out to delete the file."}},
+     {"path": _PATH, "text": {"type": "string", "description": "The words to remove: whole lines, or words inside a "
+                                                             "line, with the words that join them, such as \" and my "
+                                                             "test is in March\". Leave out to delete the file."}},
      ["path"], False),
     ("policy", "Turn memory on or off, when the person asks.",
      {"state": {"type": "string", "enum": ["on", "off"]}}, ["state"], False),

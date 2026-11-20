@@ -753,12 +753,38 @@ class Forget(StoreTest):
                       " ".join(answer["notices"]))
         self.assertIn("removed text", self.read("journal.md").decode().splitlines()[-1])
 
-    def test_forget_only_whole_lines(self):
+    def test_forget_whole_lines_then_words_in_a_line(self):
         self.write("me.md", "x blue\nblue\nblue")
         answer = self.host.forget("me.md", "blue")
-        self.assertEqual(answer["removed"], 2)
-        self.assertEqual(self.read("me.md"), b"x blue\n")
+        self.assertEqual(answer["removed"], 3)
+        self.assertEqual(self.read("me.md"), b"x\n")
         self.assertEqual(self.code(self.host.forget, "me.md", "nothing"), "no_match")
+
+    def test_forget_part_of_a_line_does_what_forget_does(self):
+        """The words go, the line stays readable, applied proposals with them go, and the journal says removed."""
+        self.write("me.md", "- I'm learning to drive and my test is in March.\n- I like blue.\n")
+        done = ACCEPTED.replace("topics/travel.md", "me.md").replace("Prefer aisle seats.", "my test is in March")
+        self.write("proposals/20261112T170301Z-done.md", done)
+        self.write("proposals/20261112T170301Z-pend.md", PROPOSAL.replace("topics/travel.md", "me.md")
+                   .replace("Prefer aisle seats.", "Noor says my test is in March, so remind her."))
+        answer = self.host.forget("me.md", "my test is in March")
+        self.assertEqual(answer["removed"], 1)
+        self.assertEqual(self.read("me.md"), b"- I'm learning to drive.\n- I like blue.\n")
+        self.assertFalse(os.path.exists(self.path("proposals/20261112T170301Z-done.md")))
+        self.assertIn("20261112T170301Z-pend.md still holds these words. It is pending", " ".join(answer["notices"]))
+        journal = self.read("journal.md").decode().splitlines()
+        self.assertIn("| me.md | removed text |", journal[0])
+        self.assertIn("deleted an applied proposal", journal[1])
+        self.lint()
+
+    def test_forget_words_only_where_they_are_whole_words(self):
+        self.write("me.md", "My cat Mochi likes the category page.\r\n- cat\r\nconcat\r\n")
+        self.assertEqual(self.host.forget("me.md", "cat")["removed"], 2)
+        self.assertEqual(self.read("me.md"), b"My Mochi likes the category page.\r\nconcat\r\n")
+        self.assertEqual(self.code(self.host.forget, "me.md", "ego"), "no_match")
+        self.write("me.md", "Mochi, my cat, is 3.\n- and\n")
+        self.host.forget("me.md", "Mochi, my cat,")
+        self.assertEqual(self.read("me.md"), b"is 3.\n- and\n")
 
 
 class Formats(unittest.TestCase):

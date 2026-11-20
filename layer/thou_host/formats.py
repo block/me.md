@@ -422,6 +422,60 @@ def without_lines(data, text):
     return bytes(out), count
 
 
+_DANGLING = re.compile(rb"(?:[ \t]*,|[ \t]+(?:and|or|but))[ \t]*\Z", re.I)
+_EMPTIED = re.compile(rb"\A[ \t]*(?:[-*+]|\d+[.)])?[ \t]*[.,;:!?]*[ \t]*\Z")
+
+
+def _wordy(byte):
+    """A byte that can be part of a word: an ASCII letter, digit or _, or any byte of a non-ASCII character."""
+    return byte >= 0x80 or byte == 0x5F or chr(byte).isalnum()
+
+
+def _cut(line, chunk):
+    """Remove each place chunk appears in line as whole words, and tidy the space around each cut."""
+    out, count, start = b"", 0, 0
+    at = line.find(chunk)
+    while at != -1:
+        end = at + len(chunk)
+        before = _wordy(chunk[0]) and at > 0 and _wordy(line[at - 1])
+        after = _wordy(chunk[-1]) and end < len(line) and _wordy(line[end])
+        if before or after:  # inside a longer word: "cat" in "category"
+            at = line.find(chunk, at + 1)
+            continue
+        left, right = out + line[start:at], line[end:]
+        if right.strip(b" \t")[:1] in (b"",) or right.lstrip(b" \t")[:1] in b".;:!?)":
+            left = _DANGLING.sub(b"", left)  # "drive and my test is in March." without its end: "drive."
+        if left.endswith((b" ", b"\t")) and (right[:1] in (b"", b" ", b"\t") or right[:1] in b".,;:!?)"):
+            left = left.rstrip(b" \t") + (b" " if right[:1] in (b" ", b"\t") and left.strip() else b"")
+            right = right.lstrip(b" \t") if right[:1] in (b" ", b"\t") else right
+        elif left == b"":
+            right = right.lstrip(b" \t")
+        out, line, start, count = left, right, 0, count + 1
+        at = line.find(chunk)
+    return out + line[start:], count
+
+
+def without_text(data, text):
+    """Forget words: remove each place text fills whole lines, with its line break (without_lines); then, for
+    words on one line, remove them from inside each line where they stand as whole words. A line left with
+    nothing but a list marker or punctuation goes too. Returns (bytes, count)."""
+    data, count = without_lines(data, text)
+    chunk, _ = as_target_text(text, data)
+    if not chunk or b"\n" in chunk:
+        return data, count
+    out = []
+    for line in data.splitlines(True):
+        content = line.rstrip(b"\r\n")
+        cut, n = _cut(content, chunk)
+        if n:
+            count += n
+            if _EMPTIED.match(cut):
+                continue
+            line = cut + line[len(content):]
+        out.append(line)
+    return b"".join(out), count
+
+
 # --- journal (S7) -----------------------------------------------------------
 
 def journal_entry(path, change, host, authority, when=None):
