@@ -1622,6 +1622,25 @@ class Quoted(Served):
         self.assertIn("undo", answer["receipt"])
         self.assertEqual(self.read("me.md"), b"- I'm allergic to shellfish.\n")
 
+    def test_remember_of_words_already_kept_adds_no_copy(self):
+        """A remember of a line me.md already holds, as a list item or not, says so and adds nothing. Words that
+        are only part of a line are added."""
+        kept = "- I'm allergic to shellfish.\n- I like blue.\n"
+        self.write("me.md", kept)
+        journal = self.journal()
+        self.say("Please don't ever forget that I'm allergic to shellfish.")
+        for text in ("I'm allergic to shellfish.", "- I'm allergic to shellfish", "i'm  allergic to shellfish"):
+            answer = self.one("remember", text=text, quote="Please don't ever forget that I'm allergic to shellfish.")
+            self.assertTrue(answer["ok"], answer)
+            self.assertEqual(answer["receipt"], 'Already saved: "%s".' % " ".join(text.split()), answer)
+            self.assertIn("already in me.md", " ".join(answer["notices"]))
+            self.assertEqual(self.read("me.md"), kept.encode())
+        self.assertEqual(self.journal(), journal)
+        self.write("me.md", "- I'm allergic to shellfish and nuts.\n")
+        self.assertTrue(self.one("remember", text="I'm allergic to shellfish.",
+                                 quote="Please don't ever forget that I'm allergic to shellfish.")["ok"])
+        self.assertEqual(self.read("me.md"), b"- I'm allergic to shellfish and nuts.\n- I'm allergic to shellfish.\n")
+
     def test_the_agent_is_told_not_to_restate_forgotten_words(self):
         """The agent's own notes and proposals are out of the layer's reach, so the rule and the forget's answer
         tell it: once words are forgotten or refused, it doesn't restate them anywhere."""

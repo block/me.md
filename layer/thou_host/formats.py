@@ -399,6 +399,19 @@ _ITEM = re.compile(rb"\A[ \t]*([-*+])[ \t]+\S")
 _MARKED = re.compile(r"\A\s*(?:[-*+]|\d+[.)])\s|\A\s*#")
 
 
+_MARKER = re.compile(r"\A\s*(?:[-*+]|\d+[.)])\s+")
+
+
+def has_lines(data, text):
+    """Whether each line of text is already a whole line of data, list markers, spacing, case and a final full
+    stop aside: words a remember would only repeat."""
+    def plain(line):
+        return normalize(_MARKER.sub("", line)).rstrip(" .").casefold()
+    have = {plain(line) for line in (data or b"").decode("utf-8", "replace").splitlines()}
+    want = [plain(line) for line in body_lines(text) if plain(line)]
+    return bool(want) and all(line in have for line in want)
+
+
 def as_list_items(data, text):
     """Text to add at the end of data, in data's list style: when the last line of data is a list item ("- ",
     "* " or "+ "), each line of text becomes an item with the same marker, unless it is one already or a

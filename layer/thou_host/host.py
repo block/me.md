@@ -554,7 +554,8 @@ class Host:
 
     def edit(self, path, action, text=None, old=None, new=None, agent=None, listed=False):
         """H3.7: an edit the person asked for, journaled as person direct. With listed, an append takes the
-        file's list style (formats.as_list_items)."""
+        file's list style (formats.as_list_items), and words the file already holds as whole lines aren't added
+        again."""
         self._writable()
         path = self._editable(path)
         who = self.who(agent)
@@ -564,16 +565,23 @@ class Host:
                 raise HostError("bad_request", "append needs text.")
             self._visible(text, "The text")
             token = self._lock(agent)
+            held = []
+
+            def add(data):
+                if listed and formats.has_lines(data, text):
+                    held.append(path)
+                    return None
+                return formats.appended(data, formats.as_list_items(data, text) if listed else text)
             try:
-                before, after = self.fs.replace(path, lambda data: formats.appended(
-                    data, formats.as_list_items(data, text) if listed else text))
+                before, after = self.fs.replace(path, add)
                 self._lift(text)
             except Missing as exc:
                 raise HostError("bad_path", "I will not write %s: %s." % (path, exc.why))
             finally:
                 self.fs.unlock(token)
             if after is None:
-                notices.append("Those words are already at the end of %s, so I changed nothing." % path)
+                notices.append(("Those words are already in %s, so I changed nothing." if held else
+                                "Those words are already at the end of %s, so I changed nothing.") % path)
                 return self._answer(self.state(), journal=[], notices=notices)
             change = "created the file" if before is None else "added text"
         elif action == "replace":
