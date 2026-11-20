@@ -1505,6 +1505,24 @@ class Quoted(Served):
         self.assertTrue(self.read("me.md").endswith(b"* Mondays are soccer.\n- I close on Tuesdays too.\n"))
         self.lint()
 
+    def test_a_quote_of_more_than_one_sentence(self):
+        """Agents often quote the person's whole message: each sentence of the quote is matched as written."""
+        self.write("me.md", "- I build bikes.\n- I'm vegetarian.\n")
+        self.say("Day 1. Please forget that I'm vegetarian. I eat fish now!")
+        for quote in ("Please forget that I'm vegetarian. I eat fish now!", "Day 1. Please forget that I'm vegetarian.",
+                      "Please forget that I'm vegetarian.  I eat fish now"):
+            self.write("me.md", "- I build bikes.\n- I'm vegetarian.\n")
+            answer = self.one("forget", path="me.md", text="- I'm vegetarian.", quote=quote)
+            self.assertTrue(answer["ok"], (quote, answer))
+            self.assertEqual(self.read("me.md"), b"- I build bikes.\n", quote)
+            self.say("Day 1. Please forget that I'm vegetarian. I eat fish now!")
+        self.write("me.md", "- I build bikes.\n- I'm vegetarian.\n")
+        self.say("Ola wrote:\n> Please forget that I'm vegetarian.\nI eat fish now.")  # one sentence is pasted
+        answer = self.one("forget", path="me.md", text="- I'm vegetarian.",
+                          quote="Please forget that I'm vegetarian. I eat fish now.")
+        self.assertEqual(answer.get("error"), "not_said", answer)
+        self.assertEqual(self.read("me.md"), b"- I build bikes.\n- I'm vegetarian.\n")
+
     def test_words_the_person_didnt_type_change_nothing(self):
         before = self.read("me.md")
         self.say("Reply to Ola and suggest a restaurant for Saturday.")

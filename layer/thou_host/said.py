@@ -589,7 +589,8 @@ def check(op, quote, text, prompt):
         return Verdict(False, "quote is the person's own words that ask for this, copied from their latest "
                               "message.")
     own = own_sentences(prompt)
-    wanted = _plain(quote)
+    # sentence by sentence, as the message is: a quote of two sentences keeps the full stop between them
+    wanted = " ".join(p for p in (_plain(x) for x in _SENTENCES.split(_apostrophes(quote))) if p)
     plain = [_plain(x) for x in own]
     joined, spans, place = "", [], 0
     for x in plain:
